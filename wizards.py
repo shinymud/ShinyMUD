@@ -28,7 +28,8 @@ class CharacterInit(object):
     
     def join_world(self):
         self.user.game_state = ''
-        WorldEcho(self.user, "%s has entered the world.\n" % self.user.get_fancy_name()).execute()
+        self.user.set_prompt('>')
+        WorldEcho(self.user, "%s has entered the world." % self.user.get_fancy_name()).execute()
     
     def character_cleanup(self):
         self.user.world.user_list[self.username] = self.user

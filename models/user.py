@@ -17,6 +17,9 @@ class User(object):
         self.game_state = 'init'
         self.log = logging.getLogger('User')
         self.char_init = CharacterInit(self)
+        self.location = ''
+        self.prompt = ''
+        self.channels = {'chat': True}
     
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""
@@ -33,21 +36,21 @@ class User(object):
     def send_output(self):
         """Sends all data from the user's output queue to the user."""
         try:
-            # sent_output = False
+            sent_output = False
             while len(self.outq) > 0:
                 self.conn.send(self.outq[0])
                 del self.outq[0]
                 sent_output = True
-            # if sent_output:
-                # self.conn.send(self.get_prompt())
+            if sent_output:
+                self.conn.send(self.prompt)
         except Exception, e:
             # If we die here, it's probably because we got a broken pipe.
             # In this case, we should disconnect the user
             self.user_logout(True)
             print str(e)
     
-    def get_prompt(self):
-        return '\n>'
+    def set_prompt(self, new_prompt):
+        self.prompt = new_prompt
     
     def parse_command(self):
         """Parses the lines in the user's input buffer and then calls
