@@ -1,0 +1,6 @@
+*.pyc
+*.log
+*.aux
+*.pdf
+*.dvi
+*.ps
