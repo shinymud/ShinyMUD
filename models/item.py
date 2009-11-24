@@ -24,7 +24,7 @@ class Item(object):
         self.name = args.get('name', '')
         self.short = args.get('short', '')
         self.long = args.get('long', '')
-        self.equip_loc = args.get('equip_loc', False)
+        self.equip_loc = args.get('equip_loc', None)
         self.keywords = args.get('keywords', '')
         self.weight = args.get('weight', 1)
         self.pickup = args.get('pickup', False)
@@ -35,7 +35,7 @@ class Item(object):
         string = 'name: ' + self.name + '\n' + \
                  'short description: ' + self.short + '\n' + \
                  'long description: ' + self.long + '\n' + \
-                 'equip location: ' + self.equip_loc + '\n' + \
+                 'equip location: ' + str(self.equip_loc) + '\n' + \
                  'keywords: ' + self.keywords + '\n' + \
                  'weight: ' + str(self.weight) + '\n' + \
                  'pickup/carryable: ' + str(self.pickup) + '\n' + \
@@ -87,8 +87,8 @@ class Item(object):
         self.addDmg = types.MethodType(addDmg, self, self.__class__)
         
         def removeDmg(self, index):
-            if index <= len(self.dmg)
-            del self.dmg[index -1]
+            if index <= len(self.dmg):
+                del self.dmg[index -1]
         
         self.removeDmg = types.MethodType(removeDmg, self, self.__class__)
     
