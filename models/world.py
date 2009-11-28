@@ -1,17 +1,20 @@
 from models import ShinyModel
 import threading
 import time
+import logging
 
 class World(ShinyModel):
-    user_list = {}
-    user_delete = []
-    user_list_lock = threading.Lock()
-    shutdown_flag = False
-    listening = True
     
     def __init__(self):
-        pass
-    
+        self.user_list = {}
+        self.user_delete = []
+        self.user_list_lock = threading.Lock()
+        self.shutdown_flag = False
+        self.listening = True
+        self.areas = {}
+        self.log = logging.getLogger('World')
+        
+        
     def cleanup(self):
         for user in self.user_delete:
             del self.user_list[user]
@@ -29,6 +32,6 @@ class World(ShinyModel):
                 self.user_list[key].send_output()
             self.user_list_lock.release()
             
-            time.sleep(0.25)
+            # time.sleep(0.25)
         self.listening = False
     

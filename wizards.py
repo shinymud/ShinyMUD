@@ -6,6 +6,8 @@ class CharacterInit(object):
         self.user = user
         self.user.update_output("Enter username: ")
         self.state = self.verify_username
+        self.active = True
+        self.name = 'CharInitMode'
     
     def verify_username(self):
         if len(self.user.inq) > 0:
@@ -27,8 +29,7 @@ class CharacterInit(object):
                 self.user.update_output("Bad username or password.\n Enter username: ")
     
     def join_world(self):
-        self.user.game_state = ''
-        self.user.set_prompt('>')
+        self.active = False
         WorldEcho(self.user, "%s has entered the world." % self.user.get_fancy_name()).execute()
     
     def character_cleanup(self):

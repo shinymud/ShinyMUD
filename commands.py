@@ -1,3 +1,4 @@
+from models.area import Area
 
 class CommandRegister(object):
     commands = {}
@@ -8,6 +9,8 @@ class CommandRegister(object):
     def register(self, func, aliases):
         for alias in aliases:
             self.commands[alias] = func
+    
+# ************************ GENERIC COMMANDS ************************
 command_list = CommandRegister()
 
 class BaseCommand(object):
@@ -43,7 +46,7 @@ class Apocalypse(BaseCommand):
         
         self.user.world.shutdown_flag = True
     
-command_list.register(Apocalypse, ['apocalypse'])
+command_list.register(Apocalypse, ['apocalypse', 'die'])
 
 class Chat(BaseCommand):
     """Sends a message to every user on the chat channel."""
@@ -75,3 +78,76 @@ class Channel(BaseCommand):
             self.user.update_output('Which channel do you want to change?\n')
 
 command_list.register(Channel, ['channel'])
+
+class Build(BaseCommand):
+    """Activate or deactivate build mode."""
+    def execute(self):
+        if self.args == 'exit':
+            self.user.set_mode('normal')
+            self.user.update_output('Exiting BuildMode.\n')
+        else:
+            self.user.set_mode('build')
+            self.user.update_output('Entering BuildMode.\n')
+
+command_list.register(Build, ['build'])
+
+# ************************ BUILD COMMANDS ************************
+build_list = CommandRegister()
+
+class Create(BaseCommand):
+    """Create a new item, npc, or area."""
+    def execute(self):
+        # creates = ['obj', 'area', 'npc', 'room']
+        if not self.args:
+            self.user.update_output('What do you want to create?\n')
+        else:
+            args = self.args.lower().split()
+            if args[0] == 'area':
+                # Areas need to be created with a name argument -- make sure the user has passed one
+                if len(args) > 1:
+                    new_area = Area.create(args[1], self.user.world.areas)
+                    if type(new_area) == str:
+                        self.user.update_output(new_area)
+                    else:
+                        self.user.mode.edit_area = new_area
+                        new_area.add_builder(self.user.name)
+                        self.user.update_output('New area "%s" created.\n' % new_area.name)
+            else:
+                self.user.update_output('You can\'t create that.\n')
+    
+build_list.register(Create, ['create'])
+
+class Edit(BaseCommand):
+    """Edit an area, object, npc, or room."""
+    def execute(self):
+        args = self.args.lower().split()
+        if len(args) < 2:
+            self.user.update_output('Type "help edit" to get help using this command.\n')
+        else:
+            if args[0] == 'area':
+                if args[1] in self.user.world.areas.keys():
+                    self.user.mode.edit_area = self.user.world.areas[args[1]]
+                    self.user.update_output('Now editing area "%s".\n' % args[1])
+                else:
+                    self.user.update_output('That area doesn\'t exist. You should create it first.\n')
+    
+
+build_list.register(Edit, ['edit'])
+
+class List(BaseCommand):
+    """List the attributes of the object or area currently being edited."""
+    def execute(self):
+        # Let's match a regular expression to figure out what they gave us..
+        message = 'Type "help list" to get help using this command.\n'
+        if not self.args:
+            # The user didn't give a specific item to be listed; show them the current one,
+            # if there is one
+            if self.user.mode.edit_object:
+                message = self.user.mode.edit_object.list_me()
+            elif self.user.mode.edit_area:
+                message = self.user.mode.edit_area.list_me()
+            else:
+                message = self.user.update_output('You\'re not editing anything right now.\n')
+        self.user.update_output(message)
+
+build_list.register(List, ['list'])

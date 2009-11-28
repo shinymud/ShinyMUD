@@ -1,34 +1,33 @@
 from commands import *
 from wizards import CharacterInit
 from models import ShinyModel
+from modes.build_mode import BuildMode
 import re
 import logging
 
 class User(ShinyModel):
     """This is a basic user object."""
     
-    def __init__(self, conn_info, world):
-        self.conn, self.addr = conn_info        
+    def __init__(self, conn_info=(None,None), world=None):
+        self.conn, self.addr = conn_info
         self.world = world
         self.inq = []
         self.outq = []
         self.quit_flag = False
-        self.game_state = 'init'
         self.log = logging.getLogger('User')
-        self.char_init = CharacterInit(self)
+        self.mode = CharacterInit(self)
         self.location = ''
-        self.prompt = ''
         
         # The following dictionary contains the attributes of this model that will
         # be saved to the database. The key should be the name of the attribute, and the value
         # should be a list with the following values in the following order: the value of the 
         # attribute, the type of the attribute, and the default value of the attribute.
-        self.model_attr = {
-            'channels': [None, dict, {'chat': True}],
-            'name': [None, str, ''],
-            'password': [None, str, '']
+        self.save_attr = {
+            'channels': [{'chat': True}, dict],
+            'name': ['', str],
+            'password': ['', str]
         }
-    
+        
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""
         self.outq.append(data)
@@ -50,15 +49,27 @@ class User(ShinyModel):
                 del self.outq[0]
                 sent_output = True
             if sent_output:
-                self.conn.send(self.prompt)
+                self.conn.send(self.get_prompt())
         except Exception, e:
             # If we die here, it's probably because we got a broken pipe.
             # In this case, we should disconnect the user
             self.user_logout(True)
             print str(e)
     
-    def set_prompt(self, new_prompt):
-        self.prompt = new_prompt
+    def get_prompt(self):
+        if not self.mode:
+            return '>'
+        elif self.mode.name == 'CharInitMode':
+            return ''
+        elif self.mode.name == 'BuildMode':
+            prompt = '<Build'
+            if self.mode.edit_area:
+                prompt += ' ' + self.mode.edit_area.name
+            if self.mode.edit_object:
+                prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
+            prompt += '>'
+            return prompt
+            
     
     def parse_command(self):
         """Parses the lines in the user's input buffer and then calls
@@ -82,13 +93,12 @@ class User(ShinyModel):
             self.user_logout()
         else:
             self.get_input()
-            # do authorization, if needed
-            if self.game_state == 'init':
-                self.char_init.state()
-                if self.game_state != 'init':
-                    del self.char_init
-            else:
+            if not self.mode:
                 self.parse_command()
+            elif self.mode.active:
+                self.mode.state()
+                if not self.mode.active:
+                    self.mode = None
     
     def user_logout(self, broken_pipe=False):
         #TO DO: Save the user to the database
@@ -100,3 +110,8 @@ class User(ShinyModel):
     def get_fancy_name(self):
         return self.name.capitalize()
     
+    def set_mode(self, mode):
+        if mode == 'build':
+            self.mode = BuildMode(self)
+        elif mode == 'normal':
+            self.mode.active = False

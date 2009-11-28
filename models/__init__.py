@@ -1,5 +1,15 @@
+SAVE_MODELS = ['models.user.User']
+
 class ShinyModel(object):
-    save_list = []
+    
+    def __setattr__(self, key, val):
+        if hasattr(self, 'save_attr') and key in self.__dict__['save_attr']:
+            self.__dict__['save_attr'][key][0] = val
+        else:
+            self.__dict__[key] = val
+    
+    def __getattr__(self, key):
+        return self.__dict__['save_attr'][key][0]
     
     def __get_table_name(self):
         return getattr(self, 'table_name', self.__class__.__name__.lower())
@@ -17,11 +27,11 @@ class ShinyModel(object):
     def save(self, conn):
         values = []
         cursor = conn.cursor()
-        values = [getattr(self, key) for key in self.save_list if key != 'id']
+        # values = [getattr(self, key) for key in self.save_list if key != 'id']
         table_name = self.__get_table_name()
         if self.id:
             # update
-            settings = [str(self.save_list[i]) + '=' + str(self.values[i]) for i in range(len(self.save_list))]
+            settings = [key + '=' + val for key,val in self.save_attr.items() if key != self.id]
             cursor.execute("UPDATE ? SET ? WHERE id=?", (table_name, settings, self.id))
         else:
             # insert

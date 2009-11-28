@@ -10,7 +10,7 @@ class ConnectionHandler(threading.Thread):
         self.log = logging.getLogger('ConnectionHandler')
         self.daemon = True
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # Set the listener to non-blocking so that the listener will die when the main
+        # Set the listener to non-blocking so that the listener can die when the main
         # thread dies.
         self.listener.setblocking(0)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -23,12 +23,18 @@ class ConnectionHandler(threading.Thread):
         self.log.debug("Listener started")
         while self.world.listening:
             try:
+                # DON'T PUT A LOGGING STATEMENT IN THIS TRY/EXCEPT BLOCK UNLESS
+                # YOU ARE TESTING THIS STATEMENT SPECIFICALLY -- THEN REMOVE IT
+                # WHEN YOU ARE DONE! This try/except statement will get called several 
+                # times each second because the socket is non-blocking. Putting logging
+                # statements here will make the logging file HUGE in just a few minutes.
+                # Sorry for all the shouting...
                 new_user = User(self.listener.accept(), self.world)
             except:
                 pass
             else:
-                new_user.conn.setblocking(0)
                 self.log.info("Client logging in from: %s" % str(new_user.addr))
+                new_user.conn.setblocking(0)
                 self.world.user_list_lock.acquire()
                 self.world.user_list[new_user.conn] = new_user
                 self.world.user_list_lock.release()
