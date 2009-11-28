@@ -1,7 +1,8 @@
+from models import ShinyModel
 import threading
 import time
 
-class World(object):
+class World(ShinyModel):
     user_list = {}
     user_delete = []
     user_list_lock = threading.Lock()

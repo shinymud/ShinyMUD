@@ -1,9 +1,12 @@
-class Area(Object):
+from models import ShinyModel
+
+class Area(ShinyModel):
     
     def __init__(self, name, lr='All'):
         self.name = name
         self.level_range = lr
         self.builders = []
+    
     
     def add_builder(self, username):
         """Add a user to the builder's list."""

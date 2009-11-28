@@ -1,4 +1,5 @@
 import types
+from models import ShinyModel
 
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
@@ -19,7 +20,7 @@ class Damage(object):
     def __str__(self):
         string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
 
-class Item(object):
+class Item(ShinyModel):
     def __init__(self, **args):
         self.name = args.get('name', '')
         self.short = args.get('short', '')

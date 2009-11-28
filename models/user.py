@@ -1,10 +1,10 @@
 from commands import *
 from wizards import CharacterInit
+from models import ShinyModel
 import re
 import logging
 
-
-class User(object):
+class User(ShinyModel):
     """This is a basic user object."""
     
     def __init__(self, conn_info, world):
@@ -13,13 +13,21 @@ class User(object):
         self.inq = []
         self.outq = []
         self.quit_flag = False
-        self.name = ''
         self.game_state = 'init'
         self.log = logging.getLogger('User')
         self.char_init = CharacterInit(self)
         self.location = ''
         self.prompt = ''
-        self.channels = {'chat': True}
+        
+        # The following dictionary contains the attributes of this model that will
+        # be saved to the database. The key should be the name of the attribute, and the value
+        # should be a list with the following values in the following order: the value of the 
+        # attribute, the type of the attribute, and the default value of the attribute.
+        self.model_attr = {
+            'channels': [None, dict, {'chat': True}],
+            'name': [None, str, ''],
+            'password': [None, str, '']
+        }
     
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""
@@ -82,9 +90,9 @@ class User(object):
             else:
                 self.parse_command()
     
-    def user_logout(self, bp=False):
-        #do a save, also
-        if not bp:
+    def user_logout(self, broken_pipe=False):
+        #TO DO: Save the user to the database
+        if not broken_pipe:
             self.conn.send('Bye!\n')
         self.conn.close()
         self.world.user_delete.append(self.name)

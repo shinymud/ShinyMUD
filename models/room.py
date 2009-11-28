@@ -1,4 +1,6 @@
-class Room(object):
+from models import ShinyModel
+
+class Room(ShinyModel):
     def __init__(self, area):
         self.id
         self.items = {}
