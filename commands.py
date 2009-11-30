@@ -1,7 +1,11 @@
 from models.area import Area
+from models.room import Room
+import re
 
 class CommandRegister(object):
-    commands = {}
+    
+    def __init__(self):
+        self.commands = {}
     
     def __getitem__(self, key):
         return self.commands.get(key)
@@ -91,31 +95,95 @@ class Build(BaseCommand):
 
 command_list.register(Build, ['build'])
 
+class Look(BaseCommand):
+    """Look at a room, item, or npc."""
+    def execute(self):
+        if not self.args:
+            self.look_room()
+        else:
+            self.user.update_output('You don\'t see that here.\n')
+    
+    def look_room(self):
+        if self.user.location:
+            message = self.user.location.look()
+        else:
+            message = 'You see a dark void.\n'
+        self.user.update_output(message)
+command_list.register(Look, ['look'])
+
+class Goto(BaseCommand):
+    """Go to a location."""
+    def execute(self):
+        if self.args:
+            exp = r'((?P<area>\w+)[ ]+(?P<room>\d+))|(?P<name>\w+)'
+            name, area, room = re.match(exp, self.args).group('name', 'area', 'room')
+            if name:
+                # go to the same room that user is in
+                per = self.user.world.user_list.get(name)
+                if per:
+                    if per.location:
+                        self.user.go(self.user.world.user_list.get(name).location)
+                    else:
+                        self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
+                else:
+                    self.user.update_output('That person doesn\'t exist.\n')
+            elif area:
+                # go to the room in the area specified.
+                area = self.user.world.areas.get(area)
+                message = 'Type "help goto" for help with this command.\n'
+                if area:
+                    room = area.get_room(room)
+                    if room:
+                        self.user.go(room)
+                    else:
+                        self.user.update_output(message)
+                else:
+                    self.user.update_output(message)
+            else:
+                self.user.update_output('You can\'t get there.\n')
+        else:
+            self.user.update_output('Where did you want to go?\n')
+    
+
+command_list.register(Goto, ['goto'])
 # ************************ BUILD COMMANDS ************************
 build_list = CommandRegister()
 
 class Create(BaseCommand):
     """Create a new item, npc, or area."""
     def execute(self):
-        # creates = ['obj', 'area', 'npc', 'room']
         if not self.args:
             self.user.update_output('What do you want to create?\n')
         else:
             args = self.args.lower().split()
             if args[0] == 'area':
                 # Areas need to be created with a name argument -- make sure the user has passed one
-                if len(args) > 1:
+                if len(args) > 1 and args[1]:
                     new_area = Area.create(args[1], self.user.world.areas)
                     if type(new_area) == str:
                         self.user.update_output(new_area)
                     else:
                         self.user.mode.edit_area = new_area
                         new_area.add_builder(self.user.name)
+                        self.user.mode.edit_object = None
                         self.user.update_output('New area "%s" created.\n' % new_area.name)
+                else:
+                    self.user.update_output('You can\'t create a new area without a name.\n')
+            elif args[0] == 'room':
+                if not self.user.mode.edit_area:
+                    self.user.update_output('You need to be editing an area first.\n')
+                else:
+                    new_room = Room.create(self.user.mode.edit_area)
+                    if type(new_room) == str:
+                        self.user.update_output(new_room)
+                    else:
+                        self.user.mode.edit_object = new_room
+                        self.user.update_output('New room number %s created.\n' % new_room.id)
             else:
                 self.user.update_output('You can\'t create that.\n')
     
-build_list.register(Create, ['create'])
+
+build_list.register(Create, ['create', 'new'])
 
 class Edit(BaseCommand):
     """Edit an area, object, npc, or room."""
@@ -127,9 +195,22 @@ class Edit(BaseCommand):
             if args[0] == 'area':
                 if args[1] in self.user.world.areas.keys():
                     self.user.mode.edit_area = self.user.world.areas[args[1]]
+                    # Make sure to clear any objects they were working on in the old area
+                    self.user.mode.edit_object = None
                     self.user.update_output('Now editing area "%s".\n' % args[1])
                 else:
                     self.user.update_output('That area doesn\'t exist. You should create it first.\n')
+            elif args[0] == 'room':
+                if self.user.mode.edit_area:
+                    if args[1] in self.user.mode.edit_area.rooms.keys():
+                        self.user.mode.edit_object = self.user.mode.edit_area.rooms.get(args[1])
+                        self.user.update_output(self.user.mode.edit_object.list_me())
+                    else:
+                        self.user.update_output('That room doesn\'t exist. Type "list rooms" to see all the rooms in your area.\n')
+                else:
+                    self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+            else:
+                self.user.update_ouput('You can\'t edit that.\n')
     
 
 build_list.register(Edit, ['edit'])
@@ -137,8 +218,8 @@ build_list.register(Edit, ['edit'])
 class List(BaseCommand):
     """List the attributes of the object or area currently being edited."""
     def execute(self):
-        # Let's match a regular expression to figure out what they gave us..
         message = 'Type "help list" to get help using this command.\n'
+        list_funcs = ['room', 'npc', 'area', 'item']
         if not self.args:
             # The user didn't give a specific item to be listed; show them the current one,
             # if there is one
@@ -148,6 +229,65 @@ class List(BaseCommand):
                 message = self.user.mode.edit_area.list_me()
             else:
                 message = self.user.update_output('You\'re not editing anything right now.\n')
+        else:
+            exp = r'(?P<func>(area)|(npc)|(item)|(room))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+            func, obj_id, area_name = re.match(exp, self.args, re.I).group('func', 'id', 'area_name')
+            if func in list_funcs:
+                message = getattr(self, 'list_' + func)(obj_id, area_name)
+            else:
+                message = 'You can\'t list that.\n'
         self.user.update_output(message)
+        
+    def list_area(self, obj_id, area_name):
+        if area_name:
+            area = self.user.world.areas.get(area_name)
+            if area:
+                return area.list_me()
+            else:
+                return 'That area doesn\'t exist.\n'
+        else:
+            return self.user.world.list_areas()
+    
+    def list_room(self, obj_id, area_name):
+        # if there is an area
+        if area_name:
+            area = self.user.world.areas.get(area_name)
+            if not area:
+                return 'Area "%s" doesn\'t exist.' % area_name
+        else:
+            area = self.user.mode.edit_area
+        
+        if obj_id:
+            room = area.rooms.get(obj_id)
+            if room:
+                return room.list_me()
+            else:
+                return 'Room "%s" doesn\'t exist in area "%s".' % (obj_id, area.name)
+        else:
+            return area.list_rooms()
+    
+    def list_item(self, obj_id, area_name):
+        return 'There aren\'t any yet.\n'
+    
+    def list_npc(self, obj_id, area_name):
+        return 'There aren\'t any yet.\n'
+    
 
 build_list.register(List, ['list'])
+
+class Set(BaseCommand):
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to set its attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to set?\n')
+        else:
+            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
+            if hasattr(obj, 'set_' + func):
+                self.user.update_output(getattr(obj, 'set_' + func)(arg))
+            else:
+                self.user.update_output('You can\'t set that.\n')
+    
+
+build_list.register(Set, ['set'])

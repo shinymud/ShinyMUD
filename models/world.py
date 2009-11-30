@@ -14,7 +14,20 @@ class World(ShinyModel):
         self.areas = {}
         self.log = logging.getLogger('World')
         
-        
+    
+    def list_areas(self):
+        names = self.areas.keys()
+        area_list = """______________________________________________
+Areas:
+    %s
+______________________________________________\n""" % '\n    '.join(names)
+        return area_list
+    
+    def area_exists(self, area_name):
+        if area_name in self.areas.keys():
+            return True
+        return False
+    
     def cleanup(self):
         for user in self.user_delete:
             del self.user_list[user]

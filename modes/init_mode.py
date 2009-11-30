@@ -1,13 +1,13 @@
 from commands import *
 
-class CharacterInit(object):
+class InitMode(object):
     
     def __init__(self, user):
         self.user = user
         self.user.update_output("Enter username: ")
         self.state = self.verify_username
         self.active = True
-        self.name = 'CharInitMode'
+        self.name = 'InitMode'
     
     def verify_username(self):
         if len(self.user.inq) > 0:

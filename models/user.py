@@ -1,5 +1,5 @@
 from commands import *
-from wizards import CharacterInit
+from modes.init_mode import InitMode
 from models import ShinyModel
 from modes.build_mode import BuildMode
 import re
@@ -15,8 +15,8 @@ class User(ShinyModel):
         self.outq = []
         self.quit_flag = False
         self.log = logging.getLogger('User')
-        self.mode = CharacterInit(self)
-        self.location = ''
+        self.mode = InitMode(self)
+        self.location = None
         
         # The following dictionary contains the attributes of this model that will
         # be saved to the database. The key should be the name of the attribute, and the value
@@ -59,7 +59,7 @@ class User(ShinyModel):
     def get_prompt(self):
         if not self.mode:
             return '>'
-        elif self.mode.name == 'CharInitMode':
+        elif self.mode.name == 'InitMode':
             return ''
         elif self.mode.name == 'BuildMode':
             prompt = '<Build'
@@ -69,7 +69,7 @@ class User(ShinyModel):
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
             prompt += '>'
             return prompt
-            
+    
     
     def parse_command(self):
         """Parses the lines in the user's input buffer and then calls
@@ -115,3 +115,17 @@ class User(ShinyModel):
             self.mode = BuildMode(self)
         elif mode == 'normal':
             self.mode.active = False
+    
+    def go(self, room):
+        """Go to a specific room."""
+        if self.location:
+            # Tell the old room you are leaving.
+            self.location.user_remove(self)
+        if self.location == room:
+            self.user.update_output('You\'re already there.\n')
+        else:
+            self.location = room
+            self.location.user_add(self)
+            # Tell the new room you have arrived
+            self.update_output(self.location.look())
+    
