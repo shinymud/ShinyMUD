@@ -45,6 +45,6 @@ ______________________________________________\n""" % '\n    '.join(names)
                 self.user_list[key].send_output()
             self.user_list_lock.release()
             
-            # time.sleep(0.25)
+            time.sleep(0.25)
         self.listening = False
     

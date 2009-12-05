@@ -105,7 +105,10 @@ class User(ShinyModel):
         if not broken_pipe:
             self.conn.send('Bye!\n')
         self.conn.close()
+        if self.location:
+            self.location.user_remove(self)
         self.world.user_delete.append(self.name)
+        WorldEcho(self, "%s has left the world." % self.get_fancy_name()).execute()
     
     def get_fancy_name(self):
         return self.name.capitalize()
@@ -121,11 +124,23 @@ class User(ShinyModel):
         if self.location:
             # Tell the old room you are leaving.
             self.location.user_remove(self)
-        if self.location == room:
-            self.user.update_output('You\'re already there.\n')
+        if self.location and self.location == room:
+            self.update_output('You\'re already there.\n')
         else:
             self.location = room
             self.location.user_add(self)
             # Tell the new room you have arrived
-            self.update_output(self.location.look())
+            self.update_output(self.look())
+    
+    def look(self):
+        exit_list = [key for key, value in self.location.exits.items() if value != None]
+        xits = 'exits: None'
+        if exit_list:
+            xits = 'exits: ' + ', '.join(exit_list)
+        users = ''
+        for user in self.location.users.values():
+            if user.name != self.name:
+                users += user.get_fancy_name() + ' is here.\n'
+        look = """%s\n%s\n%s\n%s""" % (self.location.title, xits, self.location.description, users)
+        return look
     

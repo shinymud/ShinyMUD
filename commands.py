@@ -105,10 +105,12 @@ class Look(BaseCommand):
     
     def look_room(self):
         if self.user.location:
-            message = self.user.location.look()
+            message = self.user.look()
         else:
             message = 'You see a dark void.\n'
         self.user.update_output(message)
+    
+
 command_list.register(Look, ['look'])
 
 class Goto(BaseCommand):
@@ -146,7 +148,23 @@ class Goto(BaseCommand):
     
 
 command_list.register(Goto, ['goto'])
+
+class Go(BaseCommand):
+    """Go to the next room in the direction given."""
+    def execute(self):
+        if self.user.location:
+            go_exit = self.user.location.exits.get(self.args)
+            if go_exit:
+                self.user.go(go_exit.to_room)
+            else:
+                self.user.update_output('You can\'t go that way.\n')
+        else:
+            self.user.update_output('You exist in a void; there is no where to go.\n')
+    
+
+command_list.register(Go, ['go'])
 # ************************ BUILD COMMANDS ************************
+# TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
 
 class Create(BaseCommand):
@@ -256,6 +274,8 @@ class List(BaseCommand):
                 return 'Area "%s" doesn\'t exist.' % area_name
         else:
             area = self.user.mode.edit_area
+            if not area:
+                return 'What area do you want to list rooms for?\n'
         
         if obj_id:
             room = area.rooms.get(obj_id)
@@ -291,3 +311,34 @@ class Set(BaseCommand):
     
 
 build_list.register(Set, ['set'])
+
+class Link(BaseCommand):
+    """Link two room objects together through their exits."""
+    def execute(self):
+        this_room = self.user.mode.edit_object
+        if this_room and (this_room.__class__.__name__ == 'Room'):
+            exp = r'(?P<direct>\w+)([ ]+(?P<area>\w+)([ ]+(?P<room>\d+)))?'
+            match = re.match(exp, self.args, re.I)
+            if match:
+                direction, area, room = match.group('direct', 'area', 'room')
+                if direction in this_room.exits:
+                    if area and room:
+                        link_area = self.user.world.areas.get(area)
+                        link_room = link_area.get_room(room)
+                        if link_area and link_room:
+                            self.user.update_output(this_room.link_exits(direction, link_room))
+                        else:
+                            self.user.update_output('That area/room combo doesn\'t exist.\n')
+                    else:
+                        new_room = Room.create(this_room.area)
+                        self.user.update_output('Room %s created.\n' % new_room.id)
+                        self.user.update_output(this_room.link_exits(direction, new_room))
+                else:
+                    self.user.update_output('That direction doesn\'t exist.\n')
+            else:
+                self.user.update_output('Type "help link" for help on this command.\n')
+        else:
+            self.user.update_output('You have to be editing a room to link it to something.\n')
+    
+
+build_list.register(Link, ['link'])
