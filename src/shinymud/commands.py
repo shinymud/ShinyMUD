@@ -27,6 +27,7 @@ class Quit(BaseCommand):
     def execute(self):
         self.user.quit_flag = True
     
+
 command_list.register(Quit, ['quit', 'exit'])
 
 class WorldEcho(BaseCommand):
@@ -38,6 +39,7 @@ class WorldEcho(BaseCommand):
         # This should definitely require admin privileges in the future.
         for person in self.user.world.user_list:
             self.user.world.user_list[person].update_output(self.args + '\n')
+    
 
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
 
@@ -50,6 +52,7 @@ class Apocalypse(BaseCommand):
         
         self.user.world.shutdown_flag = True
     
+
 command_list.register(Apocalypse, ['apocalypse', 'die'])
 
 class Chat(BaseCommand):
@@ -63,6 +66,7 @@ class Chat(BaseCommand):
             if self.user.world.user_list[person].channels['chat']:
                 self.user.world.user_list[person].update_output(message)
     
+
 command_list.register(Chat, ['chat', 'c'])
 
 class Channel(BaseCommand):

@@ -2,7 +2,7 @@ all: clean
 
 clean:
 	rm -rf logs/*
-	rm models/*.pyc
-	rm modes/*.pyc
-	rm *.pyc
-	touch logs/shinymud.log
+	rm src/shinymud/models/*.pyc
+	rm src/shinymud/modes/*.pyc
+	rm src/shinymud/*.pyc
+	touch src/shinymud/logs/shinymud.log
