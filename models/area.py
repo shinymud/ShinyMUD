@@ -1,20 +1,22 @@
-from models import ShinyModel
+from shinymud.models import ShinyModel
 
 class Area(ShinyModel):
-    
-    def __init__(self, name=None, lr='All'):
-        self.name = name
-        self.level_range = lr
-        self.builders = []
+    UNIQUE = ['name']
+    save_attrs = {
+                    'name': ['', str],
+                    'level_range': ['ALL', str],
+                    'builders': [[], list]
+    }
+    def __init__(self, **args):
         self.rooms = {}
-    
+        super(Area, self).__init__(**args)
     
     def add_builder(self, username):
         """Add a user to the builder's list."""
         self.builders.append(username)
     
     def remove_builder(self, username):
-        """Remave a user from the builder's list."""
+        """Remove a user from the builder's list."""
         if username in self.builders:
             self.builders.remove(username)
     

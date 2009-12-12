@@ -1,6 +1,6 @@
 import sqlite3
 from shinymud.config import DB_NAME
-from shinymud.models import SAVE_MODELS
+from shinymud.models import SAVE_MODELS, ShinyModel
 
 con = sqlite3.Connection(DB_NAME)
 cursor = con.cursor()
@@ -18,9 +18,12 @@ for m in SAVE_MODELS:
 # Build Create-table strings
 for klass in IMPORTED_MODELS:
     instance = klass()
-    query = "CREATE TABLE "+ klass.__name__ + " ("
-    for name, value in instance.save_attr.items():
-        query += str(name) + ' TEXT,'
-    query = query[:-1] + ')'
+    query = "CREATE TABLE "+ klass.__name__ + " (dbid INTEGER PRIMARY KEY, "
+    for name, defn in klass.save_attrs.items():
+        if issubclass(defn[1], ShinyModel):
+            query += str(name) + '_id INTEGER REFERENCES ' + defn[1].__name__ + ' (dbid), '
+        else:
+            query += str(name) + ' TEXT' + ', '
+    query += "UNIQUE (" + ','.join(instance.UNIQUE) + '))'
     print query
-    cursor.execute(query)
+    # cursor.execute(query)
