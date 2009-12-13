@@ -32,10 +32,10 @@ class Room(ShinyModel):
         """Create a new room."""
         new_room = cls(area)
         new_room.id = area.get_id('room')
-        new_room.area.add_room(new_room)
+        area.new_room(new_room)
         return new_room
     
-    def list_me(self):
+    def __str__(self):
         nice_exits = ''
         for direction, value in self.exits.items():
             if value:
@@ -75,7 +75,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     def set_exit(self, args):
         args = args.split()
         if len(args) < 3:
-            return 'Usage: set exit direction attribute value(s). Type "help exits" for more detail.\n'
+            return 'Usage: set exit <direction> <attribute> <value(s)>. Type "help exits" for more detail.\n'
         my_exit = self.exits.get(args[0])
         if my_exit:
             if hasattr(my_exit, 'set_' + args[1]):
@@ -84,6 +84,23 @@ ______________________________________________\n""" % (self.id, self.area.name, 
                 return 'You can\'t set that.\n'
         else:
             return 'That exit doesn\'t exist.\n'
+    
+    def add_exit(self, args):
+        exp = r'(?P<direction>(north)|(south)|(east)|(west)|(up)|(down))([ ]+(?P<room_id>\d+))([ ]+(?P<area_name>\w+))?'
+        match = re.match(exp, args, re.I)
+        message = 'Type "help exits" to get help using this command.\n'
+        if match:
+            direction, room_id, area_name = match.group('direction', 'room_id', 'area_name')
+            area = user.world.areas.get(area_name) or self.area
+            if area:
+                room = area.get_room(room_id)
+                if room:
+                    room.exits[direction] = RoomExit(self, direction, room)
+                    message = 'Exit %s created.' % direction
+        return message
+    
+    def remove_exit(self, args):
+        pass
     
     def link_exits(self, direction, link_room):
         """Link exits between this room (self), and the room passed."""
@@ -111,8 +128,8 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
             
-    def tell_room(self, message, exclude_list):
-        """Echo something to everyone in the room."""
+    def tell_room(self, message, exclude_list=[]):
+        """Echo something to everyone in the room, except the people on the exclude list."""
         for person in self.users.values():
             if person.name not in exclude_list:
                 person.update_output(message)

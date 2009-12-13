@@ -1,5 +1,6 @@
 from models.area import Area
-from models.room import Room
+from shinymud.models.room import Room
+from shinymud.models.world import World
 import re
 
 class CommandRegister(object):
@@ -22,6 +23,7 @@ class BaseCommand(object):
     def __init__(self, user, args):
         self.args = args
         self.user = user
+        self.world = World.get_world()
     
 class Quit(BaseCommand):
     def execute(self):
@@ -37,8 +39,8 @@ class WorldEcho(BaseCommand):
     """
     def execute(self):
         # This should definitely require admin privileges in the future.
-        for person in self.user.world.user_list:
-            self.user.world.user_list[person].update_output(self.args + '\n')
+        for person in self.world.user_list:
+            self.world.user_list[person].update_output(self.args + '\n')
     
 
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
@@ -50,7 +52,7 @@ class Apocalypse(BaseCommand):
         message = "%s has stopped the world from turning. Goodbye." % self.user.get_fancy_name()
         WorldEcho(self.user, message).execute()
         
-        self.user.world.shutdown_flag = True
+        self.world.shutdown_flag = True
     
 
 command_list.register(Apocalypse, ['apocalypse', 'die'])
@@ -62,9 +64,9 @@ class Chat(BaseCommand):
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
         message = '%s chats, "%s"\n' % (self.user.get_fancy_name(), self.args)
-        for person in self.user.world.user_list:
-            if self.user.world.user_list[person].channels['chat']:
-                self.user.world.user_list[person].update_output(message)
+        for person in self.world.user_list:
+            if self.world.user_list[person].channels['chat']:
+                self.world.user_list[person].update_output(message)
     
 
 command_list.register(Chat, ['chat', 'c'])
@@ -125,17 +127,17 @@ class Goto(BaseCommand):
             name, area, room = re.match(exp, self.args).group('name', 'area', 'room')
             if name:
                 # go to the same room that user is in
-                per = self.user.world.user_list.get(name)
+                per = self.world.user_list.get(name)
                 if per:
                     if per.location:
-                        self.user.go(self.user.world.user_list.get(name).location)
+                        self.user.go(self.world.user_list.get(name).location)
                     else:
                         self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
                 else:
                     self.user.update_output('That person doesn\'t exist.\n')
             elif area:
                 # go to the room in the area specified.
-                area = self.user.world.areas.get(area)
+                area = self.world.get_area(area)
                 message = 'Type "help goto" for help with this command.\n'
                 if area:
                     room = area.get_room(room)
@@ -167,6 +169,19 @@ class Go(BaseCommand):
     
 
 command_list.register(Go, ['go'])
+
+class Say(BaseCommand):
+    """Echo a message from the user to the room that user is in."""
+    def execute(self):
+        if self.args:
+            if self.user.location:
+                message = '%s says, "%s"\n' % (self.user.get_fancy_name(), self.args)
+                self.user.location.tell_room(message)
+        else:
+            self.user.update_output('Say what?\n')
+    
+
+command_list.register(Say, ['say'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
@@ -181,7 +196,7 @@ class Create(BaseCommand):
             if args[0] == 'area':
                 # Areas need to be created with a name argument -- make sure the user has passed one
                 if len(args) > 1 and args[1]:
-                    new_area = Area.create(args[1], self.user.world.areas)
+                    new_area = Area.create(args[1])
                     if type(new_area) == str:
                         self.user.update_output(new_area)
                     else:
@@ -215,8 +230,8 @@ class Edit(BaseCommand):
             self.user.update_output('Type "help edit" to get help using this command.\n')
         else:
             if args[0] == 'area':
-                if args[1] in self.user.world.areas.keys():
-                    self.user.mode.edit_area = self.user.world.areas[args[1]]
+                if args[1] in self.world.areas.keys():
+                    self.user.mode.edit_area = self.world.areas[args[1]]
                     # Make sure to clear any objects they were working on in the old area
                     self.user.mode.edit_object = None
                     self.user.update_output('Now editing area "%s".\n' % args[1])
@@ -226,7 +241,7 @@ class Edit(BaseCommand):
                 if self.user.mode.edit_area:
                     if args[1] in self.user.mode.edit_area.rooms.keys():
                         self.user.mode.edit_object = self.user.mode.edit_area.rooms.get(args[1])
-                        self.user.update_output(self.user.mode.edit_object.list_me())
+                        self.user.update_output(str(self.user.mode.edit_object))
                     else:
                         self.user.update_output('That room doesn\'t exist. Type "list rooms" to see all the rooms in your area.\n')
                 else:
@@ -246,9 +261,9 @@ class List(BaseCommand):
             # The user didn't give a specific item to be listed; show them the current one,
             # if there is one
             if self.user.mode.edit_object:
-                message = self.user.mode.edit_object.list_me()
+                message = str(self.user.mode.edit_object)
             elif self.user.mode.edit_area:
-                message = self.user.mode.edit_area.list_me()
+                message = str(self.user.mode.edit_area)
             else:
                 message = self.user.update_output('You\'re not editing anything right now.\n')
         else:
@@ -262,18 +277,18 @@ class List(BaseCommand):
         
     def list_area(self, obj_id, area_name):
         if area_name:
-            area = self.user.world.areas.get(area_name)
+            area = self.world.get_area(area_name)
             if area:
-                return area.list_me()
+                return str(area)
             else:
                 return 'That area doesn\'t exist.\n'
         else:
-            return self.user.world.list_areas()
+            return self.world.list_areas()
     
     def list_room(self, obj_id, area_name):
         # if there is an area
         if area_name:
-            area = self.user.world.areas.get(area_name)
+            area = self.world.get_area(area_name)
             if not area:
                 return 'Area "%s" doesn\'t exist.' % area_name
         else:
@@ -284,7 +299,7 @@ class List(BaseCommand):
         if obj_id:
             room = area.rooms.get(obj_id)
             if room:
-                return room.list_me()
+                return str(room)
             else:
                 return 'Room "%s" doesn\'t exist in area "%s".' % (obj_id, area.name)
         else:
@@ -327,7 +342,7 @@ class Link(BaseCommand):
                 direction, area, room = match.group('direct', 'area', 'room')
                 if direction in this_room.exits:
                     if area and room:
-                        link_area = self.user.world.areas.get(area)
+                        link_area = self.world.get_area(area)
                         link_room = link_area.get_room(room)
                         if link_area and link_room:
                             self.user.update_output(this_room.link_exits(direction, link_room))
@@ -346,3 +361,72 @@ class Link(BaseCommand):
     
 
 build_list.register(Link, ['link'])
+
+class Add(BaseCommand):
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to add attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to add?\n')
+        else:
+            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
+            if hasattr(obj, 'add_' + func):
+                self.user.update_output(getattr(obj, 'add_' + func)(arg))
+            else:
+                self.user.update_output('You can\'t add that.\n')
+    
+
+build_list.register(Add, ['add'])
+
+class Remove(BaseCommand):
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to remove attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to remove?\n')
+        else:
+            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
+            if hasattr(obj, 'remove_' + func):
+                self.user.update_output(getattr(obj, 'remove_' + func)(arg))
+            else:
+                self.user.update_output('You can\'t remove that.\n')
+    
+
+build_list.register(Remove, ['remove'])
+
+class Destroy(BaseCommand):
+    """Destroy an area, room, npc, or item, permanently removing it from the system.
+    
+    NOTE: Player avatars should not be able to be deleted using this."""
+    def execute(self):
+        message = 'Type "help destroy" to get help using this command.\n'
+        if not self.args:
+                # Don't ever let them destroy something if they haven't been specific about 
+                # what they want destroyed (i.e, they haven't given us any arguments)
+                message = self.user.update_output('You should be more specific. This command could really cause some damage.\n')
+        else:
+            exp = r'(?P<func>(area)|(npc)|(item)|(room))([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+            match = re.match(exp, self.args, re.I)
+            message = 'Type "help destroy" to get help using this command.\n'
+            if match:
+                func, obj_id, area_name = match.group('func', 'id', 'area_name')
+                area = self.world.get_area(area_name) or self.user.mode.edit_area
+                if func == 'area':
+                    message = self.world.destroy_area(area)
+                elif area and hasattr(area, 'destroy_' + func):
+                    message = getattr(area, 'destroy_' + func)(obj_id)
+                else:
+                    message = 'You can\'t destroy something that does\'t exist.\n'
+                # The destroy function will set the id of whatever it deleted to None
+                # so that any other objects with references will know they should terminate
+                # their reference. If the user destroyed the object they're working on,
+                # make sure that we clear it from their edit_object, and therefore ther prompt 
+                # so they don't try and edit it again before it gets wiped.
+                if self.user.mode.edit_object.id == None:
+                    self.user.mode.edit_object = None
+        self.user.update_output(message)
+    
+
+build_list.register(Destroy, ['destroy'])

@@ -1,4 +1,5 @@
-from commands import *
+from shinymud.commands import *
+from shinymud.models.world import World
 
 class InitMode(object):
     
@@ -33,7 +34,8 @@ class InitMode(object):
         WorldEcho(self.user, "%s has entered the world." % self.user.get_fancy_name()).execute()
     
     def character_cleanup(self):
-        self.user.world.user_list[self.username] = self.user
-        self.user.world.user_delete.append(self.user.conn)
+        world = World.get_world()
+        world.user_add(self.user)
+        world.user_remove(self.user.conn)
         self.state = self.join_world
     

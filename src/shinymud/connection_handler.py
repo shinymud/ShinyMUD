@@ -1,6 +1,6 @@
+from shinymud.models.user import User
 import threading
 import socket
-from models.user import User
 import logging
 
 class ConnectionHandler(threading.Thread):
@@ -28,15 +28,22 @@ class ConnectionHandler(threading.Thread):
                 # WHEN YOU ARE DONE! This try/except statement will get called several 
                 # times each second because the socket is non-blocking. Putting logging
                 # statements here will make the logging file HUGE in just a few minutes.
-                # Sorry for all the shouting...
-                new_user = User(self.listener.accept(), self.world)
-            except:
+                # Sorry for all the shouting.
+                new_user = User(self.listener.accept())
+            except socket.error:
+                # TODO: We intend that this aught to be blocking once the mud has a 
+                # start-up/shut-down script that can handle killing these processes
                 pass
+            except Exception, e:
+                self.log.debug(str(e))
             else:
                 self.log.info("Client logging in from: %s" % str(new_user.addr))
                 new_user.conn.setblocking(0)
+                # The user_add function in the world requires access to the user_list,
+                # which the main thread edits quite a bit -- that's why we need a lock 
+                # before we add a user
                 self.world.user_list_lock.acquire()
-                self.world.user_list[new_user.conn] = new_user
+                self.world.user_add(new_user)
                 self.world.user_list_lock.release()
         self.log.info('Listener closing down.')
         self.listener.close()

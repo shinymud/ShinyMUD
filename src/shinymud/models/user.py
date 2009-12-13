@@ -1,7 +1,7 @@
-from commands import *
-from modes.init_mode import InitMode
+from shinymud.commands import *
+from shinymud.modes.init_mode import InitMode
 from shinymud.models import ShinyModel
-from modes.build_mode import BuildMode
+from shinymud.modes.build_mode import BuildMode
 import re
 import logging
 
@@ -19,10 +19,10 @@ class User(ShinyModel):
                     "intelligence": [0, int],
                     "dexterity": [0, int]
                 }
-    def __init__(self, conn_info, world, **args):
+    def __init__(self, conn_info, **args):
         super(User, self).__init__(**args)
         self.conn, self.addr = conn_info
-        self.world = world
+        self.name = self.conn
         self.inq = []
         self.outq = []
         self.quit_flag = False

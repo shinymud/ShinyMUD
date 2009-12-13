@@ -4,6 +4,13 @@ import time
 import logging
 
 class World(ShinyModel):
+    _instance = None
+    
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(World, cls).__new__(
+                                  cls, *args, **kwargs)
+        return cls._instance
     
     def __init__(self):
         self.user_list = {}
@@ -13,22 +20,31 @@ class World(ShinyModel):
         self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
-        
     
-    def list_areas(self):
-        names = self.areas.keys()
-        area_list = """______________________________________________
-Areas:
-    %s
-______________________________________________\n""" % '\n    '.join(names)
-        return area_list
+    @classmethod
+    def get_world(cls):
+        """This will return None if world has never been initialized. Since the first thing 
+        we do in our main thread is create and initialize a new world instance, the only
+        way this could fail is if somehow we tried to grab the world before the main thread
+        started, which really aught to be impossible."""
+        logging.debug('Returning the world: %s' % str(cls._instance))
+        return cls._instance
     
-    def area_exists(self, area_name):
-        if area_name in self.areas.keys():
-            return True
-        return False
+    def user_add(self, user):
+        self.user_list[user.name] = user
+    
+    def user_remove(self, username):
+        """Add a user's name to the world's delete list so they get removed from the userlist
+        on the next turn."""
+        self.user_delete.append(username)
+    
+    def new_area(self, area):
+        self.areas[area.name] = area
     
     def cleanup(self):
+        """Do any cleanup that needs to be done after a turn.
+        This includes deleting users from the userlist if they have
+        logged out."""
         for user in self.user_delete:
             del self.user_list[user]
         self.user_delete = []
@@ -47,4 +63,28 @@ ______________________________________________\n""" % '\n    '.join(names)
             
             time.sleep(0.25)
         self.listening = False
+    
+# ************************ Area Functions ************************
+# Here exist all the function that the world uses to manage the areas
+# it contains.
+    def list_areas(self):
+        names = self.areas.keys()
+        area_list = """______________________________________________
+Areas:
+    %s
+______________________________________________\n""" % '\n    '.join(names)
+        return area_list
+    
+    def get_area(self, area_name):
+        if area_name in self.areas:
+            return self.areas[area_name]
+        return None
+    
+    def destroy_area(self, area_name):
+        """Destroy an entire area!
+        TODO: whoa nelly, they want to destroy a whole area! We should really
+        make sure that's what they want by adding an extra game state that
+        blocks all actions until they confirm.
+        """
+        return 'Someone was too lazy to implement this function. Sorry.\n'
     

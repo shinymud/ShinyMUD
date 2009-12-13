@@ -1,4 +1,5 @@
 from shinymud.models import ShinyModel
+from shinymud.models.world import World
 
 class Area(ShinyModel):
     UNIQUE = ['name']
@@ -19,25 +20,19 @@ class Area(ShinyModel):
     def add_builder(self, username):
         """Add a user to the builder's list."""
         self.builders.append(username)
+        return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
     
     def remove_builder(self, username):
-        """Remave a user from the builder's list."""
+        """Remove a user from the builder's list."""
         if username in self.builders:
             self.builders.remove(username)
+            return '%s has been removed from the builder\'s list for this area.\n' % username.capitalize()
+        else:
+            return '%s is not on the builder\'s list for this area.\n' % username.capitalize()
     
-    def add_room(self, room):
-        self.rooms[room.id] = room
-    
-    def get_room(self, room_id):
-        return self.rooms.get(room_id)
-    
-    def room_exists(self, room_id):
-        if room_id in self.rooms.keys():
-            return True
-        return False
-    
-    def list_me(self):
+    def __str__(self):
         """Print out a nice string representation of this area's attributes."""
+        
         builders = ', '.join(self.builders)
         area_list = """______________________________________________
  Area: %s
@@ -61,10 +56,13 @@ ______________________________________________\n""" % (self.name,
         return room_list
     
     @classmethod
-    def create(cls, name, area_list):
-        if name not in area_list:
-            area_list[name] = cls(name)
-            return area_list[name]
+    def create(cls, name):
+        """Create a new area instance and add it to the world's area list."""
+        world = World.get_world()
+        if not world.get_area(name):
+            new_area = cls(name)
+            world.new_area(new_area)
+            return new_area
         else:
             return "This area already exists.\n"
     
@@ -76,9 +74,52 @@ ______________________________________________\n""" % (self.name,
             return str(your_id)
     
     def set_description(self, desc):
+        """Set this area's description."""
         self.description = desc
         return 'Area description set.\n'
     
     def set_levelrange(self, lvlrange):
+        """Set this area's level range."""
         self.level_range = lvlrange
         return 'Area levelrange set.\n'
+    
+# ************************ Room Functions ************************
+# Here exist all the function that an area uses to manage the rooms
+# it contains.
+    def destroy_room(self, room_id):
+        """Destroy a specific room in this area."""
+        room = self.get_room(room_id)
+        if room:
+            if room.users:
+                return 'You can\'t destroy that room, there are people in there!.\n'
+            doors = room.exits.keys()
+            for door in doors:
+                del room.exits[door]
+            room.id = None
+            del self.rooms[room_id]
+            return 'Room %s has been deleted.\n' % room_id
+        return 'Room %s doesn\'t exist.\n' % room_id
+    
+    def new_room(self, room):
+        """Add a new room to this area's room list."""
+        self.rooms[room.id] = room
+    
+    def get_room(self, room_id):
+        """Get a room from this area by its id, if it exists.
+        If it does not exist, return None."""
+        if room_id in self.rooms.keys():
+            return self.rooms.get(room_id)
+        return None
+    
+# ************************ NPC Functions ************************
+# Here exist all the function that an area uses to manage the NPC's
+# it contains.
+    def destroy_npc(self, npc_id):
+        return 'Npc\'s don\'t exist yet.\n'
+    
+# ************************ Item Functions ************************
+# Here exist all the function that an area uses to manage the items
+# it contains.
+    def destroy_item(self, npc_id):
+        return 'Items don\'t exist yet.\n'
+    
