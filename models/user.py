@@ -12,14 +12,15 @@ class User(ShinyModel):
     # be saved to the database. The key should be the name of the attribute, and the value
     # should be a list with the following values in the following order: the value of the 
     # attribute, the type of the attribute, and the default value of the attribute.
-    save_attrs ={  "channels": [{'chat': True}, dict],
+    save_attrs ={  "channels": [{'chat': True}, eval],
                     "name": ['', str],
                     "password": ['', str],
                     "strength": [0, int],
                     "intelligence": [0, int],
                     "dexterity": [0, int]
                 }
-    def __init__(self, conn_info=(None,None), world=None):
+    def __init__(self, conn_info, world, **args):
+        super(User, self).__init__(**args)
         self.conn, self.addr = conn_info
         self.world = world
         self.inq = []

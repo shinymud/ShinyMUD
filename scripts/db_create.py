@@ -24,6 +24,11 @@ for klass in IMPORTED_MODELS:
             query += str(name) + '_id INTEGER REFERENCES ' + defn[1].__name__ + ' (dbid), '
         else:
             query += str(name) + ' TEXT' + ', '
-    query += "UNIQUE (" + ','.join(instance.UNIQUE) + '))'
+    for x in instance.UNIQUE:
+        if hasattr(x, '__iter__'):
+            query += "UNIQUE (" + ','.join(x) + '),'
+        else:
+            query += "UNIQUE (" + x + "),"
+    query = query[:-1] + ')'
     print query
-    # cursor.execute(query)
+    cursor.execute(query)

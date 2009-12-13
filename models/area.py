@@ -5,7 +5,7 @@ class Area(ShinyModel):
     save_attrs = {
                     'name': ['', str],
                     'level_range': ['ALL', str],
-                    'builders': [[], list]
+                    'builders': [[], eval]
     }
     def __init__(self, **args):
         self.rooms = {}

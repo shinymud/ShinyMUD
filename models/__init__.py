@@ -20,7 +20,7 @@ class ShinyModel(object):
         for key, val in args.items():
             setattr(self, key, val)
         for attr in [_ for _ in self.save_attrs if _ not in args]:
-            setattr(self, _, self.save_attrs[_][0])
+            setattr(self, attr, self.save_attrs[attr][0])
     
     def __setattr__(self, key, val):
         if key in self.save_attrs:
@@ -49,17 +49,20 @@ class ShinyModel(object):
         table_name = self.__get_table_name()
         cols = self.save_attrs.keys()
         if not criteria:
-            if not self.__exists:
-                return 
+            if not self.__exists():
+                raise Exception('Cannot execute load without criteria')
             criteria = {'dbid':self.__dbid}
         where_clause = " AND ".join([key + "='" + val + "'" for key,val in criteria.items()])
-        cursor.execute('SELECT * FROM ? WHERE ? LIMIT 1', (",".join(cols), table_name, where_clause))
+        cursor.execute('SELECT * FROM %s WHERE %s LIMIT 1' % (table_name, where_clause))
         row = cursor.fetchone()
-        if row and len(row) == len(cols):
+        if row:
             for i in range(len(row)):
-                setattr(self, cols[i], self.save_attrs[cols[i]][1](row[i]))
+                col_name = cursor.description[i][0]
+                if col_name == 'dbid':
+                    self.__dbid = row[i]
+                else:
+                    setattr(self, col_name, self.save_attrs[col_name][1](row[i]))
             self.__changed = False
-            self.__exists = True
         # if loaded from db, add to cache
     
     def save(self, conn):
@@ -67,26 +70,33 @@ class ShinyModel(object):
             cols = self.save_attrs.keys()
             cursor = conn.cursor()
             table_name = self.__get_table_name()
-            if self.__exists:
+            if self.__exists():
                 # update
                 set_values = []
                 for key in cols:
                     set_values.append(key + "='" + str(getattr(self, key)) + "'")
                 where_clause = "dbid=" + str(self.__dbid)
-                cursor.execute("UPDATE ? SET ? WHERE ?", 
-                                (table_name, ", ".join(set_values), where_clause))
+                cursor.execute("UPDATE %s SET %s WHERE %s" % (table_name, ", ".join(set_values).replace("'", '"'), where_clause))
+                conn.commit()
             else:
                 # insert
                 data = []
                 for key in cols:
                     data.append(str(getattr(self, key)))
-                cursor.execute("INSERT INTO ? (?) VALUES (?)", 
-                                (table_name, ",".join(self.cols), ','.join(["'" + str(_) + "'" for _ in data])))
+                print "TEST"
+                print table_name
+                print ",".join(cols)
+                print ",".join(["'" + str(_) + "'" for _ in data])
+                cursor.execute("INSERT INTO %s (%s) VALUES (%s)" % (table_name, ",".join(cols) , ",".join(["'" + str(_).replace("'", '"') + "'" for _ in data])))
                 self.__dbid = cursor.lastrowid
+                conn.commit()
+                
     
     def delete(self, conn):
         if self.id:
             cursor = conn.cursor()
             table_name = self.__get_table_name()
-            cursor.execute('DELETE FROM ? WHERE id=?', (table_name, self.id))
+            cursor.execute('DELETE FROM ? WHERE dbid=?', (table_name, self.__dbid))
+            conn.commit()
+            
     
