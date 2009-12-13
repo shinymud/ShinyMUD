@@ -6,8 +6,15 @@ dir_opposites = {'north': 'south', 'south': 'north',
                       'up': 'down', 'down': 'up'}
 
 class Room(ShinyModel):
-    def __init__(self, area=None):
+    UNIQUE = ['area', 'id']
+    save_attrs =    {   "id": [None, int],
+                        "area": [None, Area],
+                        "title": ["New Room", str],
+                        "description": ["This is a shiny new room!", str]
+                    }
+    def __init__(self, area=None, **args):
         self.id = 0
+        super(Room, self).__init__(**args)
         self.items = {}
         self.exits = {'north': None,
                       'south': None,
@@ -15,9 +22,8 @@ class Room(ShinyModel):
                       'west': None,
                       'up': None,
                       'down': None}
-        self.area = area
-        self.title = 'New Room'
-        self.description = 'This is a shiny new room!'
+        if area:
+            self.area = area
         self.resets = {}
         self.users = {}
     

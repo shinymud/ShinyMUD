@@ -1,6 +1,6 @@
 import types
-from models import ShinyModel
-
+from shinymud.models import ShinyModel
+from shinymud.models.area import Area
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
                     'impact', 
@@ -11,6 +11,28 @@ DAMAGE_TYPES =  [   'slashing',
                     'poison',
                     'holy'
                 ]
+SLOT_TYPES =    [   None,
+                    'one-handed',
+                    'two-handed',
+                    'head',
+                    'neck',
+                    'ring',
+                    'crown',
+                    'hands',
+                    'wrist',
+                    'earring',
+                    'arms',
+                    'legs',
+                    'feet',
+                    'torso',
+                    'waist',
+                    'back',
+                    'face',
+                    'eyes',
+                ]
+
+
+
 
 class Damage(object):
     def __init__(self, dmgmin, dmgmax, dmgtype, probability):
@@ -21,17 +43,21 @@ class Damage(object):
         string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
 
 class Item(ShinyModel):
-    def __init__(self, **args):
-        self.name = args.get('name', '')
-        self.short = args.get('short', '')
-        self.long = args.get('long', '')
-        self.equip_loc = args.get('equip_loc', None)
-        self.keywords = args.get('keywords', '')
-        self.weight = args.get('weight', 1)
-        self.pickup = args.get('pickup', False)
-        self.base_value = args.get('base_value', 0)
-        self.other_attributes = []
-    
+    save_attrs = {  'area': [None, Area],
+                    'id': [None, int],
+                    'name': ["", str],
+                    'title': ["", str],
+                    'description': ["", str],
+                    'keywords': [[], eval],
+                    'weight': [0, int],
+                    'base_value': [0, int],
+                    'pickup': [False, bool],
+                    'equip_slot': [None, lambda x: x if x else None],
+                    'extras': [None, ShinyModel.load_extras]
+                 }
+    UNIQUE = ['area','id']
+    def load_extras(self, object):
+        pass
     def list(self):
         string = 'name: ' + self.name + '\n' + \
                  'short description: ' + self.short + '\n' + \
@@ -93,3 +119,16 @@ class Item(ShinyModel):
         
         self.removeDmg = types.MethodType(removeDmg, self, self.__class__)
     
+
+
+class InventoryItem(Item):
+    UNIQUE = ['uid']
+    def __init__(self):
+        Item.__init__(self)
+        self.save_attr['uid'] = [None, str]
+        self.save_attr['owner'] = [None, User]
+        self.save_attr['container'] = [None, InventoryItem]
+        self.is_container = False 
+
+
+

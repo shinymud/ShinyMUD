@@ -1,4 +1,4 @@
-from models import ShinyModel
+from shinymud.models import ShinyModel
 import threading
 import time
 import logging

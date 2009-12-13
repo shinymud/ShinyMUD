@@ -1,12 +1,18 @@
-from models import ShinyModel
+from shinymud.models import ShinyModel
 
 class Area(ShinyModel):
+    UNIQUE = ['name']
+    save_attrs = {
+                    'name': ['', str],
+                    'level_range': ['ALL', str],
+                    'builders': [[], eval],
+                    'description': ['No Description', str]
+                 }
     
-    def __init__(self, name=None, lr='All'):
-        self.name = name
-        self.level_range = lr
-        self.builders = []
-        self.description = 'No Description'
+    def __init__(self, name=None, lr='All', **args):
+        super(Area, self).__init__(**args)
+        if name:
+            self.name = name
         self.rooms = {}
         self.ids = {'room': 1, 'item': 1, 'npc': 1}
     
