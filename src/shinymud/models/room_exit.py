@@ -1,7 +1,9 @@
-from models import ShinyModel
+from shinymud.models import ShinyModel
+from shinymud.models.world import World
 
 class RoomExit(ShinyModel):
-    states = {'true': True, 'false': False}
+    bool_states = {'true': True, 'false': False}
+    
     def __init__(self, from_room=None, direction=None, to_room=None):
         self.to_room = to_room
         self.room = from_room
@@ -25,14 +27,14 @@ class RoomExit(ShinyModel):
         linked = "false"
         if self.linked_exit:
             linked = "true"
-        list_exit = "[to: %s-%s, linked: %s, openable: %s, closed: %s, hidden: %s, locked: %s key: %s]" % (self.room.area.name, self.to_room.id, linked,
+        list_exit = "[to: %s-%s, linked: %s, openable: %s, closed: %s, hidden: %s, locked: %s, key: %s]" % (self.room.area.name, self.to_room.id, linked,
                                                                                                         str(self.openable), str(self.closed),
                                                                                                         str(self.hidden), str(self.locked),
                                                                                                         str(self.key))
         return list_exit
     
     def close_me(self, username):
-        if self.door == False:
+        if self.openable == False:
             return 'You can\'t close that.\n'
         if self.closed:
             return 'It\'s already closed.\n'
@@ -44,7 +46,7 @@ class RoomExit(ShinyModel):
         return 'You close the %s door.\n' % self.direction
     
     def open_me(self, username):
-        if self.door == False:
+        if self.openable == False:
             'You can\'t open that.\n'
         if not self.closed:
             return 'It\'s already open.\n'
@@ -55,3 +57,47 @@ class RoomExit(ShinyModel):
             self.to_room.tell_room('The %s door was opened from the other side.\n' % self.linked_exit.direction)
         return 'You open the %s door.\n' % self.direction
     
+    def set_closed(self, args):
+        if args and args[0] in self.bool_states:
+            self.closed = self.bool_states.get(args[0])
+            return 'Exit attribute "closed" is now %s.\n' % args[0]
+        return 'This attribute can only be set to true or false.\n'
+    
+    def set_openable(self, args):
+        if args and args[0] in self.bool_states:
+            self.openable = self.bool_states.get(args[0])
+            return 'Exit attribute "openable" is now %s.\n' % args[0]
+        return 'This attribute can only be set to true or false.\n'
+    
+    def set_hidden(self, args):
+        if args and args[0] in self.bool_states:
+            self.hidden = self.bool_states.get(args[0])
+            return 'Exit attribute "hidden" is now %s.\n' % args[0]
+        return 'This attribute can only be set to true or false.\n'
+    
+    def set_locked(self, args):
+        if args and args[0] in self.bool_states:
+            self.locked = self.bool_states.get(args[0])
+            return 'Exit attribute "locked" is now %s.\n' % args[0]
+        return 'This attribute can only be set to true or false.\n'
+    
+    def set_to(self, args):
+        if not len(args) == 2:
+            return 'Usage: set exit <direction> to <area-name> <room-number>\n'
+        area = World.get_world().get_area(args[0])
+        if not area:
+            return 'That area doesn\'t exist.\n'
+        room = area.get_room(args[1])
+        if not room:
+            return 'That room doesn\'t exist.\n'
+        if not room.linked_exit:
+            self.to_room = room
+            return ' The %s exit now goes to room %s in area %s.\n' % (self.direction,
+                                                                       self.to_room.id,
+                                                                       self.to_room.area.name)
+        else:
+            return 'That exit is linked. You should unlink it before you set it to somewhere else.\n'
+
+    
+    def set_key(self, args):
+        return 'This functionality coming soon!\n'

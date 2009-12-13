@@ -161,7 +161,10 @@ class Go(BaseCommand):
         if self.user.location:
             go_exit = self.user.location.exits.get(self.args)
             if go_exit:
-                self.user.go(go_exit.to_room)
+                if go_exit.closed:
+                    self.user.update_output('The door is closed.\n')
+                else:
+                    self.user.go(go_exit.to_room)
             else:
                 self.user.update_output('You can\'t go that way.\n')
         else:

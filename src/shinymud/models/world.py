@@ -27,7 +27,6 @@ class World(ShinyModel):
         we do in our main thread is create and initialize a new world instance, the only
         way this could fail is if somehow we tried to grab the world before the main thread
         started, which really aught to be impossible."""
-        logging.debug('Returning the world: %s' % str(cls._instance))
         return cls._instance
     
     def user_add(self, user):

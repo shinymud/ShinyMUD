@@ -32,7 +32,7 @@ class ConnectionHandler(threading.Thread):
                 new_user = User(self.listener.accept())
             except socket.error:
                 # TODO: We intend that this aught to be blocking once the mud has a 
-                # start-up/shut-down script that can handle killing these processes
+                # start-up/shut-down script that can handle killing these processes,
                 pass
             except Exception, e:
                 self.log.debug(str(e))

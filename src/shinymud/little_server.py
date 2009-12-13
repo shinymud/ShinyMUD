@@ -12,8 +12,8 @@ world = World()
 conn_handler = ConnectionHandler(PORT, HOST, world)
 conn_handler.start()
 logger.debug('Started the connection handler. Now listening.')
-# Let there be light!
 
+# Let there be light!
 logger.info('The world is about to start turning')
 world.start_turning()
 logger.info('The world has stopped turning.')

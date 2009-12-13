@@ -1,6 +1,9 @@
-from models import ShinyModel
-from models.room_exit import RoomExit
-from models.area import Area
+from shinymud.models import ShinyModel
+from shinymud.models.room_exit import RoomExit
+from shinymud.models.area import Area
+from shinymud.models.world import World
+import re
+
 dir_opposites = {'north': 'south', 'south': 'north',
                       'east': 'west', 'west': 'east',
                       'up': 'down', 'down': 'up'}
@@ -86,21 +89,25 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             return 'That exit doesn\'t exist.\n'
     
     def add_exit(self, args):
-        exp = r'(?P<direction>(north)|(south)|(east)|(west)|(up)|(down))([ ]+(?P<room_id>\d+))([ ]+(?P<area_name>\w+))?'
+        exp = r'(?P<direction>(north)|(south)|(east)|(west)|(up)|(down))([ ]+to)?([ ]+(?P<room_id>\d+))([ ]+(?P<area_name>\w+))?'
         match = re.match(exp, args, re.I)
         message = 'Type "help exits" to get help using this command.\n'
         if match:
             direction, room_id, area_name = match.group('direction', 'room_id', 'area_name')
-            area = user.world.areas.get(area_name) or self.area
+            area = World.get_world().get_area(area_name) or self.area
             if area:
                 room = area.get_room(room_id)
                 if room:
-                    room.exits[direction] = RoomExit(self, direction, room)
-                    message = 'Exit %s created.' % direction
+                    self.exits[direction] = RoomExit(self, direction, room)
+                    message = 'Exit %s created.\n' % direction
+                else:
+                    message = 'That room doesn\'t exist.\n'
+            else:
+                message = 'That area doesn\'t exist.\n'
         return message
     
     def remove_exit(self, args):
-        pass
+        return 'This function isn\'t implemented yet.\n'
     
     def link_exits(self, direction, link_room):
         """Link exits between this room (self), and the room passed."""
