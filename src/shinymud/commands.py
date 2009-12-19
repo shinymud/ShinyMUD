@@ -1,6 +1,6 @@
 from models.area import Area
 from shinymud.models.room import Room
-from shinymud.models.world import World
+from shinymud.world import World
 import re
 
 class CommandRegister(object):

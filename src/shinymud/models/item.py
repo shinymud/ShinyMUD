@@ -1,5 +1,4 @@
 import types
-from shinymud.models import ShinyModel
 from shinymud.models.area import Area
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
@@ -42,7 +41,7 @@ class Damage(object):
     def __str__(self):
         string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
 
-class Item(ShinyModel):
+class Item(object):
     save_attrs = {  'area': [None, Area],
                     'id': [None, int],
                     'name': ["", str],
@@ -53,7 +52,6 @@ class Item(ShinyModel):
                     'base_value': [0, int],
                     'pickup': [False, bool],
                     'equip_slot': [None, lambda x: x if x else None],
-                    'extras': [None, ShinyModel.load_extras]
                  }
     UNIQUE = ['area','id']
     def load_extras(self, object):

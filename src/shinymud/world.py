@@ -1,9 +1,24 @@
-from shinymud.models import ShinyModel
+from shinymud.config import DB_NAME
 import threading
 import time
 import logging
+import sqlite3
 
-class World(ShinyModel):
+class Cache(object):
+    def __init__(self):
+        self.d = {}
+    def lookup(self, name, key):
+        return self.d.get(name, {}).get(str(key))
+    def insert(self, name, key, object):
+        if not self.d[name]:
+            self.d[name] = {}
+        self.d[name][str(key)] = object
+    def remove(self, name, key):
+        if self.d[name] and self.d[name][key]:
+            del self.d[name][key]
+            
+
+class World(object):
     _instance = None
     
     def __new__(cls, *args, **kwargs):
@@ -20,6 +35,8 @@ class World(ShinyModel):
         self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
+        self.cache = Cache()
+        self.db = sqlite3.Connection(DB_NAME)
     
     @classmethod
     def get_world(cls):

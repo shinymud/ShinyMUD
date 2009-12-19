@@ -1,11 +1,10 @@
-from models import ShinyModel
 from models.room_exit import RoomExit
 from models.area import Area
 dir_opposites = {'north': 'south', 'south': 'north',
                       'east': 'west', 'west': 'east',
                       'up': 'down', 'down': 'up'}
 
-class Room(ShinyModel):
+class Room(object):
     UNIQUE = ['area', 'id']
     save_attrs =    {   "id": [None, int],
                         "area": [None, Area],

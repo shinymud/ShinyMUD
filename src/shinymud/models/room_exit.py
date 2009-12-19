@@ -1,6 +1,5 @@
-from models import ShinyModel
 
-class RoomExit(ShinyModel):
+class RoomExit(object):
     states = {'true': True, 'false': False}
     def __init__(self, from_room=None, direction=None, to_room=None):
         self.to_room = to_room
