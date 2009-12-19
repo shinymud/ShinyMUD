@@ -1,34 +1,29 @@
 from shinymud.commands import *
 from shinymud.modes.init_mode import InitMode
-from shinymud.models import ShinyModel
 from shinymud.modes.build_mode import BuildMode
 import re
 import logging
 
-class User(ShinyModel):
+class User(object):
     """This is a basic user object."""
-    UNIQUE = ['name']
-    # The following dictionary contains the attributes of this model that will
-    # be saved to the database. The key should be the name of the attribute, and the value
-    # should be a list with the following values in the following order: the value of the 
-    # attribute, the type of the attribute, and the default value of the attribute.
-    save_attrs ={  "channels": [{'chat': True}, eval],
-                    "name": ['', str],
-                    "password": ['', str],
-                    "strength": [0, int],
-                    "intelligence": [0, int],
-                    "dexterity": [0, int]
-                }
+    # save_attrs ={  "channels": [{'chat': True}, eval],
+    #                 "name": ['', str],
+    #                 "password": ['', str],
+    #                 "strength": [0, int],
+    #                 "intelligence": [0, int],
+    #                 "dexterity": [0, int]
+    #             }
     def __init__(self, conn_info, **args):
-        super(User, self).__init__(**args)
         self.conn, self.addr = conn_info
         self.name = self.conn
+        self.password = ''
         self.inq = []
         self.outq = []
         self.quit_flag = False
         self.log = logging.getLogger('User')
         self.mode = InitMode(self)
         self.location = None
+        self.channels = {'chat': True}
         
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""

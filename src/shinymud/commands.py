@@ -1,6 +1,7 @@
-from models.area import Area
+from shinymud.models.area import Area
 from shinymud.models.room import Room
 from shinymud.models.item import Item
+from shinymud.models.npc import Npc
 from shinymud.models.world import World
 import re
 

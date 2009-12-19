@@ -1,3 +1,4 @@
+from shinymud.models import to_bool
 import types
 
 DAMAGE_TYPES =  [   'slashing', 
@@ -48,7 +49,7 @@ class Item(object):
         self.keywords = []
         self.weight = 0
         self.base_value = 0
-        self.pickup = False
+        self.carryable = False
         self.equip_slot = None
         self.is_container = False
     
@@ -59,13 +60,14 @@ class Item(object):
         return new_item
     
     def __str__(self):
-        string = 'name: ' + self.name + '\n' + \
+        string = 'id: ' + self.id + '\n' + \
+                 'name: ' + self.name + '\n' + \
                  'title: ' + self.title + '\n' + \
                  'description: ' + self.description + '\n' + \
                  'equip location: ' + str(self.equip_slot) + '\n' + \
                  'keywords: ' + str(self.keywords) + '\n' + \
                  'weight: ' + str(self.weight) + '\n' + \
-                 'pickup/carryable: ' + str(self.pickup) + '\n' + \
+                 'carryable: ' + str(self.carryable) + '\n' + \
                  'base value: ' + str(self.base_value) + '\n'
         # for attr in self.other_attributes:
         #     a = getattr(self, attr)
@@ -77,7 +79,67 @@ class Item(object):
         #         string += attr + ": " + str(a) + '\n'
         return string
     
-    #***************** Set Attribute Functions *****************
+    #***************** Set Basic Attribute Functions *****************
+    def set_description(self, desc):
+        """Set the description of this item."""
+        self.description = desc
+        return 'Item description set.\n'
+    
+    def set_title(self, title):
+        """Set the title of this item."""
+        self.title = title
+        return 'Item title set.\n'
+    
+    def set_name(self, name):
+        self.name = name
+        return 'Item name set.\n'
+    
+    def set_equip_loc(self, loc):
+        """Set the equip location for this item."""
+        if loc in SLOT_TYPES:
+            self.equip_slot = loc
+            return 'Item location set.\n'
+        else:
+            return 'That equip location doesn\'t exist.\n'
+    
+    def set_weight(self, weight):
+        """Set the weight for this object."""
+        try:
+            weight = int(weight)
+        except:
+            return 'Item weight must be a number.\n'
+        else:
+            self.weight = weight
+            return 'Item weight set.\n'
+    
+    def set_base_value(self, value):
+        """Set the base currency value for this item."""
+        try:
+            value = int(value)
+        except:
+            return 'Item value must be a number.\n'
+        else:
+            self.base_value = value
+            return 'Item base_value has been set.\n'
+    
+    def set_keywords(self, keywords):
+        """Set the keywords for this item.
+        The argument keywords should be a string of words separated by commas.
+        """
+        word_list = keywords.split(',')
+        # Make sure to take out any accidental whitespace between the keywords passed
+        self.keywords = [word.strip() for word in word_list]
+        return 'Item keywords have been set.\n'
+        
+    def set_carryable(self, boolean):
+        """Set the carryable status for this item."""
+        try:
+            val = to_bool(boolean)
+        except Exception, e:
+            return str(e)
+        else:
+            self.carryable = val
+            return 'Item carryable status set.\n'
     
     def weaponize(self, **args):
         """Make this item into a weapon.

@@ -1,9 +1,8 @@
-from shinymud.models import ShinyModel
 import threading
 import time
 import logging
 
-class World(ShinyModel):
+class World(object):
     _instance = None
     
     def __new__(cls, *args, **kwargs):

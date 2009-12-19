@@ -1,8 +1,7 @@
-from shinymud.models import ShinyModel
+from shinymud.models import to_bool
 from shinymud.models.world import World
 
-class RoomExit(ShinyModel):
-    bool_states = {'true': True, 'false': False}
+class RoomExit(object):
     
     def __init__(self, from_room=None, direction=None, to_room=None):
         self.to_room = to_room
@@ -58,28 +57,40 @@ class RoomExit(ShinyModel):
         return 'You open the %s door.\n' % self.direction
     
     def set_closed(self, args):
-        if args and args[0] in self.bool_states:
-            self.closed = self.bool_states.get(args[0])
-            return 'Exit attribute "closed" is now %s.\n' % args[0]
-        return 'This attribute can only be set to true or false.\n'
+        try:
+            boolean = to_bool(args[0])
+        except Exception, e:
+            return str(e)
+        else:
+            self.closed = boolean
+            return 'Exit attribute "closed" is now %s.\n' % str(boolean)
     
     def set_openable(self, args):
-        if args and args[0] in self.bool_states:
-            self.openable = self.bool_states.get(args[0])
-            return 'Exit attribute "openable" is now %s.\n' % args[0]
-        return 'This attribute can only be set to true or false.\n'
+        try:
+            boolean = to_bool(args[0])
+        except Exception, e:
+            return str(e)
+        else:
+            self.openable = boolean
+            return 'Exit attribute "openable" is now %s.\n' % str(boolean)
     
     def set_hidden(self, args):
-        if args and args[0] in self.bool_states:
-            self.hidden = self.bool_states.get(args[0])
-            return 'Exit attribute "hidden" is now %s.\n' % args[0]
-        return 'This attribute can only be set to true or false.\n'
+        try:
+            boolean = to_bool(args[0])
+        except Exception, e:
+            return str(e)
+        else:
+            self.hidden = boolean
+            return 'Exit attribute "hidden" is now %s.\n' % str(boolean)
     
     def set_locked(self, args):
-        if args and args[0] in self.bool_states:
-            self.locked = self.bool_states.get(args[0])
-            return 'Exit attribute "locked" is now %s.\n' % args[0]
-        return 'This attribute can only be set to true or false.\n'
+        try:
+            boolean = to_bool(args[0])
+        except Exception, e:
+            return str(e)
+        else:
+            self.locked = boolean
+            return 'Exit attribute "locked" is now %s.\n' % str(boolean)
     
     def set_to(self, args):
         if not len(args) == 2:
