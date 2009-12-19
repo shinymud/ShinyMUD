@@ -1,5 +1,6 @@
 from models.area import Area
 from shinymud.models.room import Room
+from shinymud.models.item import Item
 from shinymud.models.world import World
 import re
 
@@ -192,13 +193,16 @@ build_list = CommandRegister()
 class Create(BaseCommand):
     """Create a new item, npc, or area."""
     def execute(self):
+        object_types = ['item', 'npc', 'room']
         if not self.args:
             self.user.update_output('What do you want to create?\n')
         else:
             args = self.args.lower().split()
             if args[0] == 'area':
                 # Areas need to be created with a name argument -- make sure the user has passed one
-                if len(args) > 1 and args[1]:
+                if not len(args) > 1:
+                    self.user.update_output('You can\'t create a new area without a name.\n')
+                else:
                     new_area = Area.create(args[1])
                     if type(new_area) == str:
                         self.user.update_output(new_area)
@@ -207,18 +211,18 @@ class Create(BaseCommand):
                         new_area.add_builder(self.user.name)
                         self.user.mode.edit_object = None
                         self.user.update_output('New area "%s" created.\n' % new_area.name)
-                else:
-                    self.user.update_output('You can\'t create a new area without a name.\n')
-            elif args[0] == 'room':
+            
+            elif args[0] in object_types:
                 if not self.user.mode.edit_area:
                     self.user.update_output('You need to be editing an area first.\n')
                 else:
-                    new_room = Room.create(self.user.mode.edit_area)
-                    if type(new_room) == str:
-                        self.user.update_output(new_room)
+                    new_obj = getattr(self.user.mode.edit_area, 'new_' + args[0])()
+                    if type(new_obj) == str:
+                        self.user.update_output(new_obj)
                     else:
-                        self.user.mode.edit_object = new_room
-                        self.user.update_output('New room number %s created.\n' % new_room.id)
+                        self.user.mode.edit_object = new_obj
+                        self.user.update_output('New %s number %s created.\n' % (args[0], 
+                                                                                 new_obj.id))
             else:
                 self.user.update_output('You can\'t create that.\n')
     
@@ -256,10 +260,31 @@ class Edit(BaseCommand):
 build_list.register(Edit, ['edit'])
 
 class List(BaseCommand):
-    """List the attributes of the object or area currently being edited."""
+    """List allows a builder to "see" all of the areas and objects in the world.
+        
+    More specifically, list either returns a string representation of a group of objects/areas, 
+    or a the attributes of a specific object/area, filtered by the criteria passed by the user. 
+    An object-type is one of the following: item, npc, or room.
+        
+    * With no arguments passed, list will return the attributes of the object currently being edited.
+    * If just an object-type is passed, list will return a list of ALL the objects of that type in 
+        the working area.
+    * If an object-type and an area name are passed, list will return a list of ALL objects 
+        of that type in the specified area.
+    * If an object-type and a specific id are passed, list will return a list of attributes for 
+        that specific object in the working area.
+    * If an object-type, a specific id, and an area name are passed, list will return a list of
+        attributes for that specific object in the specified area.
+        
+    examples: 
+    "list room 4 in area bilbos_shire" will show the attributes of room number 4 in the 
+    area bilbos_shire, regardless if that area or that room are being currently edited.
+    "list items" will list all of the items that exist in the working area.
+    
+    """
+    
     def execute(self):
         message = 'Type "help list" to get help using this command.\n'
-        list_funcs = ['room', 'npc', 'area', 'item']
         if not self.args:
             # The user didn't give a specific item to be listed; show them the current one,
             # if there is one
@@ -270,49 +295,54 @@ class List(BaseCommand):
             else:
                 message = self.user.update_output('You\'re not editing anything right now.\n')
         else:
+            # The user wants to see the details of some other object than the one they're editing.
             exp = r'(?P<func>(area)|(npc)|(item)|(room))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
-            func, obj_id, area_name = re.match(exp, self.args, re.I).group('func', 'id', 'area_name')
-            if func in list_funcs:
-                message = getattr(self, 'list_' + func)(obj_id, area_name)
-            else:
+            match = re.match(exp, self.args, re.I)
+            if not match:
                 message = 'You can\'t list that.\n'
+            else:
+                func, obj_id, area_name = match.group('func', 'id', 'area_name')
+                if func == 'area':
+                    message = self.list_area(obj_id, area_name)
+                else:
+                    message = self.list_object(func, obj_id, area_name)
         self.user.update_output(message)
         
     def list_area(self, obj_id, area_name):
         if area_name:
+            # The user wants to know the details of a specific area
             area = self.world.get_area(area_name)
             if area:
                 return str(area)
             else:
                 return 'That area doesn\'t exist.\n'
         else:
+            # No area_name was passed, therefore we want to give the user a
+            # list of all the areas in the world
             return self.world.list_areas()
     
-    def list_room(self, obj_id, area_name):
-        # if there is an area
-        if area_name:
-            area = self.world.get_area(area_name)
-            if not area:
-                return 'Area "%s" doesn\'t exist.' % area_name
-        else:
-            area = self.user.mode.edit_area
-            if not area:
-                return 'What area do you want to list rooms for?\n'
+    def list_object(self, obj_type, obj_id, area_name):
+        
+        area = self.world.get_area(area_name) or self.user.mode.edit_area
+        if not area:
+            return 'What area do you want to list %ss for?\n' % obj_type
         
         if obj_id:
-            room = area.rooms.get(obj_id)
-            if room:
-                return str(room)
+            # A specific id was passed -- if an object of the specified type with that
+            # id exists, show the user the attributes for that particular object.
+            obj = getattr(area, obj_type + 's').get(obj_id)
+            if obj:
+                return str(obj)
             else:
-                return 'Room "%s" doesn\'t exist in area "%s".' % (obj_id, area.name)
+                return '%s "%s" doesn\'t exist in area "%s".' % (obj_type.capitalize(),
+                                                                 obj_id, area.name)
         else:
-            return area.list_rooms()
-    
-    def list_item(self, obj_id, area_name):
-        return 'There aren\'t any yet.\n'
-    
-    def list_npc(self, obj_id, area_name):
-        return 'There aren\'t any yet.\n'
+            # Since we got this far, obj_type will be equal to "npc", "room", or "item",
+            # which means the following will call one of these three functions:
+            # list_rooms(), list_items(), or list_npcs(). Since the user didn't pass us a specific
+            # id, they should get a list of all of the objects of the type they specified
+            # (for the given area they specified).
+            return getattr(area, "list_" + obj_type + "s")()
     
 
 build_list.register(List, ['list'])

@@ -1,6 +1,4 @@
-from shinymud.models import ShinyModel
 from shinymud.models.room_exit import RoomExit
-from shinymud.models.area import Area
 from shinymud.models.world import World
 import re
 
@@ -8,16 +6,13 @@ dir_opposites = {'north': 'south', 'south': 'north',
                       'east': 'west', 'west': 'east',
                       'up': 'down', 'down': 'up'}
 
-class Room(ShinyModel):
-    UNIQUE = ['area', 'id']
-    save_attrs =    {   "id": [None, int],
-                        "area": [None, Area],
-                        "title": ["New Room", str],
-                        "description": ["This is a shiny new room!", str]
-                    }
-    def __init__(self, area=None, **args):
-        self.id = 0
-        super(Room, self).__init__(**args)
+class Room(object):
+
+    def __init__(self, area=None, room_id=0, **args):
+        self.id = room_id
+        self.area = area
+        self.title = 'New Room'
+        self.description = 'This is a shiny new room!'
         self.items = {}
         self.exits = {'north': None,
                       'south': None,
@@ -25,17 +20,13 @@ class Room(ShinyModel):
                       'west': None,
                       'up': None,
                       'down': None}
-        if area:
-            self.area = area
         self.resets = {}
         self.users = {}
     
     @classmethod
-    def create(cls, area):
+    def create(cls, area=None, room_id=0):
         """Create a new room."""
-        new_room = cls(area)
-        new_room.id = area.get_id('room')
-        area.new_room(new_room)
+        new_room = cls(area, room_id)
         return new_room
     
     def __str__(self):

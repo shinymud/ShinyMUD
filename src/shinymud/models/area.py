@@ -1,21 +1,18 @@
-from shinymud.models import ShinyModel
 from shinymud.models.world import World
+from shinymud.models.room import Room
+from shinymud.models.item import Item
+from shinymud.models.npc import Npc
 
-class Area(ShinyModel):
-    UNIQUE = ['name']
-    save_attrs = {
-                    'name': ['', str],
-                    'level_range': ['ALL', str],
-                    'builders': [[], eval],
-                    'description': ['No Description', str]
-                 }
-    
+class Area(object):
     def __init__(self, name=None, lr='All', **args):
-        super(Area, self).__init__(**args)
-        if name:
-            self.name = name
+        self.name = name
         self.rooms = {}
+        self.items = {}
+        self.npcs = {}
         self.ids = {'room': 1, 'item': 1, 'npc': 1}
+        self.builders = []
+        self.level_range = lr
+        self.description = 'No description'
     
     def add_builder(self, username):
         """Add a user to the builder's list."""
@@ -54,6 +51,22 @@ ______________________________________________\n""" % (self.name,
             room_list += '    %s - %s\n' % (key, value.title)
         room_list += '______________________________________________\n'
         return room_list
+    
+    def list_items(self):
+        names = self.items.keys()
+        item_list = '______________________________________________\nItems in area "%s":\n' % self.name
+        for key, value in self.items.items():
+            item_list += '    %s - %s\n' % (key, value.title)
+        item_list += '______________________________________________\n'
+        return item_list
+    
+    def list_npcs(self):
+        names = self.npcs.keys()
+        npc_list = '______________________________________________\nNpcs in area "%s":\n' % self.name
+        for key, value in self.npcs.items():
+            npc_list += '    %s - %s\n' % (key, value.title)
+        npc_list += '______________________________________________\n'
+        return npc_list
     
     @classmethod
     def create(cls, name):
@@ -100,15 +113,43 @@ ______________________________________________\n""" % (self.name,
             return 'Room %s has been deleted.\n' % room_id
         return 'Room %s doesn\'t exist.\n' % room_id
     
-    def new_room(self, room):
+    def new_room(self):
         """Add a new room to this area's room list."""
-        self.rooms[room.id] = room
+        new_room = Room.create(self, self.get_id('room'))
+        self.rooms[new_room.id] = new_room
+        return new_room
     
+    def new_item(self):
+        """Add a new item to this area's item list."""
+        new_item = Item.create(self, self.get_id('item'))
+        self.items[new_item.id] = new_item
+        return new_item
+    
+    def new_npc(self):
+        """Add a new npc to this area's npc list."""
+        new_npc = Npc.create(self, self.get_id('npc'))
+        self.npcs[new_npc.id] = new_npc
+        return new_npc
+    
+    def get_item(self, item_id):
+        """Get an item from this area by its id, if it exists.
+        If it does not exist, return None."""
+        if item_id in self.items.keys():
+            return self.items.get(item_id)
+        return None
+        
     def get_room(self, room_id):
         """Get a room from this area by its id, if it exists.
         If it does not exist, return None."""
         if room_id in self.rooms.keys():
             return self.rooms.get(room_id)
+        return None
+    
+    def get_npc(self, npc_id):
+        """Get an npc from this area by its id, if it exists.
+        If it does not exist, return None."""
+        if npc_id in self.npcs.keys():
+            return self.npcs.get(npc_id)
         return None
     
 # ************************ NPC Functions ************************

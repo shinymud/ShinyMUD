@@ -1,6 +1,5 @@
 import types
-from shinymud.models import ShinyModel
-from shinymud.models.area import Area
+
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
                     'impact', 
@@ -30,10 +29,7 @@ SLOT_TYPES =    [   None,
                     'face',
                     'eyes',
                 ]
-
-
-
-
+                
 class Damage(object):
     def __init__(self, dmgmin, dmgmax, dmgtype, probability):
         self.range = (dmgmin, dmgmax)
@@ -42,41 +38,46 @@ class Damage(object):
     def __str__(self):
         string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
 
-class Item(ShinyModel):
-    save_attrs = {  'area': [None, Area],
-                    'id': [None, int],
-                    'name': ["", str],
-                    'title': ["", str],
-                    'description': ["", str],
-                    'keywords': [[], eval],
-                    'weight': [0, int],
-                    'base_value': [0, int],
-                    'pickup': [False, bool],
-                    'equip_slot': [None, lambda x: x if x else None],
-                    'extras': [None, ShinyModel.load_extras]
-                 }
-    UNIQUE = ['area','id']
-    def load_extras(self, object):
-        pass
-    def list(self):
+class Item(object):
+    def __init__(self, area=None, item_id=0):
+        self.area = area
+        self.id = item_id
+        self.name = 'New Item'
+        self.title = 'A shiny new object sparkles happily.'
+        self.description = 'This is a shiny new object.'
+        self.keywords = []
+        self.weight = 0
+        self.base_value = 0
+        self.pickup = False
+        self.equip_slot = None
+        self.is_container = False
+    
+    @classmethod
+    def create(cls, area=None, item_id=0):
+        """Create a new room."""
+        new_item = cls(area, item_id)
+        return new_item
+    
+    def __str__(self):
         string = 'name: ' + self.name + '\n' + \
-                 'short description: ' + self.short + '\n' + \
-                 'long description: ' + self.long + '\n' + \
-                 'equip location: ' + str(self.equip_loc) + '\n' + \
-                 'keywords: ' + self.keywords + '\n' + \
+                 'title: ' + self.title + '\n' + \
+                 'description: ' + self.description + '\n' + \
+                 'equip location: ' + str(self.equip_slot) + '\n' + \
+                 'keywords: ' + str(self.keywords) + '\n' + \
                  'weight: ' + str(self.weight) + '\n' + \
                  'pickup/carryable: ' + str(self.pickup) + '\n' + \
                  'base value: ' + str(self.base_value) + '\n'
-        for attr in self.other_attributes:
-            a = getattr(self, attr)
-            if hasattr(a, '__iter__'):
-                string += attr + ":\n"
-                for i in range(len(a)):
-                    string += "\t" + str(i) + ' ' + str(attr[i])
-            else:
-                string += attr + ": " + str(a) + '\n'
+        # for attr in self.other_attributes:
+        #     a = getattr(self, attr)
+        #     if hasattr(a, '__iter__'):
+        #         string += attr + ":\n"
+        #         for i in range(len(a)):
+        #             string += "\t" + str(i) + ' ' + str(attr[i])
+        #     else:
+        #         string += attr + ": " + str(a) + '\n'
         return string
-                 
+    
+    #***************** Set Attribute Functions *****************
     
     def weaponize(self, **args):
         """Make this item into a weapon.
@@ -119,7 +120,8 @@ class Item(ShinyModel):
         
         self.removeDmg = types.MethodType(removeDmg, self, self.__class__)
     
-
+    def containerize(self):
+        pass
 
 class InventoryItem(Item):
     UNIQUE = ['uid']
@@ -128,7 +130,5 @@ class InventoryItem(Item):
         self.save_attr['uid'] = [None, str]
         self.save_attr['owner'] = [None, User]
         self.save_attr['container'] = [None, InventoryItem]
-        self.is_container = False 
-
-
+    
 
