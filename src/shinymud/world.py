@@ -1,6 +1,7 @@
 import threading
 import time
 import logging
+import sqlite3
 
 class World(object):
     _instance = None
@@ -19,6 +20,8 @@ class World(object):
         self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
+        self.cache = Cache()
+        self.db = sqlite3.Connection(DB_NAME)
     
     @classmethod
     def get_world(cls):

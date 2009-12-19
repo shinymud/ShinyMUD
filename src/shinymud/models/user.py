@@ -6,14 +6,30 @@ import logging
 
 class User(object):
     """This is a basic user object."""
-    # save_attrs ={  "channels": [{'chat': True}, eval],
-    #                 "name": ['', str],
-    #                 "password": ['', str],
-    #                 "strength": [0, int],
-    #                 "intelligence": [0, int],
-    #                 "dexterity": [0, int]
-    #             }
-    def __init__(self, conn_info, **args):
+
+
+    def to_dict(self):
+        d = {}
+        d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
+        d['name'] = self.name
+        d['password'] = self.password
+        d['strength'] = self.strength
+        d['intelligence'] = self.intelligence
+        d['dexterity'] = self.dexterity
+        return d
+        
+    def from_dict(self, d):
+        if 'channels' in d:
+            self.channels = dict([_.split('=') for _ in d['channels'].split(',')])
+        else:
+            self.channels = {'chat':True}
+        self.name = d.get('name', "")
+        self.password = d.get('password', None)
+        self.strength = d.get('strength', 0)
+        self.intelligence = d.get('intelligence', 0)
+        self.dexterity = d.get('dexterity', 0)
+        
+    def __init__(self, conn_info):
         self.conn, self.addr = conn_info
         self.name = self.conn
         self.password = ''

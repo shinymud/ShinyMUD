@@ -1,9 +1,24 @@
-from shinymud.models.world import World
+from shinymud.world import World
 from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 
 class Area(object):
+    
+    def to_dict(self):
+        d = {}
+        d['name'] = self.name
+        d['level_range'] = self.level_range
+        d['builders'] = ",".join(self.builders)
+        d['description']  = self.description)
+        return d
+    
+    def from_dict(self, d):
+        self.name = d.get('name', "")
+        self.level_range = d.get('level_range', 'All')
+        self.builders = d['builders'].split(',') if 'builders' in d else []
+        self.description = d.get('description', 'No Description')
+    
     def __init__(self, name=None, lr='All', **args):
         self.name = name
         self.rooms = {}

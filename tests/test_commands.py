@@ -1,6 +1,6 @@
-from src.shinymud.models.world import *
-from src.shinymud.models.user import *
-from src.shinymud.commands import *
+from shinymud.world import *
+from shinymud.models.user import *
+from shinymud.commands import *
 import unittest
 
 class TestGeneralCommands(unittest.TestCase):

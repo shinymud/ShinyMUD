@@ -1,5 +1,5 @@
 from shinymud.commands import *
-from shinymud.models.world import World
+from shinymud.world import World
 
 class InitMode(object):
     
