@@ -76,8 +76,13 @@ Areas:
 ______________________________________________\n""" % '\n    '.join(names)
         return area_list
     
-    def get_area(self, area_name):
+    def area_exists(self, area_name):
         if area_name in self.areas:
+            return True
+        return False
+    
+    def get_area(self, area_name):
+        if self.area_exists(area_name):
             return self.areas[area_name]
         return None
     

@@ -184,13 +184,28 @@ class Item(object):
     
     def containerize(self):
         pass
+    
+    def load_item(self):
+        """Create an inventory item with the same attributes as this prototype item.
+        """
+        item = InventoryItem()
+        item.area = self.area
+        item.id = self.id
+        item.name = self.name
+        item.title = self.title
+        item.description = self.description
+        item.keywords = [word for word in self.keywords]
+        item.weight = self.weight
+        item.base_value = self.base_value
+        item.carryable = self.carryable
+        item.equip_slot = self.equip_slot
+        item.is_container = self.is_container
+        return item
+    
 
 class InventoryItem(Item):
-    UNIQUE = ['uid']
     def __init__(self):
-        Item.__init__(self)
-        self.save_attr['uid'] = [None, str]
-        self.save_attr['owner'] = [None, User]
-        self.save_attr['container'] = [None, InventoryItem]
+        self.owner = None
+
     
 
