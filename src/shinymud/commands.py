@@ -104,19 +104,45 @@ class Build(BaseCommand):
 command_list.register(Build, ['build'])
 
 class Look(BaseCommand):
-    """Look at a room, item, or npc."""
+    """Look at a room, item, npc, or PC."""
     def execute(self):
+        message = 'You don\'t see that here.\n'
         if not self.args:
-            self.look_room()
+            # if the user didn't specify anything to look at, just show them the
+            # room they're in.
+            message = self.look_at_room()
         else:
-            self.user.update_output('You don\'t see that here.\n')
-    
-    def look_room(self):
-        if self.user.location:
-            message = self.user.look()
-        else:
-            message = 'You see a dark void.\n'
+            exp = r'(at[ ]+)?((?P<thing1>(\w|[ ])+)([ ]in[ ](?P<place>(room)|(inventory)|)))|(?P<thing2>(\w|[ ])+)'
+            match = re.match(exp, self.args, re.I)
+            if match:
+                thing1, thing2, place = match.group('thing1', 'thing2', 'place')
+                thing = thing1 or thing2
+                if place:
+                    obj_desc = getattr(self, 'look_in_' + place)(thing)
+                else:
+                    obj_desc = self.look_in_room(thing) or self.look_in_inventory(thing)
+                if obj_desc:
+                    message = obj_desc
+        
         self.user.update_output(message)
+    
+    def look_at_room(self):
+        if self.user.location:
+            return self.user.look_at_room()
+        else:
+            return 'You see a dark void.\n'
+    
+    def look_in_room(self, keyword):
+        obj = self.user.location.check_for_keyword(keyword)
+        if obj:
+            return "You look at %s:\n%s\n" % (obj.name, obj.description)
+        return None
+    
+    def look_in_inventory(self, keyword):
+        item = self.user.check_inv_for_keyword(keyword)
+        if item:
+            return "You look at %s:\n%s\n" % (item.name, item.description)
+        return None
     
 
 command_list.register(Look, ['look'])
@@ -187,6 +213,114 @@ class Say(BaseCommand):
     
 
 command_list.register(Say, ['say'])
+
+class Load(BaseCommand):
+    def execute(self):
+        if not self.args:
+            self.user.update_output('What do you want to load?\n')
+        else:
+            # load obj 2 from area name
+            help_message = 'Type "help load" for help on this command.\n'
+            exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
+            match = re.match(exp, self.args, re.I)
+            if match:
+                obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
+                if not obj_type or not obj_id:
+                    self.user.update_output(help_message)
+                else:
+                    if not area_name and self.user.location:
+                        getattr(self, 'load_' + obj_type)(obj_id, self.user.location.area)
+                    elif area_name and self.world.area_exists(area_name):
+                        getattr(self, 'load_' + obj_type)(obj_id, self.world.get_area(area_name))
+                    else:
+                        self.user.update_output('You need to specify an area to load from.\n')
+            else:
+                self.user.update_output(help_message)
+    
+    def load_npc(self, npc_id, npc_area):
+        """Load an npc into the same room as the user."""
+        self.user.update_output('Npc\'s don\'t exist yet.\n')
+    
+    def load_item(self, item_id, item_area):
+        """Load an item into the user's inventory."""
+        prototype = item_area.get_item(item_id)
+        if prototype:
+            item = prototype.load_item()
+            self.user.item_add(item)
+            self.user.update_output('You summon %s into the world.\n' % item.name)
+            if self.user.location:
+                self.user.location.tell_room('%s summons %s into the world.\n' % (self.user.get_fancy_name(), item.name), 
+                                                                                self.user.name)
+        else:
+            self.user.update_output('That item doesn\'t exist.\n')
+    
+
+command_list.register(Load, ['load'])
+
+class Inventory(BaseCommand):
+    """Show the user their inventory."""
+    def execute(self):
+        if not self.user.inventory:
+            self.user.update_output('Your inventory is empty.\n')
+        else:
+            i = 'Your inventory consists of:\n'
+            for item in self.user.inventory:
+                i += item.name + '\n'
+            self.user.update_output(i)
+
+command_list.register(Inventory, ['i', 'inventory'])
+
+class Give(BaseCommand):
+    """Give an item to another player."""
+    def execute(self):
+        pass
+    
+
+command_list.register(Give, ['give'])
+
+class Drop(BaseCommand):
+    """Drop an item from the user's inventory into the user's current room."""
+    def execute(self):
+        if not self.args:
+            self.user.update_output('What do you want to drop?\n')
+        else:
+            item = self.user.check_inv_for_keyword(self.args)
+            if item:
+                self.user.item_remove(item)
+                self.user.update_output('You drop %s.\n' % item.name)
+                if self.user.location:
+                    self.user.location.item_add(item)
+                    self.user.location.tell_room('%s drops %s.\n' % (self.user.get_fancy_name(), 
+                                                                     item.name), [self.user.name])
+                else:
+                    self.user.update_output('%s disappears into the void.\n' % item.name)
+            else:
+                self.user.update_output('You don\'t have that.\n')
+    
+
+command_list.register(Drop, ['drop'])
+
+class Get(BaseCommand):
+    """Get an item that exists in the user's current room."""
+    def execute(self):
+        if not self.args:
+            self.user.update_output('What do you want to get?\n')
+        elif not self.user.location:
+            self.user.update_output('Only cold blackness exists in the void. It\'s not the sort of thing you can take.\n')
+        else:
+            item = self.user.location.check_for_keyword(self.args)
+            if item:
+                self.user.location.item_remove(item)
+                self.user.item_add(item)
+                self.user.update_output('You get %s.\n' % item.name)
+                self.user.location.tell_room('%s gets %s\n' % (self.user.get_fancy_name(), item.name), 
+                                                             [self.user.name])
+            else:
+                self.user.update_output('That doesn\'t exist.\n')
+                
+    
+
+command_list.register(Get, ['get', 'take'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
