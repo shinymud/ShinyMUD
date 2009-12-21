@@ -20,8 +20,6 @@ class World(object):
         self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
-        self.cache = Cache()
-        self.db = sqlite3.Connection(DB_NAME)
     
     @classmethod
     def get_world(cls):
@@ -30,6 +28,16 @@ class World(object):
         way this could fail is if somehow we tried to grab the world before the main thread
         started, which really aught to be impossible."""
         return cls._instance
+    
+    def has_user(self, name):
+        """Return true if the world has this user's name in its user list."""
+        if name in self.user_list:
+            return True
+        return False
+    
+    def get_user(self, name):
+        """Return a user if that user's name exists in the user list."""
+        return self.user_list.get(name)
     
     def user_add(self, user):
         self.user_list[user.name] = user

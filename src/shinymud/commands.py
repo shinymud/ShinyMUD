@@ -273,7 +273,29 @@ command_list.register(Inventory, ['i', 'inventory'])
 class Give(BaseCommand):
     """Give an item to another player."""
     def execute(self):
-        pass
+        exp = r'(?P<thing>.*?)([ ]to[ ])(?P<givee>\w+)'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output('Type "help give" for help on this command.\n')
+        elif not self.user.location:
+            self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
+        else:
+            thing, givee = match.group('thing', 'givee')
+            givee = self.user.location.get_user(givee)
+            item = self.user.check_inv_for_keyword(thing)
+            if not givee:
+                self.user.update_output('%s isn\'t here.\n' % givee.capitalize())
+            elif not item:
+                self.user.update_output('You don\'t have %s.\n' % thing)
+            else:
+                self.user.item_remove(item)
+                givee.item_add(item)
+                self.user.update_output('You give %s to %s.\n' % (item.name, givee.get_fancy_name()))
+                givee.update_output('%s gives you %s.\n' % (self.user.get_fancy_name(), item.name))
+                self.user.location.tell_room('%s gives %s to %s\n.' % (self.user.get_fancy_name(),
+                                                                      item.name,
+                                                                      givee.get_fancy_name()),
+                                            [self.user.name, givee.name])
     
 
 command_list.register(Give, ['give'])
@@ -321,6 +343,7 @@ class Get(BaseCommand):
     
 
 command_list.register(Get, ['get', 'take'])
+
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()

@@ -1,5 +1,5 @@
 from shinymud.models.room_exit import RoomExit
-from shinymud.models.world import World
+from shinymud.world import World
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',

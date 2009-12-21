@@ -10,7 +10,7 @@ class Area(object):
         d['name'] = self.name
         d['level_range'] = self.level_range
         d['builders'] = ",".join(self.builders)
-        d['description']  = self.description)
+        d['description']  = self.description
         return d
     
     def from_dict(self, d):
