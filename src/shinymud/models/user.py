@@ -1,6 +1,7 @@
 from shinymud.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
+from shinymud.world import World
 import re
 import logging
 
@@ -33,6 +34,7 @@ class User(object):
         self.conn, self.addr = conn_info
         self.name = self.conn
         self.password = ''
+        self.description = 'You see nothing special about this person.'
         self.inq = []
         self.outq = []
         self.quit_flag = False
@@ -40,6 +42,7 @@ class User(object):
         self.mode = InitMode(self)
         self.location = None
         self.channels = {'chat': True}
+        self.inventory = []
         
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""
@@ -120,7 +123,7 @@ class User(object):
         self.conn.close()
         if self.location:
             self.location.user_remove(self)
-        self.world.user_delete.append(self.name)
+        World.get_world().user_remove(self.name)
         WorldEcho(self, "%s has left the world." % self.get_fancy_name()).execute()
     
     def get_fancy_name(self):
@@ -131,6 +134,15 @@ class User(object):
             self.mode = BuildMode(self)
         elif mode == 'normal':
             self.mode.active = False
+    
+    def item_add(self, item):
+        """Add an item to the user's inventory."""
+        self.inventory.append(item)
+    
+    def item_remove(self, item):
+        """Remove an item from the user's inventory."""
+        if item in self.inventory:
+            self.inventory.remove(item)
     
     def go(self, room):
         """Go to a specific room."""
@@ -143,9 +155,19 @@ class User(object):
             self.location = room
             self.location.user_add(self)
             # Tell the new room you have arrived
-            self.update_output(self.look())
+            self.update_output(self.look_at_room())
     
-    def look(self):
+    def check_inv_for_keyword(self, keyword):
+        """Check all of the items in a user's inventory for a specific keyword.
+        
+        Return the item that matches that keyword, else return None."""
+        for item in self.inventory:
+            if keyword in item.keywords:
+                return item
+        return None
+    
+    def look_at_room(self):
+        """Return this user's view of the room they are in."""
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:
@@ -154,6 +176,9 @@ class User(object):
         for user in self.location.users.values():
             if user.name != self.name:
                 users += user.get_fancy_name() + ' is here.\n'
-        look = """%s\n%s\n%s\n%s""" % (self.location.title, xits, self.location.description, users)
+        items = ''
+        for item in self.location.items:
+            items += item.title + '\n'
+        look = """%s\n%s\n%s\n%s%s""" % (self.location.title, xits, self.location.description, users, items)
         return look
     

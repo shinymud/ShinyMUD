@@ -1,5 +1,5 @@
 from shinymud.models import to_bool
-from shinymud.models.world import World
+from shinymud.world import World
 
 class RoomExit(object):
     

@@ -1,5 +1,5 @@
 from shinymud.models.room_exit import RoomExit
-from shinymud.models.world import World
+from shinymud.world import World
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',
@@ -23,13 +23,14 @@ class Room(object):
         self.area = area
         self.title = args.get('title', 'New Room')
         self.description = args.get('description','This is a shiny new room!')
-        self.items = {}
+        self.items = []
         self.exits = {'north': None,
                       'south': None,
                       'east': None,
                       'west': None,
                       'up': None,
                       'down': None}
+        self.npcs = []
         self.resets = {}
         self.users = {}
         self.dbid = args.get('dbid')
@@ -143,3 +144,50 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if person.name not in exclude_list:
                 person.update_output(message)
     
+    def get_npc(self, keyword):
+        """Get an NPC from this room if its name is equal to the keyword given."""
+        for npc in self.npcs:
+            if keyword in npc.keywords:
+                return npc
+        return None
+
+    def get_item(self, keyword):
+        """Get an item from this room they keyword given matches its keywords."""
+        for item in self.items:
+            if keyword in item.keywords:
+                return item
+        return None
+
+    def get_user(self, keyword):
+        """Get a user from this room if their name is equal to the keyword given."""
+        for user in self.users.values():
+            if keyword == user.name:
+                return user
+        return None
+    
+    def check_for_keyword(self, keyword):
+        """Return the first instance of an item, npc, or player that matches the keyword.
+        If nothing in the room matches the keyword, return None."""
+        # check the items in the room first
+        item = self.get_item(keyword)
+        if item: return item
+        
+        # then check the npcs in the room
+        npc = self.get_npc(keyword)
+        if npc: return npc
+        
+        # then check the PCs in the room
+        user = self.get_user(keyword)
+        if user: return user
+        
+        # If we didn't match any of the above, return None
+        return None
+    
+    def item_add(self, item):
+        """Add an item to this room."""
+        self.items.append(item)
+    
+    def item_remove(self, item):
+        """Remove an item from this room."""
+        if item in self.items:
+            self.items.remove(item)
