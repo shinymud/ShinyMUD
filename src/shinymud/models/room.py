@@ -8,11 +8,21 @@ dir_opposites = {'north': 'south', 'south': 'north',
 
 class Room(object):
 
+    def to_dict(self):
+        d {}
+        d['id'] = self.id
+        d['area'] = self.area.dbid
+        d['title'] = self.title
+        d['description'] = self.description
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+         
     def __init__(self, area=None, room_id=0, **args):
         self.id = room_id
         self.area = area
-        self.title = 'New Room'
-        self.description = 'This is a shiny new room!'
+        self.title = args.get('title', 'New Room')
+        self.description = args.get('description','This is a shiny new room!')
         self.items = {}
         self.exits = {'north': None,
                       'south': None,
@@ -22,6 +32,7 @@ class Room(object):
                       'down': None}
         self.resets = {}
         self.users = {}
+        self.dbid = args.get('dbid')
     
     @classmethod
     def create(cls, area=None, room_id=0):

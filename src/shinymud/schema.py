@@ -1,11 +1,13 @@
-I don't know the format of this file yet, but I do know that it will describe all of the tables in the
-database. It will probably be in sql, or python, depending on which is easier to build.
+# I don't know the format of this file yet, but I do know that it will describe all of the TABLE IF NOT EXISTSs in the
+# database. It will probably be in sql, or python, depending on which is easier to build.
 
 
+import sqlite3
+from shinymud.config import DB_NAME
 
-
-
-CREATE TABLE user (
+def initialize_database():
+    queries = [\
+'''CREATE TABLE IF NOT EXISTS user (
     dbid INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     channels TEXT,
@@ -13,33 +15,23 @@ CREATE TABLE user (
     strength INTEGER NOT NULL DEFAULT 0,
     intelligence INTEGER NOT NULL DEFAULT 0,
     dexterity INTEGER NOT NULL DEFAULT 0
-);
-
-
-
-CREATE TABLE area (
+)''',\
+'''CREATE TABLE IF NOT EXISTS area (
     dbid INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     level_range TEXT,
     builders TEXT,
     description TEXT
-);
-
-
-
-
-CREATE TABLE room (
+)''',\
+'''CREATE TABLE IF NOT EXISTS room (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
     title TEXT,
     description TEXT,
     UNIQUE (area, id)
-);
-
-
-
-CREATE TABLE  item (
+)''',\
+'''CREATE TABLE IF NOT EXISTS  item (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
@@ -53,11 +45,8 @@ CREATE TABLE  item (
     equip_slot INTEGER,
     is_container TEXT,
     UNIQUE (area, id)
-);
-
-
-
-CREATE TABLE room_exit (
+)''',\
+'''CREATE TABLE IF NOT EXISTS room_exit (
     dbid INTEGER PRIMARY KEY,
     room INTEGER NOT NULL REFERENCES room(dbid),
     to_room INTEGER NOT NULL REFERENCES room(dbid),
@@ -69,13 +58,8 @@ CREATE TABLE room_exit (
     locked TEXT,
     key INTEGER REFERENCES item(dbid),
     UNIQUE (room, direction)
-);
-
-
-
-
-
-CREATE TABLE inventory (
+)''',\
+'''CREATE TABLE IF NOT EXISTS inventory (
     dbid INTEGER PRIMARY KEY,
     template INTEGER NOT NULL REFERENCES item(dbid),
     name TEXT,
@@ -89,23 +73,23 @@ CREATE TABLE inventory (
     is_container TEXT,
     owner INTEGER REFERENCES user(dbid),
     container INTEGER REFERENCES inventory(dbid)
-);
-
-CREATE TABLE npc (
+)''',\
+'''CREATE TABLE IF NOT EXISTS npc (
     dbid INTEGER PRIMARY KEY
-
-);
-
-
-CREATE TABLE room_npc_resets (
+)''',\
+'''CREATE TABLE IF NOT EXISTS room_npc_resets (
     room INTEGER NOT NULL REFERENCES room(dbid),
     npc INTEGER NOT NULL REFERENCES npc(dbid),
     PRIMARY KEY (room, npc)
-);
-
-
-CREATE TABLE room_item_resets (
+)''',\
+'''CREATE TABLE IF NOT EXISTS room_item_resets (
     room INTEGER NOT NULL REFERENCES room(dbid),
     item INTEGER NOT NULL REFERENCES item(dbid),
     PRIMARY KEY (room, item)
-);
+)''']
+    
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    for query in queries:
+        cursor.execute(query)
+    

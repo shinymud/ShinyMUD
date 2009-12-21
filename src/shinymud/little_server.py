@@ -1,12 +1,22 @@
 from connection_handler import ConnectionHandler
 from shinymud.world import World
+from shinymud.models.area import Area
+from shinymud.schema import initialize_database
 from config import *
 
 import logging
+initialize_database()
 format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d %(message)s"
 logging.basicConfig(filename=LOG_FILE, level=LOG_LEVEL, format=format)
 logger = logging.getLogger('little_server')
 world = World()
+
+
+# load the entities in the world from the database
+for area in world.db.select("* from area"):
+    world.new_area(Area(**a))
+for area in world.areas.values():
+    area.load_rooms()
 
 # Start listening for connections on a different thread
 conn_handler = ConnectionHandler(PORT, HOST, world)

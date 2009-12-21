@@ -14,8 +14,7 @@ class DB(object):
          
         ex:
             db = DB()
-            db.insert("into table mytable (field1, field2...) values (?, ?...)", [val1, val2...])
-        
+            new_id = db.insert("into table mytable (field1, field2...) values (?, ?...)", [val1, val2...])
         """
         cursor = self.conn.cursor()
         if params:
@@ -26,11 +25,29 @@ class DB(object):
         self.conn.commit()
         return new_id
     
+    def insert_from_dict(self, table, d):
+        query = "INTO " + table + " "
+        keys = []
+        values = []
+        for key,val in d.items():
+            keys.append(key)
+            values.append(val)
+        key_string = "(" + ",".join(keys) + ")"
+        val_string = "(" + ",".join(['?' for _ in values]) + ")"
+        query = query + key_string + " VALUES " + val_string
+        self.insert(query, values) 
+        
     def select(self, query, params=None):
         """Fetch data from the database.
         If the select is successful, it returns a list of dictionaries.
         If there are no rows to return, it returns an empty list.
         If there is a problem with the query, it will raise an exception.
+         
+        ex:
+            db = DB()
+            rows = db.select("* from mytable where field1=?", [val1])
+            print rows
+            > [{'field1': somevalue, 'field2', someothervalue...}, {'field1':...}...]
         """
         cursor = self.conn.cursor()
         if params:

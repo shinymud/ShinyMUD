@@ -1,7 +1,7 @@
 import threading
 import time
 import logging
-import sqlite3
+from shinymud.db import DB
 
 class World(object):
     _instance = None
@@ -21,7 +21,7 @@ class World(object):
         self.areas = {}
         self.log = logging.getLogger('World')
         self.cache = Cache()
-        self.db = sqlite3.Connection(DB_NAME)
+        self.db = DB()
     
     @classmethod
     def get_world(cls):

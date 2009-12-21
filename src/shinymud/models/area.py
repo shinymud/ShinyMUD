@@ -11,29 +11,33 @@ class Area(object):
         d['level_range'] = self.level_range
         d['builders'] = ",".join(self.builders)
         d['description']  = self.description)
+        if self.dbid:
+            d['dbid'] = self.dbid
         return d
     
-    def from_dict(self, d):
-        self.name = d.get('name', "")
-        self.level_range = d.get('level_range', 'All')
-        self.builders = d['builders'].split(',') if 'builders' in d else []
-        self.description = d.get('description', 'No Description')
-    
-    def __init__(self, name=None, lr='All', **args):
+    def __init__(self, name=None, **args):
         self.name = name
         self.rooms = {}
         self.items = {}
         self.npcs = {}
-        self.ids = {'room': 1, 'item': 1, 'npc': 1}
-        self.builders = []
-        self.level_range = lr
-        self.description = 'No description'
+        self.builders = args['builders'].split(',') if 'builders' in args else []
+        self.level_range = args.get('level_range', 'All')
+        self.description = args.get('description', 'No Description')
+        self.dbid = args.get(dbid)
+    
+    def load_rooms(self):
+        if self.dbid:
+            world = World.get_world()
+            rooms = world.db.select("* from room where area=?", [self.dbid])
+            for room in rooms:
+                room['area'] = self
+                self.rooms[room['id']] = Room(**room)
     
     def add_builder(self, username):
         """Add a user to the builder's list."""
         self.builders.append(username)
         return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
-    
+        
     def remove_builder(self, username):
         """Remove a user from the builder's list."""
         if username in self.builders:
@@ -89,6 +93,8 @@ ______________________________________________\n""" % (self.name,
         world = World.get_world()
         if not world.get_area(name):
             new_area = cls(name)
+            a = new_area.to_dict()
+            world.db.insert_from_dict('area', a)
             world.new_area(new_area)
             return new_area
         else:
@@ -96,9 +102,13 @@ ______________________________________________\n""" % (self.name,
     
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
-        if id_type in self.ids.keys():
-            your_id = self.ids.get(id_type)
-            self.ids[id_type] += 1
+        if id_type in ['room', 'item', 'npc']:
+            world = World.get_world()
+            rows = world.db.select("max(id) as id from " + id_type " where area=?", [self.dbid])
+            if rows:
+                your_id = int(rows[0]['id']) + 1
+            else:
+                your_id = 1
             return str(your_id)
     
     def set_description(self, desc):
@@ -131,6 +141,8 @@ ______________________________________________\n""" % (self.name,
     def new_room(self):
         """Add a new room to this area's room list."""
         new_room = Room.create(self, self.get_id('room'))
+        world = World()
+        new_room.dbid = world.db.insert_from_dict('room', new_room.to_dict())
         self.rooms[new_room.id] = new_room
         return new_room
     
