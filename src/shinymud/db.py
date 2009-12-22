@@ -68,6 +68,7 @@ class DB(object):
             cursor.execute("update " + query, params)
         else:
             cursor.execute("update " + query)
+        self.conn.commit()
         return cursor.rowcount
     
     def delete(self, query, params=None):
@@ -80,5 +81,6 @@ class DB(object):
             cursor.execute("delete " + query, params)
         else:
             cursor.execute("delete " + query)
+        self.conn.commit()
         return cursor.rowcount
     

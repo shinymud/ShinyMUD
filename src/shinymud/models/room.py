@@ -9,7 +9,7 @@ dir_opposites = {'north': 'south', 'south': 'north',
 class Room(object):
 
     def to_dict(self):
-        d {}
+        d = {}
         d['id'] = self.id
         d['area'] = self.area.dbid
         d['title'] = self.title

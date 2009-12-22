@@ -14,7 +14,7 @@ world = World()
 
 # load the entities in the world from the database
 for area in world.db.select("* from area"):
-    world.new_area(Area(**a))
+    world.new_area(Area(**area))
 for area in world.areas.values():
     area.load_rooms()
 

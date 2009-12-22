@@ -20,10 +20,14 @@ class Area(object):
         self.rooms = {}
         self.items = {}
         self.npcs = {}
-        self.builders = args['builders'].split(',') if 'builders' in args else []
+        builders = args.get('builders')
+        if builders and type(builders) == str:
+            self.builders = builders.split(',')
+        else:
+            self.builders = []
         self.level_range = args.get('level_range', 'All')
         self.description = args.get('description', 'No Description')
-        self.dbid = args.get(dbid)
+        self.dbid = args.get('dbid')
     
     def load_rooms(self):
         if self.dbid:
@@ -104,9 +108,10 @@ ______________________________________________\n""" % (self.name,
         """Generate a new id for an item, npc, or room associated with this area."""
         if id_type in ['room', 'item', 'npc']:
             world = World.get_world()
-            rows = world.db.select("max(id) as id from " + id_type " where area=?", [self.dbid])
-            if rows:
-                your_id = int(rows[0]['id']) + 1
+            rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
+            max_id = rows[0]['id']
+            if max_id:
+                your_id = int(max_id) + 1
             else:
                 your_id = 1
             return str(your_id)
