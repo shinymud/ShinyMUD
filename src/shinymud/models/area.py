@@ -21,28 +21,28 @@ class Area(object):
         self.items = {}
         self.npcs = {}
         builders = args.get('builders')
-        if builders and type(builders) == str:
+        if builders:
             self.builders = builders.split(',')
         else:
             self.builders = []
         self.level_range = args.get('level_range', 'All')
         self.description = args.get('description', 'No Description')
         self.dbid = args.get('dbid')
+        self.world = World.get_world()
     
     def load(self):
         if self.dbid:
-            world = World.get_world()
-            items = world.db.select("* from item where area=?", [self.dbid])
+            items = self.world.db.select("* from item where area=?", [self.dbid])
             for item in items:
                 item['area'] = self
                 self.items[str(item['id'])] = Item(**item)
             
-            npcs = world.db.select("* from npc where area=?", [self.dbid])
+            npcs = self.world.db.select("* from npc where area=?", [self.dbid])
             for npc in npcs:
                 npc['area'] = self
                 self.npcs[str(npc['id'])] = Npc(**npc)
             
-            rooms = world.db.select("* from room where area=?", [self.dbid])
+            rooms = self.world.db.select("* from room where area=?", [self.dbid])
             for room in rooms:
                 room['area'] = self
                 self.rooms[str(room['id'])] = Room(**room)
@@ -50,12 +50,14 @@ class Area(object):
     def add_builder(self, username):
         """Add a user to the builder's list."""
         self.builders.append(username)
+        self.world.db.update_from_dict('area', self.to_dict())
         return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
         
     def remove_builder(self, username):
         """Remove a user from the builder's list."""
         if username in self.builders:
             self.builders.remove(username)
+            self.world.db.update_from_dict('area', self.to_dict())
             return '%s has been removed from the builder\'s list for this area.\n' % username.capitalize()
         else:
             return '%s is not on the builder\'s list for this area.\n' % username.capitalize()
@@ -133,11 +135,13 @@ ______________________________________________\n""" % (self.name,
     def set_description(self, desc):
         """Set this area's description."""
         self.description = desc
+        self.world.db.update_from_dict('area', self.to_dict())
         return 'Area description set.\n'
     
     def set_levelrange(self, lvlrange):
         """Set this area's level range."""
         self.level_range = lvlrange
+        self.world.db.update_from_dict('area', self.to_dict())
         return 'Area levelrange set.\n'
     
 # ************************ Room Functions ************************

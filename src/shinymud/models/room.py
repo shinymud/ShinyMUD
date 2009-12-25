@@ -37,7 +37,7 @@ class Room(object):
         self.users = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
-        self.log.debug('Area is: %s' % str(self.area))
+        self.world = World.get_world()
     
     @classmethod
     def create(cls, area=None, room_id=0):
@@ -75,11 +75,13 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     def set_title(self, title):
         """Set the title of a room."""
         self.title = title
+        self.world.db.update_from_dict('room', self.to_dict())
         return 'Room %s title set.\n' % self.id
     
     def set_description(self, desc):
         """Set the description of a room."""
         self.description = desc
+        self.world.db.update_from_dict('room', self.to_dict())
         return 'Room %s description set.\n' % self.id
     
     def set_exit(self, args):

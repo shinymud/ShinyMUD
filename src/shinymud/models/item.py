@@ -1,4 +1,5 @@
 from shinymud.models import to_bool
+from shinymud.world import World
 import types
 
 DAMAGE_TYPES =  [   'slashing', 
@@ -48,8 +49,8 @@ class Item(object):
         self.title = args.get('title', 'A shiny new object sparkles happily.')
         self.description = args.get('description', 'This is a shiny new object.')
         self.keywords = []
-        kw = args.get('keywords')
-        if kw and type(kw) == str:
+        kw = str(args.get('keywords'))
+        if kw:
             self.keywords = kw.split(',')
         self.weight = int(args.get('weight', 0))
         self.base_value = int(args.get('base_value', 0))
@@ -60,6 +61,8 @@ class Item(object):
         self.is_container = False
         if 'is_container' in args:
             self.is_container = to_bool(args.get('is_container'))
+        self.world = World.get_world()
+        self.dbid = args.get('dbid')
     
     def to_dict(self):
         d = {}
@@ -74,6 +77,8 @@ class Item(object):
         d['carryable'] = str(self.carryable)
         d['equip_slot'] = self.equip_slot
         d['is_container'] = str(self.is_container)
+        if self.dbid:
+            d['dbid'] = self.dbid
         
         return d
     
@@ -107,21 +112,25 @@ class Item(object):
     def set_description(self, desc):
         """Set the description of this item."""
         self.description = desc
+        self.world.db.update_from_dict('item', self.to_dict())
         return 'Item description set.\n'
     
     def set_title(self, title):
         """Set the title of this item."""
         self.title = title
+        self.world.db.update_from_dict('item', self.to_dict())
         return 'Item title set.\n'
     
     def set_name(self, name):
         self.name = name
+        self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
     
     def set_equip_loc(self, loc):
         """Set the equip location for this item."""
         if loc in SLOT_TYPES:
             self.equip_slot = loc
+            self.world.db.update_from_dict('item', self.to_dict())
             return 'Item location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
@@ -134,6 +143,7 @@ class Item(object):
             return 'Item weight must be a number.\n'
         else:
             self.weight = weight
+            self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
     def set_base_value(self, value):
@@ -144,6 +154,7 @@ class Item(object):
             return 'Item value must be a number.\n'
         else:
             self.base_value = value
+            self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
     def set_keywords(self, keywords):
@@ -153,6 +164,7 @@ class Item(object):
         word_list = keywords.split(',')
         # Make sure to take out any accidental whitespace between the keywords passed
         self.keywords = [word.strip() for word in word_list]
+        self.world.db.update_from_dict('item', self.to_dict())
         return 'Item keywords have been set.\n'
         
     def set_carryable(self, boolean):
@@ -163,6 +175,7 @@ class Item(object):
             return str(e)
         else:
             self.carryable = val
+            self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
     def weaponize(self, **args):

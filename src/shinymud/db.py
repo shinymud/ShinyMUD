@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from shinymud.config import DB_NAME    
 
@@ -5,6 +6,7 @@ from shinymud.config import DB_NAME
 class DB(object):
     def __init__(self):
         self.conn  = sqlite3.Connection(DB_NAME)
+        self.log = logging.getLogger('DB')
     
     def insert(self, query, params=None):
         """Insert a new row into a table.
@@ -70,6 +72,16 @@ class DB(object):
             cursor.execute("update " + query)
         self.conn.commit()
         return cursor.rowcount
+    
+    def update_from_dict(self, table, d):
+        if 'dbid' in d:
+            query = table + " SET "
+            attributes = [str(key) + "='" + str(val) + "'" for key, val in d.items() if key != 'dbid']
+            query = query + ','.join(attributes) + " WHERE dbid=?"
+            self.log.debug('Updating %s: \n%s' % (table, query))
+            return self.update(query, [d['dbid']])
+        else:
+            raise Exception("Cannot update unsaved entity.")
     
     def delete(self, query, params=None):
         """Delete rows from a table.

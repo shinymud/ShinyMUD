@@ -282,11 +282,11 @@ class Give(BaseCommand):
         elif not self.user.location:
             self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
-            thing, givee = match.group('thing', 'givee')
-            givee = self.user.location.get_user(givee)
+            thing, person = match.group('thing', 'givee')
+            givee = self.user.location.get_user(person)
             item = self.user.check_inv_for_keyword(thing)
             if not givee:
-                self.user.update_output('%s isn\'t here.\n' % givee.capitalize())
+                self.user.update_output('%s isn\'t here.\n' % person.capitalize())
             elif not item:
                 self.user.update_output('You don\'t have %s.\n' % thing)
             else:
