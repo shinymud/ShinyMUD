@@ -7,8 +7,28 @@ import logging
 
 class User(object):
     """This is a basic user object."""
-
-
+        
+    def __init__(self, conn_info, **args):
+        self.conn, self.addr = conn_info
+        self.name = args.get('name', self.conn)
+        self.password = args.get('password', None)
+        self.description = args.get('description','You see nothing special about this person.')
+        self.inq = []
+        self.outq = []
+        self.quit_flag = False
+        self.log = logging.getLogger('User')
+        self.mode = InitMode(self)
+        self.location = None
+        if 'channels' in args:
+            self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
+        else:
+            self.channels = {'chat': True}
+        self.inventory = []
+        
+        self.strength = args.get('strength', 0)
+        self.intelligence = args.get('intelligence', 0)
+        self.dexterity = args.get('dexterity', 0)
+        
     def to_dict(self):
         d = {}
         d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
@@ -17,32 +37,8 @@ class User(object):
         d['strength'] = self.strength
         d['intelligence'] = self.intelligence
         d['dexterity'] = self.dexterity
+        d['description'] = self.description
         return d
-        
-    def from_dict(self, d):
-        if 'channels' in d:
-            self.channels = dict([_.split('=') for _ in d['channels'].split(',')])
-        else:
-            self.channels = {'chat':True}
-        self.name = d.get('name', "")
-        self.password = d.get('password', None)
-        self.strength = d.get('strength', 0)
-        self.intelligence = d.get('intelligence', 0)
-        self.dexterity = d.get('dexterity', 0)
-        
-    def __init__(self, conn_info):
-        self.conn, self.addr = conn_info
-        self.name = self.conn
-        self.password = ''
-        self.description = 'You see nothing special about this person.'
-        self.inq = []
-        self.outq = []
-        self.quit_flag = False
-        self.log = logging.getLogger('User')
-        self.mode = InitMode(self)
-        self.location = None
-        self.channels = {'chat': True}
-        self.inventory = []
         
     def update_output(self, data):
         """Helpfully inserts data into the user's output queue."""

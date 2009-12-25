@@ -40,18 +40,42 @@ class Damage(object):
         string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
 
 class Item(object):
-    def __init__(self, area=None, item_id=0):
+    
+    def __init__(self, area=None, id='0', **args):
         self.area = area
-        self.id = item_id
-        self.name = 'New Item'
-        self.title = 'A shiny new object sparkles happily.'
-        self.description = 'This is a shiny new object.'
+        self.id = str(id)
+        self.name = args.get('name', 'New Item')
+        self.title = args.get('title', 'A shiny new object sparkles happily.')
+        self.description = args.get('description', 'This is a shiny new object.')
         self.keywords = []
-        self.weight = 0
-        self.base_value = 0
-        self.carryable = False
-        self.equip_slot = None
+        kw = args.get('keywords')
+        if kw and type(kw) == str:
+            self.keywords = kw.split(',')
+        self.weight = int(args.get('weight', 0))
+        self.base_value = int(args.get('base_value', 0))
+        self.carryable = True
+        if 'carryable' in args:
+            self.carryable = to_bool(args.get('carryable'))
+        self.equip_slot = args.get('equip_slot')
         self.is_container = False
+        if 'is_container' in args:
+            self.is_container = to_bool(args.get('is_container'))
+    
+    def to_dict(self):
+        d = {}
+        d['area'] = self.area.dbid
+        d['id'] = self.id
+        d['name'] = self.name
+        d['title'] = self.title
+        d['description'] = self.description
+        d['keywords'] = ','.join(self.keywords)
+        d['weight'] = self.weight
+        d['base_value'] = self.base_value
+        d['carryable'] = str(self.carryable)
+        d['equip_slot'] = self.equip_slot
+        d['is_container'] = str(self.is_container)
+        
+        return d
     
     @classmethod
     def create(cls, area=None, item_id=0):
@@ -60,7 +84,7 @@ class Item(object):
         return new_item
     
     def __str__(self):
-        string = 'id: ' + self.id + '\n' + \
+        string = 'id: ' + str(self.id) + '\n' + \
                  'name: ' + self.name + '\n' + \
                  'title: ' + self.title + '\n' + \
                  'description: ' + self.description + '\n' + \

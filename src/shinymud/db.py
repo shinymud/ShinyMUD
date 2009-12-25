@@ -35,7 +35,7 @@ class DB(object):
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string
-        self.insert(query, values) 
+        return self.insert(query, values) 
         
     def select(self, query, params=None):
         """Fetch data from the database.

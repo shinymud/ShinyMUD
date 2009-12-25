@@ -1,4 +1,4 @@
-all: clean
+all:
 
 clean:
 	rm -rf src/shinymud/logs/*
@@ -6,4 +6,4 @@ clean:
 	rm src/shinymud/modes/*.pyc
 	rm src/shinymud/*.pyc
 	touch src/shinymud/logs/shinymud.log
-	python scripts/db_create
+	rm src/shinymud/shinymud.db

@@ -41,9 +41,9 @@ def initialize_database():
     keywords TEXT,
     weight INTEGER DEFAULT 0,
     base_value INTEGER DEFAULT 0,
-    pickup TEXT,
+    carryable TEXT DEFAULT 'True',
     equip_slot INTEGER,
-    is_container TEXT,
+    is_container TEXT DEFAULT 'True',
     UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_exit (
@@ -68,14 +68,18 @@ def initialize_database():
     keywords TEXT,
     weight INTEGER DEFAULT 0,
     base_value INTEGER DEFAULT 0,
-    pickup TEXT,
+    carryable TEXT,
     equip_slot INTEGER,
     is_container TEXT,
     owner INTEGER REFERENCES user(dbid),
     container INTEGER REFERENCES inventory(dbid)
 )''',\
 '''CREATE TABLE IF NOT EXISTS npc (
-    dbid INTEGER PRIMARY KEY
+    dbid INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL,
+    area INTEGER NOT NULL REFERENCES area(dbid),
+    name TEXT,
+    UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_npc_resets (
     room INTEGER NOT NULL REFERENCES room(dbid),

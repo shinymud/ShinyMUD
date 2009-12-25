@@ -1,5 +1,6 @@
 from shinymud.models.room_exit import RoomExit
 from shinymud.world import World
+import logging
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',
@@ -16,10 +17,11 @@ class Room(object):
         d['description'] = self.description
         if self.dbid:
             d['dbid'] = self.dbid
+        self.log.debug(d)
         return d
          
-    def __init__(self, area=None, room_id=0, **args):
-        self.id = room_id
+    def __init__(self, area=None, id=0, **args):
+        self.id = str(id)
         self.area = area
         self.title = args.get('title', 'New Room')
         self.description = args.get('description','This is a shiny new room!')
@@ -31,9 +33,11 @@ class Room(object):
                       'up': None,
                       'down': None}
         self.npcs = []
-        self.resets = {}
+        self.resets = []
         self.users = {}
         self.dbid = args.get('dbid')
+        self.log = logging.getLogger('Room')
+        self.log.debug('Area is: %s' % str(self.area))
     
     @classmethod
     def create(cls, area=None, room_id=0):
@@ -108,6 +112,21 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             else:
                 message = 'That area doesn\'t exist.\n'
         return message
+    
+    def add_reset(self, args):
+        exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
+        match = re.match(exp, args, re.I)
+        if match:
+            obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
+            area = World.get_world().get_area(area_name) or self.area
+            if not area:
+                return 'That area doesn\'t exist.\n'
+            obj = getattr(area, obj_type + "s").get(obj_id)
+            if not obj:
+                return '%s number %s does not exist.\n' % (obj_type, obj_id)
+            self.resets.append(obj)
+            return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
+        return 'Type "help resets" to get help using this command.\n'
     
     def remove_exit(self, args):
         return 'This function isn\'t implemented yet.\n'

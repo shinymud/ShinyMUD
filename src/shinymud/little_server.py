@@ -16,7 +16,7 @@ world = World()
 for area in world.db.select("* from area"):
     world.new_area(Area(**area))
 for area in world.areas.values():
-    area.load_rooms()
+    area.load()
 
 # Start listening for connections on a different thread
 conn_handler = ConnectionHandler(PORT, HOST, world)

@@ -230,6 +230,8 @@ class Load(BaseCommand):
                 else:
                     if not area_name and self.user.location:
                         getattr(self, 'load_' + obj_type)(obj_id, self.user.location.area)
+                    elif not area_name and self.user.mode.edit_area:
+                        getattr(self, 'load_' + obj_type)(obj_id, self.user.mode.edit_area)
                     elif area_name and self.world.area_exists(area_name):
                         getattr(self, 'load_' + obj_type)(obj_id, self.world.get_area(area_name))
                     else:
@@ -402,17 +404,18 @@ class Edit(BaseCommand):
                     self.user.update_output('Now editing area "%s".\n' % args[1])
                 else:
                     self.user.update_output('That area doesn\'t exist. You should create it first.\n')
-            elif args[0] == 'room':
+            elif args[0] in ['room', 'npc', 'item']:
                 if self.user.mode.edit_area:
-                    if args[1] in self.user.mode.edit_area.rooms.keys():
-                        self.user.mode.edit_object = self.user.mode.edit_area.rooms.get(args[1])
+                    obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
+                    if obj:
+                        self.user.mode.edit_object = obj
                         self.user.update_output(str(self.user.mode.edit_object))
                     else:
-                        self.user.update_output('That room doesn\'t exist. Type "list rooms" to see all the rooms in your area.\n')
+                        self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
                 else:
                     self.user.update_output('You need to be editing an area before you can edit its contents.\n')
             else:
-                self.user.update_ouput('You can\'t edit that.\n')
+                self.user.update_output('You can\'t edit that.\n')
     
 
 build_list.register(Edit, ['edit'])
@@ -451,7 +454,7 @@ class List(BaseCommand):
             elif self.user.mode.edit_area:
                 message = str(self.user.mode.edit_area)
             else:
-                message = self.user.update_output('You\'re not editing anything right now.\n')
+                message = 'You\'re not editing anything right now.\n'
         else:
             # The user wants to see the details of some other object than the one they're editing.
             exp = r'(?P<func>(area)|(npc)|(item)|(room))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
@@ -540,7 +543,7 @@ class Link(BaseCommand):
                         else:
                             self.user.update_output('That area/room combo doesn\'t exist.\n')
                     else:
-                        new_room = Room.create(this_room.area)
+                        new_room = Room.create(this_room.area, this_room.area.get_id('room'))
                         self.user.update_output('Room %s created.\n' % new_room.id)
                         self.user.update_output(this_room.link_exits(direction, new_room))
                 else:
