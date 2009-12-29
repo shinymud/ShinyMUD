@@ -2,33 +2,58 @@ from shinymud.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
 from shinymud.world import World
+from shinymud.models.item import InventoryItem
 import re
 import logging
 
 class User(object):
     """This is a basic user object."""
         
-    def __init__(self, conn_info, **args):
+    def __init__(self, conn_info):
         self.conn, self.addr = conn_info
-        self.name = args.get('name', self.conn)
-        self.password = args.get('password', None)
-        self.description = args.get('description','You see nothing special about this person.')
+        self.name = self.conn
         self.inq = []
         self.outq = []
         self.quit_flag = False
         self.log = logging.getLogger('User')
         self.mode = InitMode(self)
-        self.location = None
+        self.dbid = None
+        self.world = World.get_world()
+
+    def userize(self, **args):
+        self.name = args.get('name')
+        self.password = args.get('password', None)
+        self.description = args.get('description','You see nothing special about this person.')
+        self.strength = args.get('strength', 0)
+        self.intelligence = args.get('intelligence', 0)
+        self.dexterity = args.get('dexterity', 0)
+        self.email = args.get('email')
+        self.dbid = args.get('dbid')
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
             self.channels = {'chat': True}
         self.inventory = []
-        
-        self.strength = args.get('strength', 0)
-        self.intelligence = args.get('intelligence', 0)
-        self.dexterity = args.get('dexterity', 0)
-        
+        rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
+        if rows:
+            for row in rows:
+                item = InventoryItem(**row)
+                self.inventory.append(item)
+        self.location = None
+        if 'location' in args:
+            loc = args.get('location').split(',')
+            self.log.debug(loc)
+            try:
+                self.location = self.world.get_area(loc[0]).get_room(loc[1])
+            except:
+                # This should only EVER happen if for some reason the location
+                # of the user was deleted while they were offline.  This probably
+                # shouldn't happen often. Also, instead of being None, this should
+                # be the Default starting location when that becomes
+                # applicable
+                self.location = None
+            
+    
     def to_dict(self):
         d = {}
         d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
@@ -38,6 +63,13 @@ class User(object):
         d['intelligence'] = self.intelligence
         d['dexterity'] = self.dexterity
         d['description'] = self.description
+        if self.email:
+            d['email'] = self.email
+        if self.dbid:
+            d['dbid'] = self.dbid
+        if self.location:
+            d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
+        
         return d
         
     def update_output(self, data):
@@ -113,13 +145,13 @@ class User(object):
                     self.mode = None
     
     def user_logout(self, broken_pipe=False):
-        #TO DO: Save the user to the database
+        self.world.db.update_from_dict('user', self.to_dict())
         if not broken_pipe:
             self.conn.send('Bye!\n')
         self.conn.close()
         if self.location:
             self.location.user_remove(self)
-        World.get_world().user_remove(self.name)
+        self.world.user_remove(self.name)
         WorldEcho(self, "%s has left the world." % self.get_fancy_name()).execute()
     
     def get_fancy_name(self):
@@ -133,11 +165,20 @@ class User(object):
     
     def item_add(self, item):
         """Add an item to the user's inventory."""
+        item.owner = self.dbid
+        if item.dbid:
+            # update the instance
+            self.world.db.update_from_dict('inventory', item.to_dict())
+        else:
+            # insert it into the db
+            item.dbid = self.world.db.insert_from_dict('inventory', item.to_dict())
         self.inventory.append(item)
     
     def item_remove(self, item):
         """Remove an item from the user's inventory."""
         if item in self.inventory:
+            item.owner = None
+            self.world.db.update_from_dict('inventory', item.to_dict())
             self.inventory.remove(item)
     
     def go(self, room):

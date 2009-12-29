@@ -133,9 +133,10 @@ class Look(BaseCommand):
             return 'You see a dark void.\n'
     
     def look_in_room(self, keyword):
-        obj = self.user.location.check_for_keyword(keyword)
-        if obj:
-            return "You look at %s:\n%s\n" % (obj.name, obj.description)
+        if self.user.location:
+            obj = self.user.location.check_for_keyword(keyword)
+            if obj:
+                return "You look at %s:\n%s\n" % (obj.name, obj.description)
         return None
     
     def look_in_inventory(self, keyword):
@@ -208,6 +209,8 @@ class Say(BaseCommand):
             if self.user.location:
                 message = '%s says, "%s"\n' % (self.user.get_fancy_name(), self.args)
                 self.user.location.tell_room(message)
+            else:
+                self.user.update_output('Your words are sucked into the void.\n')
         else:
             self.user.update_output('Say what?\n')
     
@@ -219,7 +222,6 @@ class Load(BaseCommand):
         if not self.args:
             self.user.update_output('What do you want to load?\n')
         else:
-            # load obj 2 from area name
             help_message = 'Type "help load" for help on this command.\n'
             exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
             match = re.match(exp, self.args, re.I)
@@ -618,7 +620,7 @@ class Destroy(BaseCommand):
                 # their reference. If the user destroyed the object they're working on,
                 # make sure that we clear it from their edit_object, and therefore ther prompt 
                 # so they don't try and edit it again before it gets wiped.
-                if self.user.mode.edit_object.id == None:
+                if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
                     self.user.mode.edit_object = None
         self.user.update_output(message)
     

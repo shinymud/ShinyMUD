@@ -1,6 +1,7 @@
 from shinymud.models import to_bool
 from shinymud.world import World
 import types
+import logging
 
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
@@ -63,6 +64,7 @@ class Item(object):
             self.is_container = to_bool(args.get('is_container'))
         self.world = World.get_world()
         self.dbid = args.get('dbid')
+        self.log = logging.getLogger('Item')
     
     def to_dict(self):
         d = {}
@@ -98,14 +100,6 @@ class Item(object):
                  'weight: ' + str(self.weight) + '\n' + \
                  'carryable: ' + str(self.carryable) + '\n' + \
                  'base value: ' + str(self.base_value) + '\n'
-        # for attr in self.other_attributes:
-        #     a = getattr(self, attr)
-        #     if hasattr(a, '__iter__'):
-        #         string += attr + ":\n"
-        #         for i in range(len(a)):
-        #             string += "\t" + str(i) + ' ' + str(attr[i])
-        #     else:
-        #         string += attr + ": " + str(a) + '\n'
         return string
     
     #***************** Set Basic Attribute Functions *****************
@@ -126,12 +120,12 @@ class Item(object):
         self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
     
-    def set_equip_loc(self, loc):
+    def set_equip(self, loc):
         """Set the equip location for this item."""
         if loc in SLOT_TYPES:
             self.equip_slot = loc
             self.world.db.update_from_dict('item', self.to_dict())
-            return 'Item location set.\n'
+            return 'Item equip location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
     
@@ -225,24 +219,30 @@ class Item(object):
     def load_item(self):
         """Create an inventory item with the same attributes as this prototype item.
         """
-        item = InventoryItem()
+        self.log.debug(str(self.to_dict()))
+        item = InventoryItem(**self.to_dict())
+        self.log.debug(str(item))
+        # Clear the parent's dbid so we don't accidentally overwrite it in the db
+        item.dbid = None
+        # to_dict will return the area as an integer -- make sure we reset it here
+        # as the actual instance of the area
         item.area = self.area
-        item.id = self.id
-        item.name = self.name
-        item.title = self.title
-        item.description = self.description
-        item.keywords = [word for word in self.keywords]
-        item.weight = self.weight
-        item.base_value = self.base_value
-        item.carryable = self.carryable
-        item.equip_slot = self.equip_slot
-        item.is_container = self.is_container
         return item
     
 
 class InventoryItem(Item):
-    def __init__(self):
+    def __init__(self, **args):
+        Item.__init__(self, **args)
         self.owner = None
+    
+    def to_dict(self):
+        d = Item.to_dict(self)
+        
+        if self.owner:
+            d['owner'] = self.owner
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
 
     
 

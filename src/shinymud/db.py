@@ -33,7 +33,7 @@ class DB(object):
         values = []
         for key,val in d.items():
             keys.append(key)
-            values.append(val)
+            values.append(str(val))
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string

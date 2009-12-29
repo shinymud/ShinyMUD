@@ -12,9 +12,12 @@ def initialize_database():
     name TEXT NOT NULL UNIQUE,
     channels TEXT,
     password TEXT NOT NULL,
+    description TEXT,
     strength INTEGER NOT NULL DEFAULT 0,
     intelligence INTEGER NOT NULL DEFAULT 0,
-    dexterity INTEGER NOT NULL DEFAULT 0
+    dexterity INTEGER NOT NULL DEFAULT 0,
+    email TEXT,
+    location TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS area (
     dbid INTEGER PRIMARY KEY,
@@ -61,7 +64,8 @@ def initialize_database():
 )''',\
 '''CREATE TABLE IF NOT EXISTS inventory (
     dbid INTEGER PRIMARY KEY,
-    template INTEGER NOT NULL REFERENCES item(dbid),
+    id INTEGER,
+    area INTEGER REFERENCES area(dbid),
     name TEXT,
     title TEXT,
     description TEXT,

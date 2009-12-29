@@ -95,7 +95,7 @@ ______________________________________________\n""" % (self.name,
         names = self.items.keys()
         item_list = '______________________________________________\nItems in area "%s":\n' % self.name
         for key, value in self.items.items():
-            item_list += '    %s - %s\n' % (key, value.title)
+            item_list += '    %s - %s\n' % (key, value.name)
         item_list += '______________________________________________\n'
         return item_list
     
