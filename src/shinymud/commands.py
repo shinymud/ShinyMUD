@@ -344,34 +344,16 @@ class Get(BaseCommand):
                 
     
 
-command_list.register(Get, ['get', 'take'])
+                command_list.register(Get, ['get', 'take'])
 
-class Areas(BaseCommand):
-    def execute(self):
-        theareas = self.areas
-        #if not theareas
-        #    self.user.update_output('there are no areas!\n')
-        #else
-        self.user.update_output(theareas)
-command_list.register(Areas, ['areas'])
-# ************************ EMOTE COMMANDS ************************
-
-emote_list = CommandRegister()
-# TODO: Separate emote commands into their own list, so their separate from regular commands.
-# For now they will use command_list
-
-class Wave(BaseCommand):
-    """Wave to another player"""
-    def execute(self):
-        if not self.user.location:
-            self.user.update_output('You wave to the void.\n')
-        """Emote commands should be able to differentiate between different persons based on who does what to who.
-        So if bob slaps jim, bob sees: You slap jim. Jim sees: you have been slapped by bob. Others see: bob slaps jim."""
-    
-command_list.register(Wave, ['wave'])
-                
-
-
+                class Areas(BaseCommand):
+                    def execute(self):
+                        theareas = self.area
+                        #if not theareas
+                        #    self.user.update_output('there are no areas!\n')
+                        #else
+                        self.user.update_output(theareas)
+                command_list.register(Areas, ['areas'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
