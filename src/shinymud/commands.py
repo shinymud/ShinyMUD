@@ -348,6 +348,18 @@ class Get(BaseCommand):
 
 command_list.register(Get, ['get', 'take'])
 
+class Who(BaseCommand):
+    def execute(self):
+        persons = [name for name in self.world.user_list.keys() if (type(name) == str)]
+        message = """Currently Online:\n______________________________________________\n"""
+        for person in persons:
+            message += person.capitalize() + '\n'
+        message += "______________________________________________\n"
+        self.user.update_output(message)
+    
+
+command_list.register(Who, ['who'])
+
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()

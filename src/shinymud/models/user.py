@@ -21,13 +21,13 @@ class User(object):
         self.world = World.get_world()
 
     def userize(self, **args):
-        self.name = args.get('name')
+        self.name = str(args.get('name'))
         self.password = args.get('password', None)
-        self.description = args.get('description','You see nothing special about this person.')
+        self.description = str(args.get('description','You see nothing special about this person.'))
         self.strength = args.get('strength', 0)
         self.intelligence = args.get('intelligence', 0)
         self.dexterity = args.get('dexterity', 0)
-        self.email = args.get('email')
+        self.email = str(args.get('email'))
         self.dbid = args.get('dbid')
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
