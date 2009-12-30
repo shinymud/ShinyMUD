@@ -350,7 +350,7 @@ class Areas(BaseCommand):
         #theareas = self.world.areas
         the_areas = self.world.areas.keys()
         """still need function to access the level """
-        message = '\tArea  :: Level Range\n______________________________________________\n'
+        message = '\tArea  ::  Level Range\n______________________________________________\n'
         if not the_areas:
             message += 'Sorry, God has taken a day off. There are no areas yet.\n'
         for eachone in the_areas:
