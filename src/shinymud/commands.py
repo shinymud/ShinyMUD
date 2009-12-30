@@ -342,18 +342,28 @@ class Get(BaseCommand):
             else:
                 self.user.update_output('That doesn\'t exist.\n')
                 
-    
 
-                command_list.register(Get, ['get', 'take'])
+command_list.register(Get, ['get', 'take'])
 
-                class Areas(BaseCommand):
-                    def execute(self):
-                        theareas = self.area
-                        #if not theareas
-                        #    self.user.update_output('there are no areas!\n')
-                        #else
-                        self.user.update_output(theareas)
-                command_list.register(Areas, ['areas'])
+class Areas(BaseCommand):
+    def execute(self):
+        #theareas = self.world.areas
+        the_areas = self.world.areas.keys()
+        """still need function to access the level """
+        message = '\tArea  :: Level Range\n______________________________________________\n'
+        if not the_areas:
+            message += 'Sorry, God has taken a day off. There are no areas yet.\n'
+        for eachone in the_areas:
+            message += eachone + '\t' + eachone.level_range + '\n'
+        message += '______________________________________________\n'
+        
+        #if not theareas
+        #    self.user.update_output('there are no areas!\n')
+        #else
+        self.user.update_output(message)
+        
+command_list.register(Areas, ['areas'])
+
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
