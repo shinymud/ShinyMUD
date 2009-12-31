@@ -378,9 +378,9 @@ class Get(BaseCommand):
             else:
                 self.user.update_output('That doesn\'t exist.\n')
                 
-    
 
 command_list.register(Get, ['get', 'take'])
+
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
@@ -437,6 +437,52 @@ class Enter(BaseCommand):
             self.user.update_output('Nothing happened.\n')
 
 command_list.register(Enter, ['enter'])
+
+class Areas(BaseCommand):
+    def execute(self):
+        """Give a list of areas in the world, as well as their level ranges."""
+        the_areas = self.world.areas.keys()
+        message = 'Area  |  Level Range\n______________________________________________\n'
+        if not the_areas:
+            message += 'Sorry, God has taken a day off. There are no areas yet.\n'
+        for eachone in the_areas:
+            message += eachone + '  |  ' + self.world.get_area(eachone).level_range + '\n'
+        message += '______________________________________________\n'
+        self.user.update_output(message)
+        
+  
+
+command_list.register(Areas, ['areas'])
+
+
+
+class Wave(BaseCommand):
+    """Wave to another player"""
+    def execute(self):
+        if not self.user.location:
+            self.user.update_output('You wave to the void.\n')
+        else:
+            if not self.args:
+                self.user.update_output('You wave.\n')
+                self.user.location.tell_room('%s waves.\n' % self.user.get_fancy_name(), [self.user.name])
+            else:
+                victim = self.user.location.get_user(self.args) #If victim is in room
+                if victim:
+                    self.user.update_output('You wave to %s.\n' % victim.get_fancy_name())
+                    victim.update_output('%s waves to you. \n' % self.user.get_fancy_name() )
+                    self.user.location.tell_room('%s waves to %s.\n' % (self.user.get_fancy_name(), victim.get_fancy_name()), 
+                                                                                    [self.user.name, victim.name])
+                else:
+                    victim = self.world.get_user(self.args) #If victim is in world
+                    if (victim):
+                        self.user.update_output('From far away, you wave to %s.\n' % victim.get_fancy_name())
+                        victim.update_output('From far away, %s waves to you. \n' % self.user.get_fancy_name() )
+                    else:                                   #If victim is in neither
+                        self.user.update_output('You don\'t see %s.\n' % self.args)
+                
+
+command_list.register(Wave, ['wave'])
+
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
