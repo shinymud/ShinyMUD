@@ -24,6 +24,7 @@ class User(object):
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
         self.description = str(args.get('description','You see nothing special about this person.'))
+        self.gender = str(args.get('gender', 'neutral'))
         self.strength = args.get('strength', 0)
         self.intelligence = args.get('intelligence', 0)
         self.dexterity = args.get('dexterity', 0)
@@ -63,6 +64,7 @@ class User(object):
         d['intelligence'] = self.intelligence
         d['dexterity'] = self.dexterity
         d['description'] = self.description
+        d['gender'] = self.gender
         if self.email:
             d['email'] = self.email
         if self.dbid:
@@ -205,6 +207,9 @@ class User(object):
     
     def look_at_room(self):
         """Return this user's view of the room they are in."""
+        title = self.location.title
+        if self.mode.name == 'build':
+            title = '[id: %s] %s' % (self.location.id, self.location.title)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:
@@ -216,6 +221,6 @@ class User(object):
         items = ''
         for item in self.location.items:
             items += item.title + '\n'
-        look = """%s\n%s\n%s\n%s%s""" % (self.location.title, xits, self.location.description, users, items)
+        look = """%s\n%s\n%s\n%s%s""" % (title, xits, self.location.description, users, items)
         return look
     

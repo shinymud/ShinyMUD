@@ -89,13 +89,24 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             self.user.password = hashlib.sha1(self.user.inq[0]).hexdigest()
             del self.user.inq[0]
-            self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
-                                    'your password if you forget it (otherwise, you\'re out of luck ' +\
-                                    'if you forget!).\n' +\
-                                    'Would you like to add an e-mail address to this character? ' +\
-                                    '(Y/N)\n>')
-            self.state = self.add_email
+            self.user.update_output("What gender shall your character be?\n" +\
+                                    "Choose from: neutral, female, or male.\n>")
+            self.state = self.choose_gender
             
+    
+    def choose_gender(self):
+        if len(self.user.inq) > 0:
+            if self.user.inq[0] in ['male', 'female', 'neutral']:
+                self.user.gender = self.user.inq[0]
+                self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
+                                        'your password if you forget it (otherwise, you\'re out of luck ' +\
+                                        'if you forget!).\n' +\
+                                        'Would you like to add an e-mail address to this character? ' +\
+                                        '(Y/N)\n>')
+                self.state = self.add_email
+            else:
+                self.user.update_output('Please choose from: male, female, or neutral.\n>')
+            del self.user.inq[0]
     
     def add_email(self):
         if len(self.user.inq) > 0:

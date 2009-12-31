@@ -4,6 +4,7 @@ from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 from shinymud.world import World
 import re
+import logging
 
 class CommandRegister(object):
     
@@ -26,6 +27,39 @@ class BaseCommand(object):
         self.args = args
         self.user = user
         self.world = World.get_world()
+        self.log = logging.getLogger('Command')
+    
+    def personalize(self, actor, target, message):
+        """Personalize an action message for a user.
+            
+        This function replaces certain keywords in generic messages with 
+        user-specific data to make the message more personal. Below is a list
+        of the keywords that will be replaced if they are found in the message:
+            
+        #actor - replaced with the name of the actor (user commiting the action)
+        #me - replaced with the gender-specific pronoun of the actor
+        #my - replace with the gender-specific possessve-pronoun of the actor
+            
+        #target - replace with the name of the target (user being acted upon)
+        #you - replace with the gender-specific pronoun of the target
+        #yours - replace with a gender-specific possessive-pronoun of the target
+        """
+        
+        possessive_pronouns = {'female': 'hers', 'male': 'his', 'neutral': 'its'}
+        pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'}
+        
+        message = message.replace('#actor', actor.get_fancy_name())
+        message = message.replace('#me', pronouns.get(actor.get_gender()))
+        message = message.replace('#my', possessive_pronouns.get(actor.get_gender()))
+        
+        # We should always have an actor, but we don't always have a target.
+        # Expect them to be able to pass None for the target
+        if target:
+            message = message.replace('#target', target.get_fancy_name())
+            message = message.replace('#your', possessive_pronouns.get(actor.get_gender()))
+            message = message.replace('#you', pronouns.get(target.get_gender()))
+        
+    
     
 class Quit(BaseCommand):
     def execute(self):
@@ -349,6 +383,7 @@ class Get(BaseCommand):
 command_list.register(Get, ['get', 'take'])
 
 class Who(BaseCommand):
+    """Return a list of names comprised of users who are currently playing the game."""
     def execute(self):
         persons = [name for name in self.world.user_list.keys() if (type(name) == str)]
         message = """Currently Online:\n______________________________________________\n"""
@@ -360,6 +395,48 @@ class Who(BaseCommand):
 
 command_list.register(Who, ['who'])
 
+class Enter(BaseCommand):
+    """Enter a portal."""
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Enter what?\n')
+        elif not self.user.location:
+            self.user.update_output('You are in a void, there is nowhere to go.\n')
+        else:
+            # Check the room for the portal object first
+            obj = self.user.location.get_item(self.args)
+            if obj:
+                if 'portal' in obj.item_types:
+                    self.go_portal(obj.item_types['portal'])
+                else:
+                    self.user.update_output('That\'s not a portal...\n')
+            else:
+                # If the portal isn't in the room, check their inventory
+                obj = self.user.check_inv_for_keyword(self.args)
+                if obj:
+                    if 'portal' in obj.item_types:
+                        # If the portal is in their inventory, make them drop it first
+                        Drop(self.user, self.args).execute()
+                        self.go_portal(obj.item_types['portal'])
+                    else:
+                        self.user.update_output('That\'s not a portal...\n')
+                else:
+                    # We've struck out an all counts -- the user doesn't have a portal
+                    self.user.update_output('You don\'t see that here.\n')
+    
+    def go_portal(self, portal):
+        if portal.location:
+            if self.user.location: 
+                self.user.location.tell_room(self.personalize(self.user, portal.leave_message), 
+                                             [self.user.name])
+            self.user.update_output(portal.entrance_message)
+            self.user.go(portal.location)
+            self.user.location.tell_room(self.personalize(self.user, portal.emerge_message), 
+                                         [self.user.name])
+        else:
+            self.user.update_output('Nothing happened.\n')
+
+command_list.register(Enter, ['enter'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
@@ -530,11 +607,24 @@ class Set(BaseCommand):
         elif not self.args:
             self.user.update_output('What do you want to set?\n')
         else:
-            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
-            if hasattr(obj, 'set_' + func):
-                self.user.update_output(getattr(obj, 'set_' + func)(arg))
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            if not match:
+                message = 'Type "help set" for help setting attributes.\n'
             else:
-                self.user.update_output('You can\'t set that.\n')
+                func, _, arg = match.groups()
+                message = 'You can\'t set that.\n'
+                if hasattr(obj, 'set_' + func):
+                    message = (getattr(obj, 'set_' + func)(arg))
+                
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the set function in the object's native set functions,
+                    # but the object is of type Item, then we should search the set functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'set_' + func):
+                            message = getattr(iType, 'set_' + func)(arg)
+                            break
+                self.user.update_output(message)
     
 
 build_list.register(Set, ['set'])
@@ -557,7 +647,7 @@ class Link(BaseCommand):
                         else:
                             self.user.update_output('That area/room combo doesn\'t exist.\n')
                     else:
-                        new_room = Room.create(this_room.area, this_room.area.get_id('room'))
+                        new_room = this_room.area.new_room()
                         self.user.update_output('Room %s created.\n' % new_room.id)
                         self.user.update_output(this_room.link_exits(direction, new_room))
                 else:

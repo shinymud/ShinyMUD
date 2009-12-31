@@ -17,6 +17,7 @@ def initialize_database():
     intelligence INTEGER NOT NULL DEFAULT 0,
     dexterity INTEGER NOT NULL DEFAULT 0,
     email TEXT,
+    gender TEXT,
     location TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS area (
@@ -46,7 +47,6 @@ def initialize_database():
     base_value INTEGER DEFAULT 0,
     carryable TEXT DEFAULT 'True',
     equip_slot INTEGER,
-    is_container TEXT DEFAULT 'True',
     UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_exit (
@@ -74,7 +74,6 @@ def initialize_database():
     base_value INTEGER DEFAULT 0,
     carryable TEXT,
     equip_slot INTEGER,
-    is_container TEXT,
     owner INTEGER REFERENCES user(dbid),
     container INTEGER REFERENCES inventory(dbid)
 )''',\
