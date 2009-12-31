@@ -40,8 +40,8 @@ class User(object):
             for row in rows:
                 item = InventoryItem(**row)
                 self.inventory.append(item)
-        self.location = None
-        if 'location' in args:
+        self.location = args.get('location')
+        if self.location:
             loc = args.get('location').split(',')
             self.log.debug(loc)
             try:
