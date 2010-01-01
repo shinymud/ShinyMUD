@@ -174,6 +174,11 @@ class User(object):
         else:
             # insert it into the db
             item.dbid = self.world.db.insert_from_dict('inventory', item.to_dict())
+            # If an item has not yet been saved, its item types will not have been
+            # saved either.
+            for key, value in item.item_types.items():
+                value.item = item.dbid
+                value.dbid = self.world.db.insert_from_dict(key, value.to_dict())
         self.inventory.append(item)
     
     def item_remove(self, item):
@@ -208,7 +213,7 @@ class User(object):
     def look_at_room(self):
         """Return this user's view of the room they are in."""
         title = self.location.title
-        if self.mode.name == 'build':
+        if self.mode and self.mode.name == 'BuildMode':
             title = '[id: %s] %s' % (self.location.id, self.location.title)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'

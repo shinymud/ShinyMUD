@@ -55,6 +55,10 @@ class Item(object):
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Item')
         self.item_types = {}
+        for key, value in ITEM_TYPES.items():
+            row = self.world.db.select('* FROM %s WHERE item=?' % key, [self.dbid])
+            if row:
+                self.item_types[key] = value(**row[0])
     
     def to_dict(self):
         d = {}
@@ -101,6 +105,19 @@ class Item(object):
         for itype in self.item_types.values():
             string += str(itype)
         return string
+    
+    def destruct(self):
+        """Remove this instance and all of its item types from the database."""
+        if self.db:
+            for key, value in self.item_types.items():
+                self.world.db.delete('FROM %s WHERE dbid=?' % key, [value.dbid])
+            if hasattr(self, 'owner'):
+                # if this instance has an owner attribute, we know it is saved
+                # to the inventory table in the database; otherwise it will
+                # have been saved in the item table.
+                self.world.db.delete('FROM inventory WHERE dbid=?', [self.dbid])
+            else:
+                self.world.db.delete('FROM item WHERE dbid=?', [self.dbid])
     
     #***************** Set Basic Attribute Functions *****************
     def set_description(self, desc):
@@ -178,7 +195,10 @@ class Item(object):
             return 'That\'s not a valid item type.\n'
         if item_type in self.item_types:
             return 'This item is already of type %s.\n' % item_type
-        self.item_types[item_type] = ITEM_TYPES[item_type]()
+        new_type = ITEM_TYPES[item_type]()
+        new_type.item = self.dbid
+        new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
+        self.item_types[item_type] = new_type
         return 'This item is now of type %s.\n' % item_type
     
     def remove_type(self, item_type):
@@ -186,6 +206,7 @@ class Item(object):
             return 'That\'s not a valid item type.\n'
         if not item_type in self.item_types:
             return 'This isn\'t of type %s.\n' % item_type
+        self.world.db.delete('FROM %s where dbid=?' % item_type, [self.item_types[item_type].dbid])
         del self.item_types[item_type]
         return 'This item is no longer of type %s.\n' % item_type
     
@@ -213,8 +234,7 @@ class InventoryItem(Item):
     def to_dict(self):
         d = Item.to_dict(self)
         
-        if self.owner:
-            d['owner'] = self.owner
+        d['owner'] = self.owner
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -331,13 +351,39 @@ class Portal(object):
         self.leave_message = args.get('leave_message', '#name enters a portal.\n')
         self.entrance_message = args.get('entrance_message', 'You enter a portal.\n')
         self.emerge_message = args.get('emerge_message', '#name steps out of a shimmering portal.\n')
+        self.item = None
+        self.dbid = args.get('dbid')
         self.location = None
+        self.world = World.get_world()
         if 'location' in args:
             location = args.get('location').split(',')
             try:
-                self.location = World.get_world().get_area(location[0]).get_room(location[1])
+                self.location = World.get_world().get_area(location[1]).get_room(location[0])
             except:
                 self.location = None
+    
+    def to_dict(self):
+        d = {}
+        d['leave_message'] = self.leave_message
+        d['entrance_message'] = self.entrance_message
+        d['emerge_message'] = self.emerge_message
+        d['item'] = self.item
+        d['location'] = None
+        if self.location:
+            d['location'] = '%s,%s' % (self.location.id, self.location.area.name)
+        if self.dbid:
+            d['dbid'] = self.dbid
+        
+        return d
+    
+    def load(self):
+        """Return a new copy of this instance so it can be loaded for an inventory item."""
+        newp = Portal()
+        newp.location = self.location
+        newp.leave_message = self.leave_message
+        newp.entrance_message = self.entrance_message
+        newp.emerge_message = self.emerge_message
+        return newp
     
     def __str__(self):
         location = 'None'
@@ -345,13 +391,12 @@ class Portal(object):
             location = 'Room %s in area %s' % (self.location.id, self.location.area.name)
         string = 'PORTAL ATTRIBUTES:\n' +\
                  '  port location: ' + location + '\n' +\
-                 '  entrance message: ' + self.entrance_message + '\n' +\
-                 '  leave message: ' + self.leave_message + '\n' +\
-                 '  emerge message: ' + self.emerge_message + '\n'
+                 '  entrance message: ' + self.entrance_message +\
+                 '  leave message: ' + self.leave_message +\
+                 '  emerge message: ' + self.emerge_message
         return string
-        
     
-    def set_port(self, args):
+    def set_portal(self, args):
         """Set the location of the room this portal should go to."""
         args = args.lower().split()
         if not len(args) == 2:
@@ -363,32 +408,27 @@ class Portal(object):
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
+        self.world.db.update_from_dict('portal', self.to_dict())
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     def set_leave(self, message):
         """Set this portal's leave message."""
         self.leave_message = message
+        self.world.db.update_from_dict('portal', self.to_dict())
         return 'Leave message set.\n'
     
     def set_entrance(self, message):
         """Set this portal's entrance message."""
         self.entrance_message = message
+        self.world.db.update_from_dict('portal', self.to_dict())
         return 'Entrance message set.\n'
     
     def set_emerge(self, message):
         """Set this portal's emerge message."""
         self.emerge_message = message
+        self.world.db.update_from_dict('portal', self.to_dict())
         return 'Emerge message set.\n'
     
-    def load(self):
-        """Return a new copy of this instance so it can be loaded for an inventory item."""
-        newp = Portal()
-        newp.location = self.location
-        newp.leave_message = self.leave_message
-        newp.entrance_message = self.entrance_message
-        newp.emerge_message = self.emerge_message
-        return newp
-
 
 ITEM_TYPES = {'weapon': Weapon,
               'food': Food,
@@ -396,4 +436,5 @@ ITEM_TYPES = {'weapon': Weapon,
               'furniture': Furniture,
               'portal': Portal
              }
+
 

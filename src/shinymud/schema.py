@@ -93,6 +93,30 @@ def initialize_database():
     room INTEGER NOT NULL REFERENCES room(dbid),
     item INTEGER NOT NULL REFERENCES item(dbid),
     PRIMARY KEY (room, item)
+)''',\
+'''CREATE TABLE IF NOT EXISTS portal (
+    dbid INTEGER PRIMARY KEY,
+    item INTEGER NOT NULL REFERENCES item(dbid),
+    location TEXT,
+    leave_message TEXT,
+    entrance_message TEXT,
+    emerge_message TEXT
+)''',\
+'''CREATE TABLE IF NOT EXISTS food (
+    dbid INTEGER PRIMARY KEY,
+    item INTEGER NOT NULL REFERENCES item(dbid)
+)''',\
+'''CREATE TABLE IF NOT EXISTS container (
+    dbid INTEGER PRIMARY KEY,
+    item INTEGER NOT NULL REFERENCES item(dbid)
+)''',\
+'''CREATE TABLE IF NOT EXISTS weapon (
+    dbid INTEGER PRIMARY KEY,
+    item INTEGER NOT NULL REFERENCES item(dbid)
+)''',\
+'''CREATE TABLE IF NOT EXISTS furniture (
+    dbid INTEGER PRIMARY KEY,
+    item INTEGER NOT NULL REFERENCES item(dbid)
 )''']
     
     conn = sqlite3.connect(DB_NAME)

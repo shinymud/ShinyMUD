@@ -49,15 +49,15 @@ class BaseCommand(object):
         pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'}
         
         message = message.replace('#actor', actor.get_fancy_name())
-        message = message.replace('#me', pronouns.get(actor.get_gender()))
-        message = message.replace('#my', possessive_pronouns.get(actor.get_gender()))
+        message = message.replace('#me', pronouns.get(actor.gender))
+        message = message.replace('#my', possessive_pronouns.get(actor.gender))
         
         # We should always have an actor, but we don't always have a target.
         # Expect them to be able to pass None for the target
         if target:
             message = message.replace('#target', target.get_fancy_name())
-            message = message.replace('#your', possessive_pronouns.get(actor.get_gender()))
-            message = message.replace('#you', pronouns.get(target.get_gender()))
+            message = message.replace('#your', possessive_pronouns.get(actor.gender))
+            message = message.replace('#you', pronouns.get(target.gender))
         
     
     
@@ -400,22 +400,24 @@ class Enter(BaseCommand):
     def execute(self):
         if not self.args:
             self.user.update_output('Enter what?\n')
-        elif not self.user.location:
-            self.user.update_output('You are in a void, there is nowhere to go.\n')
+        # elif not self.user.location:
+        #     self.user.update_output('You are in a void, there is nowhere to go.\n')
         else:
-            # Check the room for the portal object first
-            obj = self.user.location.get_item(self.args)
-            if obj:
-                if 'portal' in obj.item_types:
-                    self.go_portal(obj.item_types['portal'])
-                else:
-                    self.user.update_output('That\'s not a portal...\n')
+            if self.user.location:
+                # Check the room for the portal object first
+                obj = self.user.location.get_item(self.args)
+                if obj:
+                    if 'portal' in obj.item_types:
+                        self.go_portal(obj.item_types['portal'])
+                    else:
+                        self.user.update_output('That\'s not a portal...\n')
             else:
                 # If the portal isn't in the room, check their inventory
                 obj = self.user.check_inv_for_keyword(self.args)
                 if obj:
                     if 'portal' in obj.item_types:
                         # If the portal is in their inventory, make them drop it first
+                        # (a portal can't go through itself)
                         Drop(self.user, self.args).execute()
                         self.go_portal(obj.item_types['portal'])
                     else:
@@ -425,18 +427,40 @@ class Enter(BaseCommand):
                     self.user.update_output('You don\'t see that here.\n')
     
     def go_portal(self, portal):
+        """Go through a portal."""
         if portal.location:
             if self.user.location: 
-                self.user.location.tell_room(self.personalize(self.user, portal.leave_message), 
+                self.user.location.tell_room(self.personalize(self.user, None, portal.leave_message), 
                                              [self.user.name])
             self.user.update_output(portal.entrance_message)
             self.user.go(portal.location)
-            self.user.location.tell_room(self.personalize(self.user, portal.emerge_message), 
+            self.user.location.tell_room(self.personalize(self.user, None, portal.emerge_message), 
                                          [self.user.name])
         else:
             self.user.update_output('Nothing happened.\n')
 
 command_list.register(Enter, ['enter'])
+
+class Purge(BaseCommand):
+    """Purge all of the items and npc's in the room."""
+    def execute(self):
+        # TODO: Finish this function
+        if not self.args:
+            # If they specified nothing, just purge the room
+            if self.user.location:
+                pass
+            else:
+                self.user.update_output('You\'re in a void, there\'s nothing to purge.\n')
+        elif self.args in ['i', 'inventory']:
+            # Purge their inventory!
+            for item in self.user.inventory:
+                pass
+            self.user.update_output('Your inventory has been purged.\n')
+        else:
+            self.user.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
+    
+
+
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
