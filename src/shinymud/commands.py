@@ -59,6 +59,7 @@ class BaseCommand(object):
             message = message.replace('#your', possessive_pronouns.get(actor.gender))
             message = message.replace('#you', pronouns.get(target.gender))
         
+        return message
     
     
 class Quit(BaseCommand):
@@ -354,6 +355,7 @@ class Drop(BaseCommand):
                                                                      item.name), [self.user.name])
                 else:
                     self.user.update_output('%s disappears into the void.\n' % item.name)
+                    item.destruct()
             else:
                 self.user.update_output('You don\'t have that.\n')
     
@@ -430,11 +432,11 @@ class Enter(BaseCommand):
         """Go through a portal."""
         if portal.location:
             if self.user.location: 
-                self.user.location.tell_room(self.personalize(self.user, None, portal.leave_message), 
+                self.user.location.tell_room(self.personalize(self.user, None, portal.leave_message) + '\n', 
                                              [self.user.name])
-            self.user.update_output(portal.entrance_message)
+            self.user.update_output(self.personalize(self.user, None, portal.entrance_message) + '\n')
             self.user.go(portal.location)
-            self.user.location.tell_room(self.personalize(self.user, None, portal.emerge_message), 
+            self.user.location.tell_room(self.personalize(self.user, None, portal.emerge_message) + '\n', 
                                          [self.user.name])
         else:
             self.user.update_output('Nothing happened.\n')

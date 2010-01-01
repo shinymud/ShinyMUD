@@ -32,6 +32,11 @@ class Area(object):
     
     def load(self):
         if self.dbid:
+            rooms = self.world.db.select("* from room where area=?", [self.dbid])
+            for room in rooms:
+                room['area'] = self
+                self.rooms[str(room['id'])] = Room(**room)
+            
             items = self.world.db.select("* from item where area=?", [self.dbid])
             for item in items:
                 item['area'] = self
@@ -41,18 +46,13 @@ class Area(object):
             for npc in npcs:
                 npc['area'] = self
                 self.npcs[str(npc['id'])] = Npc(**npc)
-            
-            rooms = self.world.db.select("* from room where area=?", [self.dbid])
-            for room in rooms:
-                room['area'] = self
-                self.rooms[str(room['id'])] = Room(**room)
     
     def add_builder(self, username):
         """Add a user to the builder's list."""
         self.builders.append(username)
         self.world.db.update_from_dict('area', self.to_dict())
         return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
-        
+    
     def remove_builder(self, username):
         """Remove a user from the builder's list."""
         if username in self.builders:

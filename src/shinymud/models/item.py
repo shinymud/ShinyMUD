@@ -108,7 +108,7 @@ class Item(object):
     
     def destruct(self):
         """Remove this instance and all of its item types from the database."""
-        if self.db:
+        if self.dbid:
             for key, value in self.item_types.items():
                 self.world.db.delete('FROM %s WHERE dbid=?' % key, [value.dbid])
             if hasattr(self, 'owner'):
@@ -348,15 +348,16 @@ class Furniture(object):
 
 class Portal(object):
     def __init__(self, **args):
-        self.leave_message = args.get('leave_message', '#name enters a portal.\n')
-        self.entrance_message = args.get('entrance_message', 'You enter a portal.\n')
-        self.emerge_message = args.get('emerge_message', '#name steps out of a shimmering portal.\n')
-        self.item = None
+        self.leave_message = args.get('leave_message', '#actor enters a portal.')
+        self.entrance_message = args.get('entrance_message', 'You enter a portal.')
+        self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
+        self.item = args.get('item')
         self.dbid = args.get('dbid')
         self.location = None
         self.world = World.get_world()
         if 'location' in args:
-            location = args.get('location').split(',')
+            location = str(args.get('location')).split(',')
+            logging.getLogger('portal').debug(str(location))
             try:
                 self.location = World.get_world().get_area(location[1]).get_room(location[0])
             except:
@@ -391,9 +392,9 @@ class Portal(object):
             location = 'Room %s in area %s' % (self.location.id, self.location.area.name)
         string = 'PORTAL ATTRIBUTES:\n' +\
                  '  port location: ' + location + '\n' +\
-                 '  entrance message: ' + self.entrance_message +\
-                 '  leave message: ' + self.leave_message +\
-                 '  emerge message: ' + self.emerge_message
+                 '  entrance message: "' + self.entrance_message + '"\n'+\
+                 '  leave message: "' + self.leave_message + '"\n' +\
+                 '  emerge message: "' + self.emerge_message + '"\n'
         return string
     
     def set_portal(self, args):
@@ -408,25 +409,28 @@ class Portal(object):
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
-        self.world.db.update_from_dict('portal', self.to_dict())
+        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 'location': '%s,%s' % (self.location.id, self.location.area.name)})
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     def set_leave(self, message):
         """Set this portal's leave message."""
         self.leave_message = message
-        self.world.db.update_from_dict('portal', self.to_dict())
+        self.world.db.update_from_dict('portal', {'dbid': self.dbid,
+                                                  'leave_message': self.leave_message})
         return 'Leave message set.\n'
     
     def set_entrance(self, message):
         """Set this portal's entrance message."""
         self.entrance_message = message
-        self.world.db.update_from_dict('portal', self.to_dict())
+        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
+                                                  'entrance_message': self.entrance_message})
         return 'Entrance message set.\n'
     
     def set_emerge(self, message):
         """Set this portal's emerge message."""
         self.emerge_message = message
-        self.world.db.update_from_dict('portal', self.to_dict())
+        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
+                                                  'emerge_message': self.emerge_message})
         return 'Emerge message set.\n'
     
 

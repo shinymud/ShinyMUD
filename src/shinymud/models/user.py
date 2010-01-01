@@ -170,7 +170,7 @@ class User(object):
         item.owner = self.dbid
         if item.dbid:
             # update the instance
-            self.world.db.update_from_dict('inventory', item.to_dict())
+            self.world.db.update_from_dict('inventory', {'dbid': item.dbid, 'owner': item.owner})
         else:
             # insert it into the db
             item.dbid = self.world.db.insert_from_dict('inventory', item.to_dict())
@@ -185,7 +185,7 @@ class User(object):
         """Remove an item from the user's inventory."""
         if item in self.inventory:
             item.owner = None
-            self.world.db.update_from_dict('inventory', item.to_dict())
+            self.world.db.update_from_dict('inventory', {'dbid': item.dbid, 'owner': item.owner})
             self.inventory.remove(item)
     
     def go(self, room):
