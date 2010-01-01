@@ -203,32 +203,40 @@ class Goto(BaseCommand):
     """Go to a location."""
     def execute(self):
         if self.args:
-            exp = r'((?P<area>\w+)[ ]+(?P<room>\d+))|(?P<name>\w+)'
-            name, area, room = re.match(exp, self.args).group('name', 'area', 'room')
-            if name:
-                # go to the same room that user is in
-                per = self.world.user_list.get(name)
-                if per:
-                    if per.location:
-                        self.user.go(self.world.user_list.get(name).location)
+            exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
+            match = re.match(exp, self.args)
+            message = 'Type "help goto" for help with this command.\n'
+            if match:
+                name, area_name, room = match.group('name', 'area', 'room_id')
+                if name:
+                    # go to the same room that user is in
+                    per = self.world.user_list.get(name)
+                    if per:
+                        if per.location:
+                            self.user.go(self.world.user_list.get(name).location)
+                        else:
+                            self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
                     else:
-                        self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
-                else:
-                    self.user.update_output('That person doesn\'t exist.\n')
-            elif area:
-                # go to the room in the area specified.
-                area = self.world.get_area(area)
-                message = 'Type "help goto" for help with this command.\n'
-                if area:
-                    room = area.get_room(room)
-                    if room:
-                        self.user.go(room)
+                        self.user.update_output('That person doesn\'t exist.\n')
+                elif room:
+                    # See if they specified an area -- if they did, go there
+                    area = self.world.get_area(area_name)
+                    # if they didn't, lets try to take them to that room number in the area
+                    # they are currently in
+                    if not area and self.user.location:
+                        area = self.user.location.area
+                    if area:
+                        room = area.get_room(room)
+                        if room:
+                            self.user.go(room)
+                        else:
+                            self.user.update_output('That room doesn\'t exist.\n')
                     else:
                         self.user.update_output(message)
                 else:
-                    self.user.update_output(message)
+                    self.user.update_output('You can\'t get there.\n')
             else:
-                self.user.update_output('You can\'t get there.\n')
+                self.user.update_output(message)
         else:
             self.user.update_output('Where did you want to go?\n')
     
@@ -244,11 +252,24 @@ class Go(BaseCommand):
                 if go_exit.closed:
                     self.user.update_output('The door is closed.\n')
                 else:
-                    self.user.go(go_exit.to_room)
+                    if go_exit.to_room:
+                        self.user.go(go_exit.to_room)
+                    else:
+                        # SOMETHING WENT BADLY WRONG IF WE GOT HERE!!!
+                        # somehow the room that this exit pointed to got deleted without informing
+                        # this exit.
+                        self.log.critical('EXIT FAIL: Exit %s from room %s in area %s failed to resolve.' % (go_exit.direction, go_exit.room.id, go_exit.room.area.name))
+                        # Delete this exit in the database and the room - we don't want it 
+                        # popping up again
+                        go_exit.destruct()
+                        self.user.location.exits[go_exit.direction] = None
+                        # Tell the user to ignore the man behind the curtain
+                        self.user.location.tell_room('A disturbance was detected in the Matrix: Entity "%s exit" should not exist.\nThe anomaly has been repaired.\n' % self.args)
+                        
             else:
                 self.user.update_output('You can\'t go that way.\n')
         else:
-            self.user.update_output('You exist in a void; there is no where to go.\n')
+            self.user.update_output('You exist in a void; there is nowhere to go.\n')
     
 
 command_list.register(Go, ['go'])

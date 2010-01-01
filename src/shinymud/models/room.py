@@ -8,17 +8,6 @@ dir_opposites = {'north': 'south', 'south': 'north',
                       'up': 'down', 'down': 'up'}
 
 class Room(object):
-
-    def to_dict(self):
-        d = {}
-        d['id'] = self.id
-        d['area'] = self.area.dbid
-        d['title'] = self.title
-        d['description'] = self.description
-        if self.dbid:
-            d['dbid'] = self.dbid
-        self.log.debug(d)
-        return d
          
     def __init__(self, area=None, id=0, **args):
         self.id = str(id)
@@ -38,6 +27,40 @@ class Room(object):
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
         self.world = World.get_world()
+        if self.dbid:
+            self.load_exits()
+    
+    def load_exits(self):
+        rows = self.world.db.select(""" re.dbid AS dbid, 
+                                        re.linked_exit AS linked_exit,
+                                        re.direction AS direction,
+                                        re.openable AS openable,
+                                        re.closed AS closed,
+                                        re.hidden AS hidden,
+                                        re.locked AS locked,
+                                        a.name AS to_area,
+                                        r.id AS to_id,
+                                        i.area AS key_area,
+                                        i.id AS key_id
+                                        FROM room_exit re
+                                        INNER JOIN room r ON r.dbid = re.to_room
+                                        INNER JOIN area a on a.dbid = r.area
+                                        LEFT JOIN item i ON i.dbid = re.key
+                                        WHERE re.room=?""", [self.dbid])
+        for row in rows:
+            row['room'] = self
+            self.exits[row['direction']] = RoomExit(**row)
+    
+    def to_dict(self):
+        d = {}
+        d['id'] = self.id
+        d['area'] = self.area.dbid
+        d['title'] = self.title
+        d['description'] = self.description
+        if self.dbid:
+            d['dbid'] = self.dbid
+        self.log.debug(d)
+        return d
     
     @classmethod
     def create(cls, area=None, room_id=0):
@@ -84,6 +107,11 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         self.world.db.update_from_dict('room', {'dbid': self.dbid, 'description': self.description})
         return 'Room %s description set.\n' % self.id
     
+    def new_exit(self, direction, to_room):
+        new_exit = RoomExit(self, direction, to_room)
+        new_exit.dbid = self.world.db.insert_from_dict('room_exit', new_exit.to_dict())
+        self.exits[direction] = new_exit
+    
     def set_exit(self, args):
         args = args.split()
         if len(args) < 3:
@@ -107,7 +135,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if area:
                 room = area.get_room(room_id)
                 if room:
-                    self.exits[direction] = RoomExit(self, direction, room)
+                    room.new_exit(direction, room)
                     message = 'Exit %s created.\n' % direction
                 else:
                     message = 'That room doesn\'t exist.\n'
@@ -131,7 +159,21 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         return 'Type "help resets" to get help using this command.\n'
     
     def remove_exit(self, args):
-        return 'This function isn\'t implemented yet.\n'
+        if not args:
+            return 'Which exit do you want to remove?\n'
+        if not (args in self.exits and self.exits[args]):
+            return '%s is not a valid exit.\n' % args
+        exit = self.exits[args]
+        link = ''
+        if exit.linked_exit:
+            # Clear any exit that is associated with this exit
+            exit.to_room.exits[exit.linked_exit].destruct()
+            exit.to_room.exits[exit.linked_exit] = None
+            link = '\nThe linked exit in room %s, area %s, has also been removed.' % (exit.to_room.id,
+                                                                                     exit.to_room.area.name)
+        self.exits[args].destruct()
+        self.exits[args] = None
+        return args + ' exit has been removed.' + link + '\n'
     
     def link_exits(self, direction, link_room):
         """Link exits between this room (self), and the room passed."""
@@ -144,18 +186,18 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             this_exit.unlink()
             this_exit.to_room = link_room
         else:
-            self.exits[direction] = RoomExit(self, direction, link_room)
+            self.new_exit(direction, link_room)
             this_exit = self.exits[direction]
         if that_exit:
             # If that exit was already linked, unlink it
             that_exit.unlink()
             that_exit.to_room = self
         else:
-            link_room.exits[that_dir] = RoomExit(link_room, that_dir, self)
+            link_room.new_exit(that_dir, self)
             that_exit = link_room.exits[that_dir]
         # Now that the exits have been properly created/set, set the exits to point to each other
-        this_exit.linked_exit = that_exit
-        that_exit.linked_exit = this_exit
+        this_exit.linked_exit = that_exit.direction
+        that_exit.linked_exit = this_exit.direction
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
             
