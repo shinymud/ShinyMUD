@@ -3,6 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 from shinymud.world import World
+from shinymud.emotes import *
 import re
 import logging
 
@@ -456,32 +457,36 @@ command_list.register(Areas, ['areas'])
 
 
 
-class Wave(BaseCommand):
-    """Wave to another player"""
+class Emote(BaseCommand):
+    """Emote to another player or ones self. (slap them, cry hysterically, etc.)"""
     def execute(self):
         if not self.user.location:
-            self.user.update_output('You wave to the void.\n')
+            self.user.update_output('You do, but only the void notices.\n')
         else:
             if not self.args:
-                self.user.update_output('You wave.\n')
-                self.user.location.tell_room('%s waves.\n' % self.user.get_fancy_name(), [self.user.name])
+                emote_list = EMOTES(self.args)
+                victim = ''
+                self.user.update_output(personalize(self, victim, emote_list[0]))
+                self.user.location.tell_room(personalize(emote_list[1]), [self.user.name])
             else:
+                emote_list = TARGETEMOTES(self.args)
                 victim = self.user.location.get_user(self.args) #If victim is in room
                 if victim:
-                    self.user.update_output('You wave to %s.\n' % victim.get_fancy_name())
-                    victim.update_output('%s waves to you. \n' % self.user.get_fancy_name() )
-                    self.user.location.tell_room('%s waves to %s.\n' % (self.user.get_fancy_name(), victim.get_fancy_name()), 
-                                                                                    [self.user.name, victim.name])
+                    self.user.update_output(personalize(self, victim, emote_list[0]))
+                    victim.update_output(personalize(self, victim, emote_list[1]))
+                    self.user.location.tell_room(personalize(self, victim, emote_list[2]), [self.user.name, victim.name])
                 else:
                     victim = self.world.get_user(self.args) #If victim is in world
                     if (victim):
-                        self.user.update_output('From far away, you wave to %s.\n' % victim.get_fancy_name())
-                        victim.update_output('From far away, %s waves to you. \n' % self.user.get_fancy_name() )
+                        message = 'From far away, '
+                        self.user.update_output(message + personalize(self, victim, emote_list[0]))
+                        self.user.location.tell_room(message + personalize(self, victim, emote_list[2]),
+                                                                    [self.user.name, victim.name])
                     else:                                   #If victim is in neither
                         self.user.update_output('You don\'t see %s.\n' % self.args)
                 
 
-command_list.register(Wave, ['wave'])
+command_list.register(Emote, EMOTES.keys())
 
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
