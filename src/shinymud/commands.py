@@ -3,6 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 from shinymud.world import World
+from shinymud.emotes import *
 import re
 import logging
 
@@ -378,9 +379,9 @@ class Get(BaseCommand):
             else:
                 self.user.update_output('That doesn\'t exist.\n')
                 
-    
 
 command_list.register(Get, ['get', 'take'])
+
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
@@ -460,6 +461,54 @@ class Purge(BaseCommand):
             self.user.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
     
 
+class Areas(BaseCommand):
+    def execute(self):
+        """Give a list of areas in the world, as well as their level ranges."""
+        the_areas = self.world.areas.keys()
+        message = 'Area  |  Level Range\n______________________________________________\n'
+        if not the_areas:
+            message += 'Sorry, God has taken a day off. There are no areas yet.\n'
+        for eachone in the_areas:
+            message += eachone + '  |  ' + self.world.get_area(eachone).level_range + '\n'
+        message += '______________________________________________\n'
+        self.user.update_output(message)
+        
+  
+
+command_list.register(Areas, ['areas'])
+
+
+
+class Emote(BaseCommand):
+    """Emote to another player or ones self. (slap them, cry hysterically, etc.)"""
+    def execute(self):
+        if not self.user.location:
+            self.user.update_output('You do, but only the void notices.\n')
+        else:
+            if not self.args:
+                emote_list = EMOTES(self.args)
+                victim = ''
+                self.user.update_output(personalize(self, victim, emote_list[0]))
+                self.user.location.tell_room(personalize(emote_list[1]), [self.user.name])
+            else:
+                emote_list = TARGETEMOTES(self.args)
+                victim = self.user.location.get_user(self.args) #If victim is in room
+                if victim:
+                    self.user.update_output(personalize(self, victim, emote_list[0]))
+                    victim.update_output(personalize(self, victim, emote_list[1]))
+                    self.user.location.tell_room(personalize(self, victim, emote_list[2]), [self.user.name, victim.name])
+                else:
+                    victim = self.world.get_user(self.args) #If victim is in world
+                    if (victim):
+                        message = 'From far away, '
+                        self.user.update_output(message + personalize(self, victim, emote_list[0]))
+                        self.user.location.tell_room(message + personalize(self, victim, emote_list[2]),
+                                                                    [self.user.name, victim.name])
+                    else:                                   #If victim is in neither
+                        self.user.update_output('You don\'t see %s.\n' % self.args)
+                
+
+command_list.register(Emote, EMOTES.keys())
 
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
