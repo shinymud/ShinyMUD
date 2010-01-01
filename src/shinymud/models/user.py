@@ -128,7 +128,7 @@ class User(object):
                 cmd_name, _, args = match.groups()
                 cmd = command_list[cmd_name]
                 if cmd:
-                    cmd(self, args).execute()
+                    cmd(self, args, cmd_name).execute()
                 else:
                     # The command the user sent was invalid... tell them so
                     self.update_output("I don't understand \"%s\"\n" % raw_string)
@@ -154,7 +154,7 @@ class User(object):
         if self.location:
             self.location.user_remove(self)
         self.world.user_remove(self.name)
-        WorldEcho(self, "%s has left the world." % self.get_fancy_name()).execute()
+        WorldEcho(self, "%s has left the world." % self.get_fancy_name(), ['wecho']).execute()
     
     def get_fancy_name(self):
         return self.name.capitalize()

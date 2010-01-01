@@ -18,15 +18,18 @@ class CommandRegister(object):
     def register(self, func, aliases):
         for alias in aliases:
             self.commands[alias] = func
-    
+            
+
+   
 # ************************ GENERIC COMMANDS ************************
 command_list = CommandRegister()
 
 class BaseCommand(object):
     
-    def __init__(self, user, args):
+    def __init__(self, user, args, alias):
         self.args = args
         self.user = user
+        self.alias = alias
         self.world = World.get_world()
         self.log = logging.getLogger('Command')
     
@@ -38,30 +41,35 @@ class BaseCommand(object):
         of the keywords that will be replaced if they are found in the message:
             
         #actor - replaced with the name of the actor (user commiting the action)
-        #me - replaced with the gender-specific pronoun of the actor
-        #my - replace with the gender-specific possessve-pronoun of the actor
+        #she - replaced with the gender-specific pronoun of the actor
+        #her - replaced with the gender-specific pronoun of the actor (grammatical alternative)
+        #hers - replace with the gender-specific possessve-pronoun of the actor
             
         #target - replace with the name of the target (user being acted upon)
-        #you - replace with the gender-specific pronoun of the target
-        #yours - replace with a gender-specific possessive-pronoun of the target
+        #she - replaced with the gender-specific pronoun of the target
+        #her - replace with the gender-specific pronoun of the target (grammatical alternative)
+        #her - replace with a gender-specific possessive-pronoun of the target
         """
-        
-        possessive_pronouns = {'female': 'hers', 'male': 'his', 'neutral': 'its'}
-        pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'}
-        
+        she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'}
+        her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'}
+        hers_pronouns = {'female': 'hers', 'male': 'his', 'neutral': 'its'}
+ 
         message = message.replace('#actor', actor.get_fancy_name())
-        message = message.replace('#me', pronouns.get(actor.gender))
-        message = message.replace('#my', possessive_pronouns.get(actor.gender))
+        message = message.replace('#she', she_pronouns.get(actor.gender))
+        message = message.replace('#her', her_pronouns.get(actor.gender))
+        message = message.replace('#hers', hers_pronouns.get(actor.gender))
         
         # We should always have an actor, but we don't always have a target.
         # Expect them to be able to pass None for the target
         if target:
             message = message.replace('#target', target.get_fancy_name())
-            message = message.replace('#your', possessive_pronouns.get(actor.gender))
-            message = message.replace('#you', pronouns.get(target.gender))
-        
-    
-    
+            message = message.replace('#she', she_pronouns.get(target.gender))
+            message = message.replace('#her', her_pronouns.get(target.gender))
+            message = message.replace('#hers', hers_possessive_pronouns.get(target.gender))
+        return message
+      
+
+ 
 class Quit(BaseCommand):
     def execute(self):
         self.user.quit_flag = True
@@ -87,7 +95,7 @@ class Apocalypse(BaseCommand):
     def execute(self):
         # This should definitely require admin privileges in the future.
         message = "%s has stopped the world from turning. Goodbye." % self.user.get_fancy_name()
-        WorldEcho(self.user, message).execute()
+        WorldEcho(self.user, message, self.alias).execute()
         
         self.world.shutdown_flag = True
     
@@ -382,7 +390,6 @@ class Get(BaseCommand):
 
 command_list.register(Get, ['get', 'take'])
 
-
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
     def execute(self):
@@ -461,6 +468,7 @@ class Purge(BaseCommand):
             self.user.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
     
 
+
 class Areas(BaseCommand):
     def execute(self):
         """Give a list of areas in the world, as well as their level ranges."""
@@ -477,33 +485,31 @@ class Areas(BaseCommand):
 
 command_list.register(Areas, ['areas'])
 
-
-
 class Emote(BaseCommand):
     """Emote to another player or ones self. (slap them, cry hysterically, etc.)"""
     def execute(self):
         if not self.user.location:
-            self.user.update_output('You do, but only the void notices.\n')
+            self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
         else:
             if not self.args:
-                emote_list = EMOTES(self.args)
+                emote_list = EMOTES[self.alias]
                 victim = ''
-                self.user.update_output(personalize(self, victim, emote_list[0]))
-                self.user.location.tell_room(personalize(emote_list[1]), [self.user.name])
+                self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
+                self.user.location.tell_room(self.personalize(self.user, victim, emote_list[1] + '\n'), [self.user.name])
             else:
-                emote_list = TARGETEMOTES(self.args)
+                emote_list = TARGETEMOTES[self.alias]
                 victim = self.user.location.get_user(self.args) #If victim is in room
                 if victim:
-                    self.user.update_output(personalize(self, victim, emote_list[0]))
-                    victim.update_output(personalize(self, victim, emote_list[1]))
-                    self.user.location.tell_room(personalize(self, victim, emote_list[2]), [self.user.name, victim.name])
+                    self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
+                    victim.update_output(self.personalize(self.user, victim, emote_list[1]) + '\n')
+                    self.user.location.tell_room(self.personalize(self.user, victim, emote_list[2] + '\n'),
+                                                    [self.user.name, victim.name])
                 else:
                     victim = self.world.get_user(self.args) #If victim is in world
                     if (victim):
                         message = 'From far away, '
-                        self.user.update_output(message + personalize(self, victim, emote_list[0]))
-                        self.user.location.tell_room(message + personalize(self, victim, emote_list[2]),
-                                                                    [self.user.name, victim.name])
+                        self.user.update_output(message + self.personalize(self.user, victim, emote_list[0]) + '\n')
+                        victim.update_output(message + self.personalize(self.user, victim, emote_list[1]) + '\n')
                     else:                                   #If victim is in neither
                         self.user.update_output('You don\'t see %s.\n' % self.args)
                 

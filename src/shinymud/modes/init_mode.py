@@ -62,7 +62,7 @@ class InitMode(object):
     
     def join_world(self):
         self.active = False
-        WorldEcho(self.user, "%s has entered the world." % self.user.get_fancy_name()).execute()
+        WorldEcho(self.user, "%s has entered the world." % self.user.get_fancy_name(), ['wecho']).execute()
     
     def character_cleanup(self):
         self.user.inq = []
