@@ -75,13 +75,13 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     def set_title(self, title):
         """Set the title of a room."""
         self.title = title
-        self.world.db.update_from_dict('room', self.to_dict())
+        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'title': self.title})
         return 'Room %s title set.\n' % self.id
     
     def set_description(self, desc):
         """Set the description of a room."""
         self.description = desc
-        self.world.db.update_from_dict('room', self.to_dict())
+        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'description': self.description})
         return 'Room %s description set.\n' % self.id
     
     def set_exit(self, args):
