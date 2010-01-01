@@ -41,19 +41,23 @@ class BaseCommand(object):
         of the keywords that will be replaced if they are found in the message:
             
         #actor - replaced with the name of the actor (user commiting the action)
-        #a_she - replaced with the gender-specific pronoun of the actor
-        #a_her - replaced with the gender-specific pronoun of the actor (grammatical alternative)
-        #a_hers - replace with the gender-specific possessve-pronoun of the actor
+        #a_she/he - replaced with the gender-specific pronoun of the actor
+        #a_her/him - replaced with the gender-specific pronoun of the actor (grammatical alternative)
+        #a_hers/his - replace with the gender-specific possessve-pronoun of the actor
+        #a_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
             
         #target - replace with the name of the target (user being acted upon)
-        #t_she - replaced with the gender-specific pronoun of the target
-        #t_her - replace with the gender-specific pronoun of the target (grammatical alternative)
-        #t_hers - replace with a gender-specific possessive-pronoun of the target
-        """
+        #t_she/he - replaced with the gender-specific pronoun of the target
+        #t_her/him - replace with the gender-specific pronoun of the target (grammatical alternative)
+        #t_hers/his - replace with a gender-specific possessive-pronoun of the target
+        #t_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
+        
+
+        """                                                     #Examples:
         she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'} #she/he looks tired
-        her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #look at her/him
-        hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #that thing is hers/his
-        her_possesive = {'female': 'her', 'male': 'his', 'neutral': 'its'} ##lost her/his thingy
+        her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #Look at her/him.
+        hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #That thing is hers/his.
+        her_possesive = {'female': 'her', 'male': 'his', 'neutral': 'its'} #Person lost her/his thingy.
  
         message = message.replace('#actor', actor.get_fancy_name())
         message = message.replace('#a_she/he', she_pronouns.get(actor.gender)) 
