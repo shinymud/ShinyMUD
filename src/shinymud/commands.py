@@ -41,31 +41,35 @@ class BaseCommand(object):
         of the keywords that will be replaced if they are found in the message:
             
         #actor - replaced with the name of the actor (user commiting the action)
-        #she - replaced with the gender-specific pronoun of the actor
-        #her - replaced with the gender-specific pronoun of the actor (grammatical alternative)
-        #hers - replace with the gender-specific possessve-pronoun of the actor
+        #a_she - replaced with the gender-specific pronoun of the actor
+        #a_her - replaced with the gender-specific pronoun of the actor (grammatical alternative)
+        #a_hers - replace with the gender-specific possessve-pronoun of the actor
             
         #target - replace with the name of the target (user being acted upon)
-        #she - replaced with the gender-specific pronoun of the target
-        #her - replace with the gender-specific pronoun of the target (grammatical alternative)
-        #her - replace with a gender-specific possessive-pronoun of the target
+        #t_she - replaced with the gender-specific pronoun of the target
+        #t_her - replace with the gender-specific pronoun of the target (grammatical alternative)
+        #t_hers - replace with a gender-specific possessive-pronoun of the target
         """
-        she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'}
-        her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'}
-        hers_pronouns = {'female': 'hers', 'male': 'his', 'neutral': 'its'}
+        she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'} #she/he looks tired
+        her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #look at her/him
+        hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #that thing is hers/his
+        her_possesive = {'female': 'her', 'male': 'his', 'neutral': 'its'} ##lost her/his thingy
  
         message = message.replace('#actor', actor.get_fancy_name())
-        message = message.replace('#she', she_pronouns.get(actor.gender))
-        message = message.replace('#her', her_pronouns.get(actor.gender))
-        message = message.replace('#hers', hers_pronouns.get(actor.gender))
+        message = message.replace('#a_she/he', she_pronouns.get(actor.gender)) 
+        message = message.replace('#a_her/him', her_pronouns.get(actor.gender)) 
+        message = message.replace('#a_hers/his', hers_possesive.get(actor.gender))
+        message = message.replace('#a_her/his', her_possesive.get(actor.gender)) 
+        
         
         # We should always have an actor, but we don't always have a target.
         # Expect them to be able to pass None for the target
         if target:
             message = message.replace('#target', target.get_fancy_name())
-            message = message.replace('#she', she_pronouns.get(target.gender))
-            message = message.replace('#her', her_pronouns.get(target.gender))
-            message = message.replace('#hers', hers_possessive_pronouns.get(target.gender))
+            message = message.replace('#t_she/he', she_pronouns.get(target.gender))
+            message = message.replace('#t_her/him', her_pronouns.get(target.gender))
+            message = message.replace('#t_hers/his', hers_possesive.get(target.gender))
+            message = message.replace('#t_her/his', her_possesive.get(target.gender))
         return message
       
 
@@ -492,15 +496,19 @@ class Emote(BaseCommand):
         if not self.user.location:
             self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
         else:
-            if not self.args:
-                emote_list = EMOTES[self.alias]
+            emote_list = EMOTES[self.alias]
+            if not self.args:                               #If victim is not specified
                 victim = ''
                 self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
                 self.user.location.tell_room(self.personalize(self.user, victim, emote_list[1] + '\n'), [self.user.name])
             else:
-                emote_list = TARGETEMOTES[self.alias]
                 victim = self.user.location.get_user(self.args) #If victim is in room
-                if victim:
+                if (victim == self.user):
+                    victim = ''
+                    self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
+                    self.user.location.tell_room(self.personalize(self.user, victim, emote_list[1] + '\n'), [self.user.name])
+                elif victim:
+                    emote_list = TARGETEMOTES[self.alias]
                     self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
                     victim.update_output(self.personalize(self.user, victim, emote_list[1]) + '\n')
                     self.user.location.tell_room(self.personalize(self.user, victim, emote_list[2] + '\n'),
