@@ -25,7 +25,6 @@ class CommandRegister(object):
 command_list = CommandRegister()
 
 class BaseCommand(object):
-    
     def __init__(self, user, args, alias):
         self.args = args
         self.user = user
@@ -52,8 +51,8 @@ class BaseCommand(object):
         #t_hers/his - replace with a gender-specific possessive-pronoun of the target
         #t_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
         
-
-        """                                                     #Examples:
+        """
+                                                             #Examples:
         she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'} #she/he looks tired
         her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #Look at her/him.
         hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #That thing is hers/his.
@@ -75,7 +74,7 @@ class BaseCommand(object):
             message = message.replace('#t_hers/his', hers_possesive.get(target.gender))
             message = message.replace('#t_her/his', her_possesive.get(target.gender))
         return message
-      
+    
 
 
 class Quit(BaseCommand):
