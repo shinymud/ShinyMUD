@@ -112,7 +112,8 @@ def initialize_database():
 )''',\
 '''CREATE TABLE IF NOT EXISTS weapon (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid)
+    item INTEGER NOT NULL REFERENCES item(dbid),
+    dmg TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS furniture (
     dbid INTEGER PRIMARY KEY,

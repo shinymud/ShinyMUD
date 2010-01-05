@@ -2,6 +2,7 @@ from shinymud.models import to_bool
 from shinymud.world import World
 import types
 import logging
+import re
 
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
@@ -13,25 +14,24 @@ DAMAGE_TYPES =  [   'slashing',
                     'poison',
                     'holy'
                 ]
-SLOT_TYPES =    [   None,
-                    'one-handed',
-                    'two-handed',
-                    'head',
-                    'neck',
-                    'ring',
-                    'crown',
-                    'hands',
-                    'wrist',
-                    'earring',
-                    'arms',
-                    'legs',
-                    'feet',
-                    'torso',
-                    'waist',
-                    'back',
-                    'face',
-                    'eyes',
-                ]
+SLOT_TYPES =    {   'main-hand': 'You wield #item in your main-hand.',
+                    'off-hand': 'You weild #item in your off-hand.',
+                    'head': 'You place #item on your head.',
+                    'neck': 'You wear #item around your neck.',
+                    'ring': 'You wear #item on your finger.',
+                    'crown': 'You place #item upon your head.',
+                    'hands': 'You wear #item on your hands.',
+                    'wrist': "You wear #item on your wrist.",
+                    'earring': 'You slip #item into your ear.',
+                    'arms': 'You wear #item on your arms.',
+                    'legs': 'You wear #item on your legs.',
+                    'feet': 'You pull #item on to your feet.',
+                    'torso': 'You wear #item on your body.',
+                    'waist': 'You wear #item around your waist.',
+                    'back': 'you throw #item over your back.'
+                    #'face',
+                    #'eyes',
+                }
 
 class Item(object):
     
@@ -50,7 +50,7 @@ class Item(object):
         self.carryable = True
         if 'carryable' in args:
             self.carryable = to_bool(args.get('carryable'))
-        self.equip_slot = args.get('equip_slot')
+        self.equip_slot = str(args.get('equip_slot', ''))
         self.world = World.get_world()
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Item')
@@ -139,7 +139,7 @@ class Item(object):
     
     def set_equip(self, loc):
         """Set the equip location for this item."""
-        if loc in SLOT_TYPES:
+        if loc in SLOT_TYPES.keys():
             self.equip_slot = loc
             self.world.db.update_from_dict('item', self.to_dict())
             return 'Item equip location set.\n'
@@ -241,58 +241,108 @@ class InventoryItem(Item):
 
     
 class Damage(object):
-    def __init__(self, dmgmin, dmgmax, dmgtype, probability):
-        self.range = (dmgmin, dmgmax)
-        self.type = dmgtype, 
-        self.probability = probability
-    
+    def __init__(self, dstring):
+        exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)[ ]+(?P<d_prob>\d+)'
+        m = re.match(exp, dstring)
+        if m and m.group('d_type') in DAMAGE_TYPES:
+            self.type = m.group('d_type')
+            if m.group('d_min') and m.group('d_max') and int(m.group('d_min')) <= int(m.group('d_max')):
+                self.range = (int(m.group('d_min')), int(m.group('d_max')))
+            else:
+                raise Exception('Bad damage range.\n')
+            if m.group('d_prob'):
+                self.probability = int(m.group('d_prob'))
+                if self.probability > 100:
+                    self.probability = 100
+                elif self.probability < 0:
+                    self.probability = 0
+            else:
+                raise Exception('Bad damage probability given.\n')
+        else:
+            raise Exception('Bad damage type given.\n')
+            
     def __str__(self):
-        string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
+        return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
     
 
 class Weapon(object):
     
     def __init__(self, **args):
-        self.dmg = args.get('dmg', [])
+        dmg = args.get('dmg')
+        self.item = args.get('item')
+        self.dmg = []
+        if dmg:
+            d_list = dmg.split('|')
+            for d in d_list:
+                self.dmg.append(Damage(d))
+        self.dbid = args.get('dbid')
+
+    def __str__(self):
+        string = 'WEAPON ATTRIBUTES:\n' +\
+            '  dmg: \n'
+            
+        dstring =  '    %s: %s\n' 
+        for dmg in range(len(self.dmg)):
+            string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
+        return string
+            
+    def load(self):
+        wep = Weapon()
+        for d in self.dmg:
+            wep.add_dmg(str(d))
+        return wep
+        
+        
     
     def to_dict(self):
         d = {}
-        d['dmg'] = self.dmg
-        
-    def setDmg(self, params, index=1):
-        # Match a number followed by a dash followed by a number,
-        # OR one or more lowercase letters,
-        # OR a number that may or may not be followed by a percent sign '%'
-        # OR any number of the above, separated by spaces.
-        exp = r'((((?P<min>\d+)\-(?P<max>\d+))|(?P<type>[a-z]+)|((?P<probability>\d+)[\%]?))[ ]*)+'
-        match = re.search(exp, params.lower(), re.I)
-        if match:
-            if index and len(self.dmg) < index:
-                damage = Damage()
-            else:
-                damage = self.dmg[index-1]
-            if match.group('min') and match.group('max') and match.group('min') <= match.group('max'):
-                damage.range = (match.group('min'), match.group('max'))
-            if match.group('type') and match.group('type') in DAMAGE_TYPES:
-                damage.type = match.group('type')
-            if match.group('probability') and match.group('probability') <= 100 and match.group('probability') > 0:
-                damage.probability = match.group('probability')
+        d['item'] = self.item
+        d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+
+    def set_dmg(self, params):
+        if not params:
+            return '\nSets a damage type.\nExample: set dmg slashing 1-4 100%\n'
+        exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
+        m = re.match(exp, params)
+        #if not m:
+        #    return 'What damage do you want to set?'
+        if m.group('index'):
+            index = int(m.group('index'))
+            if index < 1:
+                return 'I can\'t set that!'
+        else:
+            index = 1
+        try:
+            dmg = Damage(m.group('params'))
+        except Exception, e:
+            return str(e)
+        else:
             if len(self.dmg) < index:
-                self.dmg.append(damage)
+                self.dmg.append(dmg)
             else:
-                self.dmg[index-1] = damage
+                self.dmg[index - 1] = dmg
+        world = World.get_world()
+        world.db.update_from_dict('weapon', self.to_dict())
         
-        self.setDmg = types.MethodType(setDmg, self, self.__class__)
+        return 'dmg ' + str(index) + ' set.\n'
+                
+            
     
-    def addDmg(self, params):
-        self.setDmg(params, len(self.dmg) + 1)
-        self.addDmg = types.MethodType(addDmg, self, self.__class__)
+    def add_dmg(self, params):
+        #Currently broken will be fixed when the add class in commands is updated.
+        try:
+            self.dmg.append(Damage(params))
+            world.db.update_from_dict('weapon', self.to_dict())
+        except:
+            return 'Error'
     
-    def removeDmg(self, index):
-        if index <= len(self.dmg):
+    def remove_dmg(self, index):
+        if index <= len(self.dmg) and index > 0:
             del self.dmg[index -1]
-        
-        self.removeDmg = types.MethodType(removeDmg, self, self.__class__)
+            world.db.update_from_dict('weapon', self.to_dict())
 
 class Food(object):
     def __init__(self, **args):

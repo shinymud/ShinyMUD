@@ -1,6 +1,6 @@
 from shinymud.models.area import Area
 from shinymud.models.room import Room
-from shinymud.models.item import Item
+from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
 from shinymud.world import World
 from shinymud.emotes import *
@@ -341,7 +341,8 @@ class Inventory(BaseCommand):
         else:
             i = 'Your inventory consists of:\n'
             for item in self.user.inventory:
-                i += item.name + '\n'
+                if item not in self.user.isequipped:
+                    i += item.name + '\n'
             self.user.update_output(i)
 
 command_list.register(Inventory, ['i', 'inventory'])
@@ -419,6 +420,37 @@ class Get(BaseCommand):
                 
 
 command_list.register(Get, ['get', 'take'])
+
+class Equip(BaseCommand):
+    """Equip an item from the user's inventory."""
+    def execute(self):
+        message = ''
+        if not self.args:
+            #Note: Does not output slot types in any order.
+            message = 'Equipped items:'
+            for i, j in self.user.equipped.iteritems():
+                message += '\n' + i + ': '
+                if j:
+                    message += j.name
+                else:
+                    message += 'None.'
+            message += '\n'
+        else:
+            item = self.user.check_inv_for_keyword(self.args)
+            if not item:
+                message = 'You don\'t have it.\n'
+            elif not item.equip_slot:
+                message = 'You can\'t equip that!\n'
+            else:
+                if self.user.equipped[item.equip_slot]: #if not empty
+                    self.user.isequipped.remove(item)   #remove it
+                self.user.equipped[item.equip_slot] = item
+                self.user.isequipped += [item]
+                message = SLOT_TYPES[item.equip_slot].replace('#item', item.name) + '\n'
+        self.user.update_output(message)  
+    
+
+command_list.register(Equip, ['equip'])
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""

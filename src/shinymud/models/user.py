@@ -2,7 +2,7 @@ from shinymud.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
 from shinymud.world import World
-from shinymud.models.item import InventoryItem
+from shinymud.models.item import InventoryItem, SLOT_TYPES
 import re
 import logging
 
@@ -35,6 +35,10 @@ class User(object):
         else:
             self.channels = {'chat': True}
         self.inventory = []
+        self.equipped = {} #Stores current weapon in each slot from SLOT_TYPES
+        for i in SLOT_TYPES.keys():
+            self.equipped[i] = ''
+        self.isequipped = [] #Is a list of the currently equipped weapons
         rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
         if rows:
             for row in rows:
