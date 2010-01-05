@@ -25,7 +25,6 @@ class CommandRegister(object):
 command_list = CommandRegister()
 
 class BaseCommand(object):
-    
     def __init__(self, user, args, alias):
         self.args = args
         self.user = user
@@ -52,8 +51,8 @@ class BaseCommand(object):
         #t_hers/his - replace with a gender-specific possessive-pronoun of the target
         #t_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
         
-
-        """                                                     #Examples:
+        """
+                                                             #Examples:
         she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'} #she/he looks tired
         her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #Look at her/him.
         hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #That thing is hers/his.
@@ -75,7 +74,7 @@ class BaseCommand(object):
             message = message.replace('#t_hers/his', hers_possesive.get(target.gender))
             message = message.replace('#t_her/his', her_possesive.get(target.gender))
         return message
-      
+    
 
 
 class Quit(BaseCommand):
@@ -813,11 +812,23 @@ class Add(BaseCommand):
         elif not self.args:
             self.user.update_output('What do you want to add?\n')
         else:
-            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
-            if hasattr(obj, 'add_' + func):
-                self.user.update_output(getattr(obj, 'add_' + func)(arg))
+            message = 'You can\'t add that.\n'
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            if not match:
+                self.user.update_output('Type "help add" for help with this command.\n')
             else:
-                self.user.update_output('You can\'t add that.\n')
+                func, _, arg = match.groups()
+                if hasattr(obj, 'add_' + func):
+                    self.user.update_output(getattr(obj, 'add_' + func)(arg))
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the set function in the object's native set functions,
+                    # but the object is of type Item, then we should search the set functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'set_' + func):
+                            message = getattr(iType, 'set_' + func)(arg)
+                            break
+                    self.user.update_output(message)
     
 
 build_list.register(Add, ['add'])
@@ -830,11 +841,23 @@ class Remove(BaseCommand):
         elif not self.args:
             self.user.update_output('What do you want to remove?\n')
         else:
-            func, _, arg = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I).groups()
-            if hasattr(obj, 'remove_' + func):
-                self.user.update_output(getattr(obj, 'remove_' + func)(arg))
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            message = 'You can\'t remove that.\n'
+            if not match:
+                self.user.update_ouput('Type "help remove" for help with this command.\n')
             else:
-                self.user.update_output('You can\'t remove that.\n')
+                func, _, args = match.groups()
+                if hasattr(obj, 'remove_' + func):
+                    self.user.update_output(getattr(obj, 'remove_' + func)(arg))
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the set function in the object's native set functions,
+                    # but the object is of type Item, then we should search the set functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'set_' + func):
+                            message = getattr(iType, 'set_' + func)(arg)
+                            break
+                    self.user.update_output(message)
     
 
 build_list.register(Remove, ['remove'])

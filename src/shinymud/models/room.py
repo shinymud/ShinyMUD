@@ -22,7 +22,8 @@ class Room(object):
                       'up': None,
                       'down': None}
         self.npcs = []
-        self.resets = []
+        self.item_resets = []
+        self.npc_resets = []
         self.users = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
@@ -75,7 +76,21 @@ class Room(object):
                 nice_exits += '        ' + direction + ': ' + str(value) + '\n'
             else:
                 nice_exits += '        ' + direction + ': None\n'
-                
+        iresets = ''
+        r = 1
+        for reset in self.item_resets:
+            iresets += '        [%s] Item - id:%s - %s\n' % (str(r),reset.id, reset.name)
+            r+=1
+        if not iresets:
+            iresets = '        None'
+        r = 1
+        nresets = ''
+        for reset in self.npc_resets:
+            nresets += '        [%s] NPC - id:%s - %s\n' % (str(r), reset.id, reset.name)
+            r+=1
+        if not nresets:
+            nresets = '        None'
+            
         room_list ="""______________________________________________
 Room: 
     id: %s
@@ -84,8 +99,12 @@ Room:
     description: %s
     exits: 
 %s
+    item resets:
+%s
+    npc resets:
+%s
 ______________________________________________\n""" % (self.id, self.area.name, self.title,
-                                                       self.description, nice_exits)
+                                                       self.description, nice_exits, iresets, nresets)
         return room_list
     
     def user_add(self, user):
@@ -135,7 +154,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if area:
                 room = area.get_room(room_id)
                 if room:
-                    room.new_exit(direction, room)
+                    self.new_exit(direction, room)
                     message = 'Exit %s created.\n' % direction
                 else:
                     message = 'That room doesn\'t exist.\n'
@@ -144,7 +163,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         return message
     
     def add_reset(self, args):
-        exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
+        exp = r'(for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
         match = re.match(exp, args, re.I)
         if match:
             obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
@@ -154,7 +173,11 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             obj = getattr(area, obj_type + "s").get(obj_id)
             if not obj:
                 return '%s number %s does not exist.\n' % (obj_type, obj_id)
-            self.resets.append(obj)
+            if obj_type == 'npc':
+                # TODO: We need to be able to save resets to the database
+                self.npc_resets.append(obj)
+            else:
+                self.item_resets.append(obj)
             return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
         return 'Type "help resets" to get help using this command.\n'
     
