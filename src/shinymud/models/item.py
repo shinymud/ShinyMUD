@@ -225,7 +225,7 @@ class Item(object):
             item.item_types[key] = value.load()
         return item
     
-    
+
 class InventoryItem(Item):
     def __init__(self, **args):
         Item.__init__(self, **args)
@@ -238,8 +238,8 @@ class InventoryItem(Item):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
-
     
+
 class Damage(object):
     def __init__(self, dstring):
         exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)[ ]+(?P<d_prob>\d+)'
@@ -260,13 +260,12 @@ class Damage(object):
                 raise Exception('Bad damage probability given.\n')
         else:
             raise Exception('Bad damage type given.\n')
-            
+    
     def __str__(self):
         return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
     
 
 class Weapon(object):
-    
     def __init__(self, **args):
         dmg = args.get('dmg')
         self.item = args.get('item')
@@ -276,7 +275,7 @@ class Weapon(object):
             for d in d_list:
                 self.dmg.append(Damage(d))
         self.dbid = args.get('dbid')
-
+    
     def __str__(self):
         string = 'WEAPON ATTRIBUTES:\n' +\
             '  dmg: \n'
@@ -285,7 +284,7 @@ class Weapon(object):
         for dmg in range(len(self.dmg)):
             string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
         return string
-            
+    
     def load(self):
         wep = Weapon()
         for d in self.dmg:
@@ -304,7 +303,7 @@ class Weapon(object):
 
     def set_dmg(self, params):
         if not params:
-            return '\nSets a damage type.\nExample: set dmg slashing 1-4 100%\n'
+            return 'Sets a damage type to a weapon.\nExample: set dmg slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
         m = re.match(exp, params)
         #if not m:
@@ -333,16 +332,25 @@ class Weapon(object):
     
     def add_dmg(self, params):
         #Currently broken will be fixed when the add class in commands is updated.
+        if not params:
+            return 'What damage would you like to add?\n'
         try:
             self.dmg.append(Damage(params))
+            world = World.get_world()
             world.db.update_from_dict('weapon', self.to_dict())
-        except:
-            return 'Error'
+            return 'dmg has been added.\n'
+        except Exception, e:
+            return str(e)
     
     def remove_dmg(self, index):
-        if index <= len(self.dmg) and index > 0:
-            del self.dmg[index -1]
-            world.db.update_from_dict('weapon', self.to_dict())
+        if not index:
+            return 'which dmg would you like to remove?'
+        else:
+            if index <= len(self.dmg) and index > 0:
+                del self.dmg[index -1]
+                world.db.update_from_dict('weapon', self.to_dict())
+        
+        
 
 class Food(object):
     def __init__(self, **args):
@@ -356,6 +364,7 @@ class Food(object):
         string = 'FOOD ATTRIBUTES:\n' +\
                  '  effects: ' + eat_effects + '\n'
         return string
+    
 
 class Container(object):
     def __init__(self, **args):
@@ -395,6 +404,7 @@ class Furniture(object):
                  '  sleep effects: ' + sleep_effects + '\n' +\
                  '  capacity: ' + str(self.capacity) + '\n'
         return string
+    
 
 class Portal(object):
     def __init__(self, **args):
@@ -462,6 +472,7 @@ class Portal(object):
         self.world.db.update_from_dict('portal', {'dbid': self.dbid, 'location': '%s,%s' % (self.location.id, self.location.area.name)})
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
+    
     def set_leave(self, message):
         """Set this portal's leave message."""
         self.leave_message = message

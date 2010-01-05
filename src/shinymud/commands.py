@@ -438,11 +438,11 @@ class Equip(BaseCommand):
             item = self.user.check_inv_for_keyword(self.args)
             if not item:
                 message = 'You don\'t have it.\n'
-            elif not item.equip_slot:
+            elif not self.user.equipped.get(item.equip_slot, ''): #if item has a slot that exists.
                 message = 'You can\'t equip that!\n'
             else:
-                if self.user.equipped[item.equip_slot]: #if not empty
-                    self.user.isequipped.remove(item)   #remove it
+                if self.user.equipped[item.equip_slot]: #if slot not empty
+                    self.user.isequipped.remove(item)   #remove item in slot
                 self.user.equipped[item.equip_slot] = item
                 self.user.isequipped += [item]
                 message = SLOT_TYPES[item.equip_slot].replace('#item', item.name) + '\n'
@@ -450,6 +450,26 @@ class Equip(BaseCommand):
     
 
 command_list.register(Equip, ['equip'])
+
+class Unequip(BaseCommand):
+    """Unequip items."""
+    def execute(self):
+        item = self.user.check_inv_for_keyword(self.args)
+        message = ''
+        if not self.args:
+            message = 'What do you want to unequip?\n'
+        elif not item: 
+            message = 'You don\'t have that!\n'
+        elif not self.user.equipped[item.equip_slot]:
+            message = 'You aren\'t using anything in that slot.\n'
+        else:
+            self.user.equipped[item.equip_slot] = ''
+            self.user.isequipped.remove(item)
+            message = 'You remove ' + item.name + '.\n'
+        self.user.update_output(message)
+            
+
+command_list.register(Unequip, ['unequip'])
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
@@ -821,12 +841,12 @@ class Add(BaseCommand):
                 if hasattr(obj, 'add_' + func):
                     self.user.update_output(getattr(obj, 'add_' + func)(arg))
                 elif obj.__class__.__name__ == 'Item':
-                    # If we didn't find the set function in the object's native set functions,
-                    # but the object is of type Item, then we should search the set functions
+                    # If we didn't find the add function in the object's native add functions,
+                    # but the object is of type Item, then we should search the add functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
-                        if hasattr(iType, 'set_' + func):
-                            message = getattr(iType, 'set_' + func)(arg)
+                        if hasattr(iType, 'add_' + func):
+                            message = getattr(iType, 'add_' + func)(arg)
                             break
                     self.user.update_output(message)
     
