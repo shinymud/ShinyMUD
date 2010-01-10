@@ -108,17 +108,19 @@ ______________________________________________\n""" % (self.name,
         return npc_list
     
     @classmethod
-    def create(cls, name):
+    def create(cls, name, **area_dict):
         """Create a new area instance and add it to the world's area list."""
         world = World.get_world()
-        if not world.get_area(name):
-            new_area = cls(name)
-            a = new_area.to_dict()
-            new_area.dbid = world.db.insert_from_dict('area', a)
-            world.new_area(new_area)
-            return new_area
+        if area_dict:
+            new_area = cls(name, **area_dict)
         else:
-            return "This area already exists.\n"
+            if world.get_area(name):
+                return "This area already exists.\n"
+            new_area = cls(name)
+        a = new_area.to_dict()
+        new_area.dbid = world.db.insert_from_dict('area', a)
+        world.new_area(new_area)
+        return new_area
     
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
@@ -161,25 +163,36 @@ ______________________________________________\n""" % (self.name,
             return 'Room %s has been deleted.\n' % room_id
         return 'Room %s doesn\'t exist.\n' % room_id
     
-    def new_room(self):
+    def new_room(self, room_dict=None):
         """Add a new room to this area's room list."""
-        new_room = Room.create(self, self.get_id('room'))
+        if room_dict:
+            # Create a new room with pre-initialized data
+            new_room = Room(**room_dict)
+        else:
+            # Create a new 'blank' room
+            new_room = Room.create(self, self.get_id('room'))
         world = World.get_world()
         new_room.dbid = world.db.insert_from_dict('room', new_room.to_dict())
         self.rooms[str(new_room.id)] = new_room
         return new_room
     
-    def new_item(self):
+    def new_item(self, item_dict=None):
         """Add a new item to this area's item list."""
-        new_item = Item.create(self, self.get_id('item'))
+        if item_dict:
+            new_item = Item(**item_dict)
+        else:
+            new_item = Item.create(self, self.get_id('item'))
         world = World.get_world()
         new_item.dbid = world.db.insert_from_dict('item', new_item.to_dict())
         self.items[str(new_item.id)] = new_item
         return new_item
     
-    def new_npc(self):
+    def new_npc(self, npc_dict=None):
         """Add a new npc to this area's npc list."""
-        new_npc = Npc.create(self, self.get_id('npc'))
+        if npc_dict:
+            new_npc = Npc(**npc_dict)
+        else:
+            new_npc = Npc.create(self, self.get_id('npc'))
         world = World.get_world()
         new_npc.dbid = world.db.insert_from_dict('npc', new_npc.to_dict())
         self.npcs[str(new_npc.id)] = new_npc

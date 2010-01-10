@@ -49,7 +49,7 @@ class Room(object):
                                         LEFT JOIN item i ON i.dbid = re.key
                                         WHERE re.room=?""", [self.dbid])
         for row in rows:
-            row['room'] = self
+            row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)
     
     def to_dict(self):
@@ -126,8 +126,11 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         self.world.db.update_from_dict('room', {'dbid': self.dbid, 'description': self.description})
         return 'Room %s description set.\n' % self.id
     
-    def new_exit(self, direction, to_room):
-        new_exit = RoomExit(self, direction, to_room)
+    def new_exit(self, direction, to_room, **exit_dict):
+        if exit_dict:
+            new_exit = RoomExit(self, direction, to_room, **exit_dict)
+        else:
+            new_exit = RoomExit(self, direction, to_room)
         new_exit.dbid = self.world.db.insert_from_dict('room_exit', new_exit.to_dict())
         self.exits[direction] = new_exit
     

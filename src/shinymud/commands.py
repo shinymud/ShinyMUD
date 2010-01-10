@@ -3,6 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 from shinymud.world import World
+from shinymud.xport import XPort
 from shinymud.emotes import *
 import re
 import logging
@@ -864,3 +865,35 @@ class Destroy(BaseCommand):
     
 
 build_list.register(Destroy, ['destroy'])
+
+class Export(BaseCommand):
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Export what?\n')
+        else:
+            area = self.world.get_area(self.args)
+            if area:
+                self.user.update_output('Exporting area %s. This may take a moment.\n' % area.name)
+                result = XPort().export_to_xml(area)
+                self.user.update_output(result)
+            else:
+                self.user.update_output('That area doesn\'t exist.\n')
+    
+
+build_list.register(Export, ['export'])
+
+class Import(BaseCommand):
+    def execute(self):
+        if not self.args:
+            self.user.update_output(XPort.list_importable_areas())
+        else:
+            area = self.world.get_area(self.args)
+            if area:
+                self.user.update_output('That area already exists in your world.\n' +\
+                                        'You\'ll need to destroy it in-game before you try importing it.\n')
+            else:
+                result = XPort().import_from_xml(self.args)
+                self.user.update_output(result)
+    
+
+build_list.register(Import, ['import'])

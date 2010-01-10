@@ -2,7 +2,7 @@ from shinymud.models import to_bool
 from shinymud.world import World
 import types
 import logging
-
+import re
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
                     'impact', 
@@ -58,6 +58,7 @@ class Item(object):
         for key, value in ITEM_TYPES.items():
             row = self.world.db.select('* FROM %s WHERE item=?' % key, [self.dbid])
             if row:
+                row[0]['item'] = self
                 self.item_types[key] = value(**row[0])
     
     def to_dict(self):
@@ -189,13 +190,16 @@ class Item(object):
             self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
-    def add_type(self, item_type):
+    def add_type(self, item_type, item_dict=None):
         """Add a new item type to this item."""
         if not item_type in ITEM_TYPES:
             return 'That\'s not a valid item type.\n'
         if item_type in self.item_types:
             return 'This item is already of type %s.\n' % item_type
-        new_type = ITEM_TYPES[item_type]()
+        if item_dict:
+            new_type = ITEM_TYPES[item_type](**item_dict)
+        else:
+            new_type = ITEM_TYPES[item_type]()
         new_type.item = self.dbid
         new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
         self.item_types[item_type] = new_type
@@ -399,13 +403,17 @@ class Portal(object):
     
     def set_portal(self, args):
         """Set the location of the room this portal should go to."""
-        args = args.lower().split()
-        if not len(args) == 2:
-            return 'Usage: set port <room_id> <area_name>\n'
-        area = World.get_world().get_area(args[1])
+        if not args:
+            return 'Usage: set portal to room <room-id> in area <area-name>\n'
+        exp = r'([ ]+)?(to)?([ ]+)?(room)?([ ]+)?(?P<room_id>\d+)([ ]+in)?([ ]+area)?([ ]+(?P<area_name>\w+))'
+        match = re.match(exp, args, re.I)
+        if not match:
+            return 'Usage: set portal to room <room-id> in area <area-name>\n'
+        room_id, area_name = match.group('room_id', 'area_name')
+        area = World.get_world().get_area(area_name)
         if not area:
             return 'That area doesn\'t exist.\n'
-        room = area.get_room(args[0])
+        room = area.get_room(room_id)
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
