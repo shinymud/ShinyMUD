@@ -1,3 +1,4 @@
+from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import to_bool
 from shinymud.world import World
 import types
@@ -121,33 +122,36 @@ class Item(object):
                 self.world.db.delete('FROM item WHERE dbid=?', [self.dbid])
     
     #***************** Set Basic Attribute Functions *****************
-    def set_description(self, desc):
+    def set_description(self, desc, user=None):
         """Set the description of this item."""
-        self.description = desc
-        self.world.db.update_from_dict('item', self.to_dict())
-        return 'Item description set.\n'
+        user.last_mode = user.mode
+        user.mode = TextEditMode(user, self, 'description', self.description)
+        return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_title(self, title):
+    def set_title(self, title, user=None):
         """Set the title of this item."""
         self.title = title
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'title': self.title})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item title set.\n'
     
-    def set_name(self, name):
+    def set_name(self, name, user=None):
         self.name = name
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'name': self.name})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
     
-    def set_equip(self, loc):
+    def set_equip(self, loc, user=None):
         """Set the equip location for this item."""
         if loc in SLOT_TYPES.keys():
             self.equip_slot = loc
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'equip_slot': self.equip_slot})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item equip location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
     
-    def set_weight(self, weight):
+    def set_weight(self, weight, user=None):
         """Set the weight for this object."""
         try:
             weight = int(weight)
@@ -155,10 +159,11 @@ class Item(object):
             return 'Item weight must be a number.\n'
         else:
             self.weight = weight
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'weight': self.weight})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
-    def set_base_value(self, value):
+    def set_base_value(self, value, user=None):
         """Set the base currency value for this item."""
         try:
             value = int(value)
@@ -166,20 +171,22 @@ class Item(object):
             return 'Item value must be a number.\n'
         else:
             self.base_value = value
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'base_value': self.base_value})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
-    def set_keywords(self, keywords):
+    def set_keywords(self, keywords, user=None):
         """Set the keywords for this item.
         The argument keywords should be a string of words separated by commas.
         """
         word_list = keywords.split(',')
         # Make sure to take out any accidental whitespace between the keywords passed
         self.keywords = [word.strip() for word in word_list]
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'keywords': self.keywords})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item keywords have been set.\n'
     
-    def set_carryable(self, boolean):
+    def set_carryable(self, boolean, user=None):
         """Set the carryable status for this item."""
         try:
             val = to_bool(boolean)
@@ -187,7 +194,8 @@ class Item(object):
             return str(e)
         else:
             self.carryable = val
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'carryable': self.carryable})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
     def add_type(self, item_type, item_dict=None):
@@ -201,7 +209,8 @@ class Item(object):
         else:
             new_type = ITEM_TYPES[item_type]()
         new_type.item = self.dbid
-        new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
+        new_type.save()
+        # new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
         self.item_types[item_type] = new_type
         return 'This item is now of type %s.\n' % item_type
     
@@ -228,6 +237,16 @@ class Item(object):
         for key,value in self.item_types.items():
             item.item_types[key] = value.load()
         return item
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('item', save_dict)
+            else:    
+                self.world.db.update_from_dict('item', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('item', self.to_dict())
     
 
 class InventoryItem(Item):
@@ -304,8 +323,8 @@ class Weapon(object):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
-
-    def set_dmg(self, params):
+    
+    def set_dmg(self, params, user=None):
         if not params:
             return 'Sets a damage type to a weapon.\nExample: set dmg slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
@@ -327,12 +346,11 @@ class Weapon(object):
                 self.dmg.append(dmg)
             else:
                 self.dmg[index - 1] = dmg
-        world = World.get_world()
-        world.db.update_from_dict('weapon', self.to_dict())
+        self.save()
+        # world = World.get_world()
+        # world.db.update_from_dict('weapon', self.to_dict())
         
         return 'dmg ' + str(index) + ' set.\n'
-                
-            
     
     def add_dmg(self, params):
         #Currently broken will be fixed when the add class in commands is updated.
@@ -340,8 +358,9 @@ class Weapon(object):
             return 'What damage would you like to add?\n'
         try:
             self.dmg.append(Damage(params))
-            world = World.get_world()
-            world.db.update_from_dict('weapon', self.to_dict())
+            self.save()
+            # world = World.get_world()
+            # world.db.update_from_dict('weapon', self.to_dict())
             return 'dmg has been added.\n'
         except Exception, e:
             return str(e)
@@ -352,13 +371,25 @@ class Weapon(object):
         else:
             if index <= len(self.dmg) and index > 0:
                 del self.dmg[index -1]
+                self.save()
+                # world.db.update_from_dict('weapon', self.to_dict())
+    
+    def save(self, save_dict=None):
+        world = World.get_world()
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                world.db.update_from_dict('weapon', save_dict)
+            else:    
                 world.db.update_from_dict('weapon', self.to_dict())
-        
-        
+        else:
+            self.dbid = world.db.insert_from_dict('weapon', self.to_dict())
+    
 
 class Food(object):
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
+        self.dbid = args.get(dbid)
     
     def __str__(self):
         if self.on_eat:
@@ -369,6 +400,23 @@ class Food(object):
                  '  effects: ' + eat_effects + '\n'
         return string
     
+    def to_dict(self):
+        d = {}
+        d['on_eat'] = ','.join(self.eat_effects)
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('food', save_dict)
+            else:    
+                self.world.db.update_from_dict('food', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('food', self.to_dict())
+    
 
 class Container(object):
     def __init__(self, **args):
@@ -376,6 +424,7 @@ class Container(object):
         self.item_capacity = args.get('item_capacity')
         self.weight_reduction = args.get('weight_reduction', 0)
         self.inventory = []
+        self.dbid = args.get(dbid)
     
     def __str__(self):
         string = 'CONTAINER ATTRIBUTES:\n' +\
@@ -383,6 +432,25 @@ class Container(object):
                  '  weight reduction: ' + str(self.weight_reduction) + '\n' +\
                  '  item capacity: ' + str(self.item_capacity) + '\n'
         return string
+    
+    def to_dict(self):
+        d = {}
+        d['weight_capacity'] = self.weight_capacity
+        d['item_capacity'] = self.item_capacity
+        d['weight_reduction'] = self.weight_reduction
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('container', save_dict)
+            else:    
+                self.world.db.update_from_dict('container', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('container', self.to_dict())
     
 
 class Furniture(object):
@@ -392,6 +460,7 @@ class Furniture(object):
         self.users = []
         # of users that can use this piece of furniture at one time.
         self.capacity = args.get('capacity')
+        self.dbid = args.get('dbid')
     
     def __str__(self):
         if self.sit_effects:
@@ -408,6 +477,25 @@ class Furniture(object):
                  '  sleep effects: ' + sleep_effects + '\n' +\
                  '  capacity: ' + str(self.capacity) + '\n'
         return string
+    
+    def to_dict(self):
+        d = {}
+        d['sit_effects'] = ','.join(self.sit_effects)
+        d['sleep_effects'] = ','.join(self.sleep_effects)
+        d['capacity'] = ','.join(self.capacity)
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('furniture', save_dict)
+            else:    
+                self.world.db.update_from_dict('furniture', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('furniture', self.to_dict())
     
 
 class Portal(object):
@@ -450,6 +538,16 @@ class Portal(object):
         newp.emerge_message = self.emerge_message
         return newp
     
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('portal', save_dict)
+            else:    
+                self.world.db.update_from_dict('portal', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('portal', self.to_dict())
+    
     def __str__(self):
         location = 'None'
         if self.location:
@@ -461,7 +559,7 @@ class Portal(object):
                  '  emerge message: "' + self.emerge_message + '"\n'
         return string
     
-    def set_portal(self, args):
+    def set_portal(self, args, user=None):
         """Set the location of the room this portal should go to."""
         if not args:
             return 'Usage: set portal to room <room-id> in area <area-name>\n'
@@ -477,29 +575,26 @@ class Portal(object):
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 'location': '%s,%s' % (self.location.id, self.location.area.name)})
+        self.save({'location': '%s,%s' % (self.location.id, self.location.area.name)})
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     
-    def set_leave(self, message):
+    def set_leave(self, message, user=None):
         """Set this portal's leave message."""
         self.leave_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid,
-                                                  'leave_message': self.leave_message})
+        self.save({'leave_message': self.leave_message})
         return 'Leave message set.\n'
     
-    def set_entrance(self, message):
+    def set_entrance(self, message, user=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
-                                                  'entrance_message': self.entrance_message})
+        self.save({'entrance_message': self.entrance_message})
         return 'Entrance message set.\n'
     
-    def set_emerge(self, message):
+    def set_emerge(self, message, user=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
-                                                  'emerge_message': self.emerge_message})
+        self.save({'emerge_message': self.emerge_message})
         return 'Emerge message set.\n'
     
 

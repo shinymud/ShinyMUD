@@ -21,6 +21,7 @@ class World(object):
         self.areas = {}
         self.log = logging.getLogger('World')
         self.db = DB()
+        self.default_location = None
     
     @classmethod
     def get_world(cls):
@@ -101,5 +102,24 @@ ______________________________________________\n""" % '\n    '.join(names)
         make sure that's what they want by adding an extra game state that
         blocks all actions until they confirm.
         """
-        return 'Someone was too lazy to implement this function. Sorry.\n'
+        area = self.get_area(area_name)
+        if not area:
+            return 'Area %s doesn\'t exist.\n' % area_name
+        for user in self.user_list.values():
+            if user.location and (user.location.area.name == area.name):
+                user.update_output('You are wisked to safety as the world collapses around you.\n')
+                user.location = self.default_location
+        item_keys = area.items.keys()
+        for item in item_keys:
+            self.log.debug(area.destroy_item(item))
+        npc_keys = area.npcs.keys()
+        for npc in npc_keys:
+            self.log.debug(area.destroy_npc(npc))
+        room_keys = area.rooms.keys()
+        for room in room_keys:
+            self.log.debug(area.destroy_room(room))
+        area.destruct()
+        del self.areas[area.name]
+        area.name = None
+        return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
     

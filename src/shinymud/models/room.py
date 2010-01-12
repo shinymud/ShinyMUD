@@ -1,4 +1,5 @@
 from shinymud.models.room_exit import RoomExit
+from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.world import World
 import logging
 import re
@@ -12,7 +13,7 @@ class Room(object):
     def __init__(self, area=None, id=0, **args):
         self.id = str(id)
         self.area = area
-        self.title = args.get('title', 'New Room')
+        self.name = args.get('name', 'New Room')
         self.description = args.get('description','This is a shiny new room!')
         self.items = []
         self.exits = {'north': None,
@@ -56,7 +57,7 @@ class Room(object):
         d = {}
         d['id'] = self.id
         d['area'] = self.area.dbid
-        d['title'] = self.title
+        d['name'] = self.name
         d['description'] = self.description
         if self.dbid:
             d['dbid'] = self.dbid
@@ -68,6 +69,20 @@ class Room(object):
         """Create a new room."""
         new_room = cls(area, room_id)
         return new_room
+    
+    def destruct(self):
+        if self.dbid:
+            self.world.db.delete('FROM room WHERE dbid=?', [self.dbid])
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('room', save_dict)
+            else:    
+                self.world.db.update_from_dict('room', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('room', self.to_dict())
     
     def __str__(self):
         nice_exits = ''
@@ -95,15 +110,16 @@ class Room(object):
 Room: 
     id: %s
     area: %s
-    title: %s
-    description: %s
+    name: %s
+    description: 
+%s
     exits: 
 %s
     item resets:
 %s
     npc resets:
 %s
-______________________________________________\n""" % (self.id, self.area.name, self.title,
+______________________________________________\n""" % (self.id, self.area.name, self.name,
                                                        self.description, nice_exits, iresets, nresets)
         return room_list
     
@@ -114,27 +130,27 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         if self.users.get(user.name):
             del self.users[user.name]
     
-    def set_title(self, title):
-        """Set the title of a room."""
-        self.title = title
-        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'title': self.title})
-        return 'Room %s title set.\n' % self.id
+    def set_name(self, name, user=None):
+        """Set the name of a room."""
+        self.name = name
+        self.save({'name': self.name})
+        return 'Room %s name set.\n' % self.id
     
-    def set_description(self, desc):
+    def set_description(self, args, user=None):
         """Set the description of a room."""
-        self.description = desc
-        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'description': self.description})
-        return 'Room %s description set.\n' % self.id
+        user.last_mode = user.mode
+        user.mode = TextEditMode(user, self, 'description', self.description)
+        return 'ENTERING TextEditMode: type "@help" for help.\n'
     
     def new_exit(self, direction, to_room, **exit_dict):
         if exit_dict:
             new_exit = RoomExit(self, direction, to_room, **exit_dict)
         else:
             new_exit = RoomExit(self, direction, to_room)
-        new_exit.dbid = self.world.db.insert_from_dict('room_exit', new_exit.to_dict())
+        new_exit.save()
         self.exits[direction] = new_exit
     
-    def set_exit(self, args):
+    def set_exit(self, args, user=None):
         args = args.split()
         if len(args) < 3:
             return 'Usage: set exit <direction> <attribute> <value(s)>. Type "help exits" for more detail.\n'
@@ -224,6 +240,8 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         # Now that the exits have been properly created/set, set the exits to point to each other
         this_exit.linked_exit = that_exit.direction
         that_exit.linked_exit = this_exit.direction
+        this_exit.save()
+        that_exit.save()
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
             

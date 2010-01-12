@@ -148,37 +148,45 @@ class XPort(object):
             rooms.append(room_dict)
         
         # Building the area
-        new_area = Area.create(**area_dict)
-        for item_dict in items:
-            item_dict['area'] = new_area
-            new_item = new_area.new_item(item_dict)
-            for key, value in item_dict['item_types'].items():
-                self.log.info(new_item.add_type(key, value))
+        try:
+            new_area = Area.create(**area_dict)
+            for item_dict in items:
+                item_dict['area'] = new_area
+                new_item = new_area.new_item(item_dict)
+                for key, value in item_dict['item_types'].items():
+                    self.log.info(new_item.add_type(key, value))
             
-        for npc_dict in npcs:
-            npc_dict['area'] = new_area
-            new_npc = new_area.new_npc(npc_dict)
+            for npc_dict in npcs:
+                npc_dict['area'] = new_area
+                new_npc = new_area.new_npc(npc_dict)
         
-        # rooms is a list of room dictionaries
-        for room_dict in rooms:
-            room_dict['area'] = new_area
-            new_room = new_area.new_room(room_dict)
-            for reset in room_dict['item_resets']:
-                item_reset = new_area.get_item(reset)
-                if item_reset:
-                    new_room.item_resets.append(item_reset)
-            for reset in room_dict['npc_resets']:
-                npc_reset = new_area.get_npc(reset)
-                if npc_reset:
-                    new_room.npc_resets.append(npc_reset)
+            # rooms is a list of room dictionaries
+            for room_dict in rooms:
+                room_dict['area'] = new_area
+                new_room = new_area.new_room(room_dict)
+                for reset in room_dict['item_resets']:
+                    item_reset = new_area.get_item(reset)
+                    if item_reset:
+                        new_room.item_resets.append(item_reset)
+                for reset in room_dict['npc_resets']:
+                    npc_reset = new_area.get_npc(reset)
+                    if npc_reset:
+                        new_room.npc_resets.append(npc_reset)
                     
-        for room_dict in rooms:
-            room = new_area.get_room(room_dict.get('id'))
-            for exit in room_dict['exits']:
-                exit['to_id'] = exit['to_room']
-                exit['to_area'] = new_area.name
-                exit['to_room'] = None
-                room.new_exit(**exit)
+            for room_dict in rooms:
+                room = new_area.get_room(room_dict.get('id'))
+                for exit in room_dict['exits']:
+                    exit['to_id'] = exit['to_room']
+                    exit['to_area'] = new_area.name
+                    exit['to_room'] = None
+                    room.new_exit(**exit)
+        except Exception, e:
+            # If we fail in the above code for ANY reason, make sure we delete
+            # any bits of the area we have imported thus far, then log it.
+            
+            self.world.destroy_area(areaname)
+            self.log.error(str(e))
+            return 'Error importing area: %s.\n' % str(e)
         
         area_dom.unlink()
         return 'Area %s has been successfully imported!\n' % new_area.name

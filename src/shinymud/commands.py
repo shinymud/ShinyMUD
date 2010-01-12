@@ -779,7 +779,7 @@ class Set(BaseCommand):
                 func, _, arg = match.groups()
                 message = 'You can\'t set that.\n'
                 if hasattr(obj, 'set_' + func):
-                    message = (getattr(obj, 'set_' + func)(arg))
+                    message = (getattr(obj, 'set_' + func)(arg, self.user))
                 
                 elif obj.__class__.__name__ == 'Item':
                     # If we didn't find the set function in the object's native set functions,
@@ -901,7 +901,7 @@ class Destroy(BaseCommand):
                 func, obj_id, area_name = match.group('func', 'id', 'area_name')
                 area = self.world.get_area(area_name) or self.user.mode.edit_area
                 if func == 'area':
-                    message = self.world.destroy_area(area)
+                    message = self.world.destroy_area(area_name)
                 elif area and hasattr(area, 'destroy_' + func):
                     message = getattr(area, 'destroy_' + func)(obj_id)
                 else:
@@ -913,6 +913,8 @@ class Destroy(BaseCommand):
                 # so they don't try and edit it again before it gets wiped.
                 if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
                     self.user.mode.edit_object = None
+                if self.user.mode.edit_area and self.user.mode.edit_area.name == None:
+                    self.user.mode.edit_area = None
         self.user.update_output(message)
     
 

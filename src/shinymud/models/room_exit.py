@@ -38,6 +38,16 @@ class RoomExit(object):
             d['dbid'] = self.dbid
         return d
     
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('room_exit', save_dict)
+            else:    
+                self.world.db.update_from_dict('room_exit', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('room_exit', self.to_dict())
+    
     def destruct(self):
         if self.dbid:
             self.world.db.delete('FROM room_exit WHERE dbid=?', [self.dbid])
@@ -117,7 +127,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.closed = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'closed': self.closed})
+            self.save({'closed': self.closed})
             return 'Exit attribute "closed" is now %s.\n' % str(boolean)
     
     def set_openable(self, args):
@@ -127,7 +137,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.openable = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'openable': self.openable})
+            self.save({'openable': self.openable})
             return 'Exit attribute "openable" is now %s.\n' % str(boolean)
     
     def set_hidden(self, args):
@@ -137,7 +147,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.hidden = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'hidden': self.hidden})
+            self.save({'hidden': self.hidden})
             return 'Exit attribute "hidden" is now %s.\n' % str(boolean)
     
     def set_locked(self, args):
@@ -147,7 +157,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.locked = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'locked': self.locked})
+            self.save({'locked': self.locked})
             return 'Exit attribute "locked" is now %s.\n' % str(boolean)
     
     def set_to(self, args):
@@ -171,7 +181,7 @@ class RoomExit(object):
             return 'That room doesn\'t exist.\n'
         if not room.linked_exit:
             self.to_room = room
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'to_room': self.to_room.dbid})
+            self.save({'to_room': self.to_room.dbid})
             return ' The %s exit now goes to room %s in area %s.\n' % (self.direction,
                                                                        self.to_room.id,
                                                                        self.to_room.area.name)
@@ -196,7 +206,7 @@ class RoomExit(object):
         if not key:
             return 'That item doesn\'t exist.\n'
         self.key = key
-        self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'key': self.key.dbid})
+        self.save({'key': self.key.dbid})
         return '%s has been added as a key to room %s\'s %s exit.\n' % (key.name.capitalize(),
                                                                         self.room.id,
                                                                         self.direction)

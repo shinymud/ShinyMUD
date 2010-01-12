@@ -17,6 +17,7 @@ class User(object):
         self.quit_flag = False
         self.log = logging.getLogger('User')
         self.mode = InitMode(self)
+        self.last_mode = None
         self.dbid = None
         self.world = World.get_world()
 
@@ -109,6 +110,8 @@ class User(object):
     def get_prompt(self):
         if not self.mode:
             return '>'
+        elif self.mode.name == 'TextEditMode':
+            return '>'
         elif self.mode.name == 'InitMode':
             return ''
         elif self.mode.name == 'BuildMode':
@@ -148,7 +151,10 @@ class User(object):
             elif self.mode.active:
                 self.mode.state()
                 if not self.mode.active:
-                    self.mode = None
+                    if self.last_mode:
+                        self.mode = self.last_mode
+                    else:
+                        self.mode = None
     
     def user_logout(self, broken_pipe=False):
         self.world.db.update_from_dict('user', self.to_dict())
@@ -216,9 +222,9 @@ class User(object):
     
     def look_at_room(self):
         """Return this user's view of the room they are in."""
-        title = self.location.title
+        title = self.location.name
         if self.mode and self.mode.name == 'BuildMode':
-            title = '[id: %s] %s' % (self.location.id, self.location.title)
+            title = '[id: %s] %s' % (self.location.id, self.location.name)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:

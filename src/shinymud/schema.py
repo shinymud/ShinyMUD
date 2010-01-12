@@ -31,7 +31,7 @@ def initialize_database():
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
-    title TEXT,
+    name TEXT,
     description TEXT,
     UNIQUE (area, id)
 )''',\
@@ -82,6 +82,7 @@ def initialize_database():
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
     name TEXT,
+    description TEXT,
     UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_npc_resets (
