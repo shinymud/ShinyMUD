@@ -98,7 +98,8 @@ def initialize_database():
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
     item INTEGER NOT NULL REFERENCES item(dbid),
-    location TEXT,
+    to_room TEXT,
+    to_area TEXT,
     leave_message TEXT,
     entrance_message TEXT,
     emerge_message TEXT

@@ -527,7 +527,7 @@ class Enter(BaseCommand):
             self.user.location.tell_room(self.personalize(self.user, None, portal.emerge_message) + '\n', 
                                          [self.user.name])
         else:
-            self.user.update_output('Nothing happened.\n')
+            self.user.update_output('Nothing happened. It must be a dud.\n')
 
 command_list.register(Enter, ['enter'])
 

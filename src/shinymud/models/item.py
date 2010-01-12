@@ -182,7 +182,7 @@ class Item(object):
         word_list = keywords.split(',')
         # Make sure to take out any accidental whitespace between the keywords passed
         self.keywords = [word.strip() for word in word_list]
-        self.save({'keywords': self.keywords})
+        self.save({'keywords': ','.join(self.keywords)})
         # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item keywords have been set.\n'
     
@@ -505,15 +505,13 @@ class Portal(object):
         self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
         self.item = args.get('item')
         self.dbid = args.get('dbid')
+        # The actual room object this portal points to
         self.location = None
+        # The id of the room this portal points to
+        self.to_room = args.get('to_room')
+        # the area of the room this portal points to
+        self.to_area = args.get('to_area')
         self.world = World.get_world()
-        if 'location' in args:
-            location = str(args.get('location')).split(',')
-            logging.getLogger('portal').debug(str(location))
-            try:
-                self.location = World.get_world().get_area(location[1]).get_room(location[0])
-            except:
-                self.location = None
     
     def to_dict(self):
         d = {}
@@ -521,9 +519,9 @@ class Portal(object):
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
         d['item'] = self.item
-        d['location'] = None
         if self.location:
-            d['location'] = '%s,%s' % (self.location.id, self.location.area.name)
+            d['to_room'] = self.location.id
+            d['to_area'] = self.location.area.name
         if self.dbid:
             d['dbid'] = self.dbid
         
@@ -559,6 +557,20 @@ class Portal(object):
                  '  emerge message: "' + self.emerge_message + '"\n'
         return string
     
+    def _resolve_location(self):
+        if self._location:
+            return self._location
+        try:
+            self._location = self.world.get_area(str(self.to_area)).get_room(str(self.to_room))
+            return self._location
+        except:
+            return None
+    
+    def _set_location(self, location):
+        self._location = location
+    
+    location = property(_resolve_location, _set_location)
+    
     def set_portal(self, args, user=None):
         """Set the location of the room this portal should go to."""
         if not args:
@@ -575,7 +587,7 @@ class Portal(object):
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
-        self.save({'location': '%s,%s' % (self.location.id, self.location.area.name)})
+        self.save({'to_room': self.location.id, 'to_area': self.location.area.name})
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     

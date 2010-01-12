@@ -61,7 +61,6 @@ class Room(object):
         d['description'] = self.description
         if self.dbid:
             d['dbid'] = self.dbid
-        self.log.debug(d)
         return d
     
     @classmethod
