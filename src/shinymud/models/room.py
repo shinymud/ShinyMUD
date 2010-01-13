@@ -1,4 +1,5 @@
 from shinymud.models.room_exit import RoomExit
+from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.world import World
 import logging
 import re
@@ -12,7 +13,7 @@ class Room(object):
     def __init__(self, area=None, id=0, **args):
         self.id = str(id)
         self.area = area
-        self.title = args.get('title', 'New Room')
+        self.name = args.get('name', 'New Room')
         self.description = args.get('description','This is a shiny new room!')
         self.items = []
         self.exits = {'north': None,
@@ -22,7 +23,8 @@ class Room(object):
                       'up': None,
                       'down': None}
         self.npcs = []
-        self.resets = []
+        self.item_resets = []
+        self.npc_resets = []
         self.users = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
@@ -48,18 +50,17 @@ class Room(object):
                                         LEFT JOIN item i ON i.dbid = re.key
                                         WHERE re.room=?""", [self.dbid])
         for row in rows:
-            row['room'] = self
+            row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)
     
     def to_dict(self):
         d = {}
         d['id'] = self.id
         d['area'] = self.area.dbid
-        d['title'] = self.title
+        d['name'] = self.name
         d['description'] = self.description
         if self.dbid:
             d['dbid'] = self.dbid
-        self.log.debug(d)
         return d
     
     @classmethod
@@ -68,6 +69,20 @@ class Room(object):
         new_room = cls(area, room_id)
         return new_room
     
+    def destruct(self):
+        if self.dbid:
+            self.world.db.delete('FROM room WHERE dbid=?', [self.dbid])
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('room', save_dict)
+            else:    
+                self.world.db.update_from_dict('room', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('room', self.to_dict())
+    
     def __str__(self):
         nice_exits = ''
         for direction, value in self.exits.items():
@@ -75,17 +90,36 @@ class Room(object):
                 nice_exits += '        ' + direction + ': ' + str(value) + '\n'
             else:
                 nice_exits += '        ' + direction + ': None\n'
-                
+        iresets = ''
+        r = 1
+        for reset in self.item_resets:
+            iresets += '        [%s] Item - id:%s - %s\n' % (str(r),reset.id, reset.name)
+            r+=1
+        if not iresets:
+            iresets = '        None'
+        r = 1
+        nresets = ''
+        for reset in self.npc_resets:
+            nresets += '        [%s] NPC - id:%s - %s\n' % (str(r), reset.id, reset.name)
+            r+=1
+        if not nresets:
+            nresets = '        None'
+            
         room_list ="""______________________________________________
 Room: 
     id: %s
     area: %s
-    title: %s
-    description: %s
+    name: %s
+    description: 
+%s
     exits: 
 %s
-______________________________________________\n""" % (self.id, self.area.name, self.title,
-                                                       self.description, nice_exits)
+    item resets:
+%s
+    npc resets:
+%s
+______________________________________________\n""" % (self.id, self.area.name, self.name,
+                                                       self.description, nice_exits, iresets, nresets)
         return room_list
     
     def user_add(self, user):
@@ -95,24 +129,27 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         if self.users.get(user.name):
             del self.users[user.name]
     
-    def set_title(self, title):
-        """Set the title of a room."""
-        self.title = title
-        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'title': self.title})
-        return 'Room %s title set.\n' % self.id
+    def set_name(self, name, user=None):
+        """Set the name of a room."""
+        self.name = name
+        self.save({'name': self.name})
+        return 'Room %s name set.\n' % self.id
     
-    def set_description(self, desc):
+    def set_description(self, args, user=None):
         """Set the description of a room."""
-        self.description = desc
-        self.world.db.update_from_dict('room', {'dbid': self.dbid, 'description': self.description})
-        return 'Room %s description set.\n' % self.id
+        user.last_mode = user.mode
+        user.mode = TextEditMode(user, self, 'description', self.description)
+        return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def new_exit(self, direction, to_room):
-        new_exit = RoomExit(self, direction, to_room)
-        new_exit.dbid = self.world.db.insert_from_dict('room_exit', new_exit.to_dict())
+    def new_exit(self, direction, to_room, **exit_dict):
+        if exit_dict:
+            new_exit = RoomExit(self, direction, to_room, **exit_dict)
+        else:
+            new_exit = RoomExit(self, direction, to_room)
+        new_exit.save()
         self.exits[direction] = new_exit
     
-    def set_exit(self, args):
+    def set_exit(self, args, user=None):
         args = args.split()
         if len(args) < 3:
             return 'Usage: set exit <direction> <attribute> <value(s)>. Type "help exits" for more detail.\n'
@@ -135,7 +172,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if area:
                 room = area.get_room(room_id)
                 if room:
-                    room.new_exit(direction, room)
+                    self.new_exit(direction, room)
                     message = 'Exit %s created.\n' % direction
                 else:
                     message = 'That room doesn\'t exist.\n'
@@ -144,7 +181,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         return message
     
     def add_reset(self, args):
-        exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
+        exp = r'(for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
         match = re.match(exp, args, re.I)
         if match:
             obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
@@ -154,7 +191,11 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             obj = getattr(area, obj_type + "s").get(obj_id)
             if not obj:
                 return '%s number %s does not exist.\n' % (obj_type, obj_id)
-            self.resets.append(obj)
+            if obj_type == 'npc':
+                # TODO: We need to be able to save resets to the database
+                self.npc_resets.append(obj)
+            else:
+                self.item_resets.append(obj)
             return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
         return 'Type "help resets" to get help using this command.\n'
     
@@ -198,6 +239,8 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         # Now that the exits have been properly created/set, set the exits to point to each other
         this_exit.linked_exit = that_exit.direction
         that_exit.linked_exit = this_exit.direction
+        this_exit.save()
+        that_exit.save()
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
             

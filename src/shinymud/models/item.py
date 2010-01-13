@@ -1,7 +1,9 @@
+from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import to_bool
 from shinymud.world import World
 import types
 import logging
+import re
 
 DAMAGE_TYPES =  [   'slashing', 
                     'piercing', 
@@ -13,25 +15,24 @@ DAMAGE_TYPES =  [   'slashing',
                     'poison',
                     'holy'
                 ]
-SLOT_TYPES =    [   None,
-                    'one-handed',
-                    'two-handed',
-                    'head',
-                    'neck',
-                    'ring',
-                    'crown',
-                    'hands',
-                    'wrist',
-                    'earring',
-                    'arms',
-                    'legs',
-                    'feet',
-                    'torso',
-                    'waist',
-                    'back',
-                    'face',
-                    'eyes',
-                ]
+SLOT_TYPES =    {   'main-hand': 'You wield #item in your main-hand.',
+                    'off-hand': 'You weild #item in your off-hand.',
+                    'head': 'You place #item on your head.',
+                    'neck': 'You wear #item around your neck.',
+                    'ring': 'You wear #item on your finger.',
+                    'crown': 'You place #item upon your head.',
+                    'hands': 'You wear #item on your hands.',
+                    'wrist': "You wear #item on your wrist.",
+                    'earring': 'You slip #item into your ear.',
+                    'arms': 'You wear #item on your arms.',
+                    'legs': 'You wear #item on your legs.',
+                    'feet': 'You pull #item on to your feet.',
+                    'torso': 'You wear #item on your body.',
+                    'waist': 'You wear #item around your waist.',
+                    'back': 'you throw #item over your back.'
+                    #'face',
+                    #'eyes',
+                }
 
 class Item(object):
     
@@ -50,7 +51,7 @@ class Item(object):
         self.carryable = True
         if 'carryable' in args:
             self.carryable = to_bool(args.get('carryable'))
-        self.equip_slot = args.get('equip_slot')
+        self.equip_slot = str(args.get('equip_slot', ''))
         self.world = World.get_world()
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Item')
@@ -58,6 +59,7 @@ class Item(object):
         for key, value in ITEM_TYPES.items():
             row = self.world.db.select('* FROM %s WHERE item=?' % key, [self.dbid])
             if row:
+                row[0]['item'] = self
                 self.item_types[key] = value(**row[0])
     
     def to_dict(self):
@@ -120,33 +122,36 @@ class Item(object):
                 self.world.db.delete('FROM item WHERE dbid=?', [self.dbid])
     
     #***************** Set Basic Attribute Functions *****************
-    def set_description(self, desc):
+    def set_description(self, desc, user=None):
         """Set the description of this item."""
-        self.description = desc
-        self.world.db.update_from_dict('item', self.to_dict())
-        return 'Item description set.\n'
+        user.last_mode = user.mode
+        user.mode = TextEditMode(user, self, 'description', self.description)
+        return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_title(self, title):
+    def set_title(self, title, user=None):
         """Set the title of this item."""
         self.title = title
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'title': self.title})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item title set.\n'
     
-    def set_name(self, name):
+    def set_name(self, name, user=None):
         self.name = name
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'name': self.name})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
     
-    def set_equip(self, loc):
+    def set_equip(self, loc, user=None):
         """Set the equip location for this item."""
-        if loc in SLOT_TYPES:
+        if loc in SLOT_TYPES.keys():
             self.equip_slot = loc
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'equip_slot': self.equip_slot})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item equip location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
     
-    def set_weight(self, weight):
+    def set_weight(self, weight, user=None):
         """Set the weight for this object."""
         try:
             weight = int(weight)
@@ -154,10 +159,11 @@ class Item(object):
             return 'Item weight must be a number.\n'
         else:
             self.weight = weight
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'weight': self.weight})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
-    def set_base_value(self, value):
+    def set_base_value(self, value, user=None):
         """Set the base currency value for this item."""
         try:
             value = int(value)
@@ -165,20 +171,22 @@ class Item(object):
             return 'Item value must be a number.\n'
         else:
             self.base_value = value
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'base_value': self.base_value})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
-    def set_keywords(self, keywords):
+    def set_keywords(self, keywords, user=None):
         """Set the keywords for this item.
         The argument keywords should be a string of words separated by commas.
         """
         word_list = keywords.split(',')
         # Make sure to take out any accidental whitespace between the keywords passed
         self.keywords = [word.strip() for word in word_list]
-        self.world.db.update_from_dict('item', self.to_dict())
+        self.save({'keywords': ','.join(self.keywords)})
+        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item keywords have been set.\n'
     
-    def set_carryable(self, boolean):
+    def set_carryable(self, boolean, user=None):
         """Set the carryable status for this item."""
         try:
             val = to_bool(boolean)
@@ -186,18 +194,23 @@ class Item(object):
             return str(e)
         else:
             self.carryable = val
-            self.world.db.update_from_dict('item', self.to_dict())
+            self.save({'carryable': self.carryable})
+            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
-    def add_type(self, item_type):
+    def add_type(self, item_type, item_dict=None):
         """Add a new item type to this item."""
         if not item_type in ITEM_TYPES:
             return 'That\'s not a valid item type.\n'
         if item_type in self.item_types:
             return 'This item is already of type %s.\n' % item_type
-        new_type = ITEM_TYPES[item_type]()
+        if item_dict:
+            new_type = ITEM_TYPES[item_type](**item_dict)
+        else:
+            new_type = ITEM_TYPES[item_type]()
         new_type.item = self.dbid
-        new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
+        new_type.save()
+        # new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
         self.item_types[item_type] = new_type
         return 'This item is now of type %s.\n' % item_type
     
@@ -225,7 +238,17 @@ class Item(object):
             item.item_types[key] = value.load()
         return item
     
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('item', save_dict)
+            else:    
+                self.world.db.update_from_dict('item', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('item', self.to_dict())
     
+
 class InventoryItem(Item):
     def __init__(self, **args):
         Item.__init__(self, **args)
@@ -238,65 +261,135 @@ class InventoryItem(Item):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
-
     
+
 class Damage(object):
-    def __init__(self, dmgmin, dmgmax, dmgtype, probability):
-        self.range = (dmgmin, dmgmax)
-        self.type = dmgtype, 
-        self.probability = probability
+    def __init__(self, dstring):
+        exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)[ ]+(?P<d_prob>\d+)'
+        m = re.match(exp, dstring)
+        if m and m.group('d_type') in DAMAGE_TYPES:
+            self.type = m.group('d_type')
+            if m.group('d_min') and m.group('d_max') and int(m.group('d_min')) <= int(m.group('d_max')):
+                self.range = (int(m.group('d_min')), int(m.group('d_max')))
+            else:
+                raise Exception('Bad damage range.\n')
+            if m.group('d_prob'):
+                self.probability = int(m.group('d_prob'))
+                if self.probability > 100:
+                    self.probability = 100
+                elif self.probability < 0:
+                    self.probability = 0
+            else:
+                raise Exception('Bad damage probability given.\n')
+        else:
+            raise Exception('Bad damage type given.\n')
     
     def __str__(self):
-        string = self.type + ': ' + self.range[0] + '-' + self.range[1], self.probability + '%'
+        return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
     
 
 class Weapon(object):
-    
     def __init__(self, **args):
-        self.dmg = args.get('dmg', [])
+        dmg = args.get('dmg')
+        self.item = args.get('item')
+        self.dmg = []
+        if dmg:
+            d_list = dmg.split('|')
+            for d in d_list:
+                self.dmg.append(Damage(d))
+        self.dbid = args.get('dbid')
+    
+    def __str__(self):
+        string = 'WEAPON ATTRIBUTES:\n' +\
+            '  dmg: \n'
+            
+        dstring =  '    %s: %s\n' 
+        for dmg in range(len(self.dmg)):
+            string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
+        return string
+    
+    def load(self):
+        wep = Weapon()
+        for d in self.dmg:
+            wep.add_dmg(str(d))
+        return wep
+        
+        
     
     def to_dict(self):
         d = {}
-        d['dmg'] = self.dmg
-        
-    def setDmg(self, params, index=1):
-        # Match a number followed by a dash followed by a number,
-        # OR one or more lowercase letters,
-        # OR a number that may or may not be followed by a percent sign '%'
-        # OR any number of the above, separated by spaces.
-        exp = r'((((?P<min>\d+)\-(?P<max>\d+))|(?P<type>[a-z]+)|((?P<probability>\d+)[\%]?))[ ]*)+'
-        match = re.search(exp, params.lower(), re.I)
-        if match:
-            if index and len(self.dmg) < index:
-                damage = Damage()
-            else:
-                damage = self.dmg[index-1]
-            if match.group('min') and match.group('max') and match.group('min') <= match.group('max'):
-                damage.range = (match.group('min'), match.group('max'))
-            if match.group('type') and match.group('type') in DAMAGE_TYPES:
-                damage.type = match.group('type')
-            if match.group('probability') and match.group('probability') <= 100 and match.group('probability') > 0:
-                damage.probability = match.group('probability')
+        d['item'] = self.item
+        d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def set_dmg(self, params, user=None):
+        if not params:
+            return 'Sets a damage type to a weapon.\nExample: set dmg slashing 1-4 100%\n'
+        exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
+        m = re.match(exp, params)
+        #if not m:
+        #    return 'What damage do you want to set?'
+        if m.group('index'):
+            index = int(m.group('index'))
+            if index < 1:
+                return 'I can\'t set that!'
+        else:
+            index = 1
+        try:
+            dmg = Damage(m.group('params'))
+        except Exception, e:
+            return str(e)
+        else:
             if len(self.dmg) < index:
-                self.dmg.append(damage)
+                self.dmg.append(dmg)
             else:
-                self.dmg[index-1] = damage
+                self.dmg[index - 1] = dmg
+        self.save()
+        # world = World.get_world()
+        # world.db.update_from_dict('weapon', self.to_dict())
         
-        self.setDmg = types.MethodType(setDmg, self, self.__class__)
+        return 'dmg ' + str(index) + ' set.\n'
     
-    def addDmg(self, params):
-        self.setDmg(params, len(self.dmg) + 1)
-        self.addDmg = types.MethodType(addDmg, self, self.__class__)
+    def add_dmg(self, params):
+        #Currently broken will be fixed when the add class in commands is updated.
+        if not params:
+            return 'What damage would you like to add?\n'
+        try:
+            self.dmg.append(Damage(params))
+            self.save()
+            # world = World.get_world()
+            # world.db.update_from_dict('weapon', self.to_dict())
+            return 'dmg has been added.\n'
+        except Exception, e:
+            return str(e)
     
-    def removeDmg(self, index):
-        if index <= len(self.dmg):
-            del self.dmg[index -1]
-        
-        self.removeDmg = types.MethodType(removeDmg, self, self.__class__)
+    def remove_dmg(self, index):
+        if not index:
+            return 'which dmg would you like to remove?'
+        else:
+            if index <= len(self.dmg) and index > 0:
+                del self.dmg[index -1]
+                self.save()
+                # world.db.update_from_dict('weapon', self.to_dict())
+    
+    def save(self, save_dict=None):
+        world = World.get_world()
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                world.db.update_from_dict('weapon', save_dict)
+            else:    
+                world.db.update_from_dict('weapon', self.to_dict())
+        else:
+            self.dbid = world.db.insert_from_dict('weapon', self.to_dict())
+    
 
 class Food(object):
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
+        self.dbid = args.get(dbid)
     
     def __str__(self):
         if self.on_eat:
@@ -306,6 +399,24 @@ class Food(object):
         string = 'FOOD ATTRIBUTES:\n' +\
                  '  effects: ' + eat_effects + '\n'
         return string
+    
+    def to_dict(self):
+        d = {}
+        d['on_eat'] = ','.join(self.eat_effects)
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('food', save_dict)
+            else:    
+                self.world.db.update_from_dict('food', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('food', self.to_dict())
+    
 
 class Container(object):
     def __init__(self, **args):
@@ -313,6 +424,7 @@ class Container(object):
         self.item_capacity = args.get('item_capacity')
         self.weight_reduction = args.get('weight_reduction', 0)
         self.inventory = []
+        self.dbid = args.get(dbid)
     
     def __str__(self):
         string = 'CONTAINER ATTRIBUTES:\n' +\
@@ -320,6 +432,25 @@ class Container(object):
                  '  weight reduction: ' + str(self.weight_reduction) + '\n' +\
                  '  item capacity: ' + str(self.item_capacity) + '\n'
         return string
+    
+    def to_dict(self):
+        d = {}
+        d['weight_capacity'] = self.weight_capacity
+        d['item_capacity'] = self.item_capacity
+        d['weight_reduction'] = self.weight_reduction
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('container', save_dict)
+            else:    
+                self.world.db.update_from_dict('container', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('container', self.to_dict())
     
 
 class Furniture(object):
@@ -329,6 +460,7 @@ class Furniture(object):
         self.users = []
         # of users that can use this piece of furniture at one time.
         self.capacity = args.get('capacity')
+        self.dbid = args.get('dbid')
     
     def __str__(self):
         if self.sit_effects:
@@ -345,6 +477,26 @@ class Furniture(object):
                  '  sleep effects: ' + sleep_effects + '\n' +\
                  '  capacity: ' + str(self.capacity) + '\n'
         return string
+    
+    def to_dict(self):
+        d = {}
+        d['sit_effects'] = ','.join(self.sit_effects)
+        d['sleep_effects'] = ','.join(self.sleep_effects)
+        d['capacity'] = ','.join(self.capacity)
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('furniture', save_dict)
+            else:    
+                self.world.db.update_from_dict('furniture', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('furniture', self.to_dict())
+    
 
 class Portal(object):
     def __init__(self, **args):
@@ -353,15 +505,13 @@ class Portal(object):
         self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
         self.item = args.get('item')
         self.dbid = args.get('dbid')
-        self.location = None
+        # The actual room object this portal points to
+        # The id of the room this portal points to
+        self.to_room = args.get('to_room')
+        # the area of the room this portal points to
+        self._location = None
+        self.to_area = args.get('to_area')
         self.world = World.get_world()
-        if 'location' in args:
-            location = str(args.get('location')).split(',')
-            logging.getLogger('portal').debug(str(location))
-            try:
-                self.location = World.get_world().get_area(location[1]).get_room(location[0])
-            except:
-                self.location = None
     
     def to_dict(self):
         d = {}
@@ -369,9 +519,8 @@ class Portal(object):
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
         d['item'] = self.item
-        d['location'] = None
-        if self.location:
-            d['location'] = '%s,%s' % (self.location.id, self.location.area.name)
+        d['to_room'] = self.to_room
+        d['to_area'] = self.to_area
         if self.dbid:
             d['dbid'] = self.dbid
         
@@ -386,6 +535,16 @@ class Portal(object):
         newp.emerge_message = self.emerge_message
         return newp
     
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('portal', save_dict)
+            else:    
+                self.world.db.update_from_dict('portal', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('portal', self.to_dict())
+    
     def __str__(self):
         location = 'None'
         if self.location:
@@ -397,40 +556,56 @@ class Portal(object):
                  '  emerge message: "' + self.emerge_message + '"\n'
         return string
     
-    def set_portal(self, args):
+    def _resolve_location(self):
+        if self._location:
+            return self._location
+        try:
+            self._location = self.world.get_area(str(self.to_area)).get_room(str(self.to_room))
+            return self._location
+        except:
+            return None
+    
+    def _set_location(self, location):
+        self._location = location
+    
+    location = property(_resolve_location, _set_location)
+    
+    def set_portal(self, args, user=None):
         """Set the location of the room this portal should go to."""
-        args = args.lower().split()
-        if not len(args) == 2:
-            return 'Usage: set port <room_id> <area_name>\n'
-        area = World.get_world().get_area(args[1])
+        if not args:
+            return 'Usage: set portal to room <room-id> in area <area-name>\n'
+        exp = r'([ ]+)?(to)?([ ]+)?(room)?([ ]+)?(?P<room_id>\d+)([ ]+in)?([ ]+area)?([ ]+(?P<area_name>\w+))'
+        match = re.match(exp, args, re.I)
+        if not match:
+            return 'Usage: set portal to room <room-id> in area <area-name>\n'
+        room_id, area_name = match.group('room_id', 'area_name')
+        area = World.get_world().get_area(area_name)
         if not area:
             return 'That area doesn\'t exist.\n'
-        room = area.get_room(args[0])
+        room = area.get_room(room_id)
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 'location': '%s,%s' % (self.location.id, self.location.area.name)})
+        self.save({'to_room': self.location.id, 'to_area': self.location.area.name})
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
-    def set_leave(self, message):
+    
+    def set_leave(self, message, user=None):
         """Set this portal's leave message."""
         self.leave_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid,
-                                                  'leave_message': self.leave_message})
+        self.save({'leave_message': self.leave_message})
         return 'Leave message set.\n'
     
-    def set_entrance(self, message):
+    def set_entrance(self, message, user=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
-                                                  'entrance_message': self.entrance_message})
+        self.save({'entrance_message': self.entrance_message})
         return 'Entrance message set.\n'
     
-    def set_emerge(self, message):
+    def set_emerge(self, message, user=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
-        self.world.db.update_from_dict('portal', {'dbid': self.dbid, 
-                                                  'emerge_message': self.emerge_message})
+        self.save({'emerge_message': self.emerge_message})
         return 'Emerge message set.\n'
     
 

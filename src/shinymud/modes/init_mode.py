@@ -148,6 +148,7 @@ class InitMode(object):
                 self.user.channels = {'chat': True}
                 self.user.inventory = []
                 self.user.location = None
+                self.user.permissions = 1
                 self.user.description = 'You see nothing special about this person.'
                 if self.user.inq[0][0].lower() == 'c':
                     # Custom stats creation
@@ -192,6 +193,7 @@ class InitMode(object):
                 # user's input didn't make any sense
                 del self.user.inq[0]
                 self.user.update_output("I don't understand.\n" + choose_class_string)
+    
     def display_custom_create(self):
         header = []
         header.append("You have %s points to spend:" % self.custom_points['left'])
@@ -216,6 +218,7 @@ class InitMode(object):
         header.append('or negative numbers to remove points. Type "Done" when finished.')
         header.append("") # one more newline for easier to read input
         self.user.update_output('\n'.join(header))
+    
 
     def custom_create(self):
         if len(self.user.inq) > 0:

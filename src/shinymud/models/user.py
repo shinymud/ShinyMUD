@@ -2,7 +2,7 @@ from shinymud.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
 from shinymud.world import World
-from shinymud.models.item import InventoryItem
+from shinymud.models.item import InventoryItem, SLOT_TYPES
 import re
 import logging
 
@@ -17,6 +17,7 @@ class User(object):
         self.quit_flag = False
         self.log = logging.getLogger('User')
         self.mode = InitMode(self)
+        self.last_mode = None
         self.dbid = None
         self.world = World.get_world()
 
@@ -34,12 +35,17 @@ class User(object):
         self.max_hp = args.get('max_hp', 20)
         self.speed = args.get('speed', 0)
         self.email = str(args.get('email'))
+        self.permissions = int(args.get('permissions', 1))
         self.dbid = args.get('dbid')
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
             self.channels = {'chat': True}
         self.inventory = []
+        self.equipped = {} #Stores current weapon in each slot from SLOT_TYPES
+        for i in SLOT_TYPES.keys():
+            self.equipped[i] = ''
+        self.isequipped = [] #Is a list of the currently equipped weapons
         rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
         if rows:
             for row in rows:
@@ -75,6 +81,7 @@ class User(object):
         d['speed'] = self.speed
         d['description'] = self.description
         d['gender'] = self.gender
+        d['permissions'] = self.permissions
         if self.email:
             d['email'] = self.email
         if self.dbid:
@@ -115,6 +122,8 @@ class User(object):
     def get_prompt(self):
         if not self.mode:
             return '>'
+        elif self.mode.name == 'TextEditMode':
+            return '>'
         elif self.mode.name == 'InitMode':
             return ''
         elif self.mode.name == 'BuildMode':
@@ -138,7 +147,7 @@ class User(object):
                 cmd_name, _, args = match.groups()
                 cmd = command_list[cmd_name]
                 if cmd:
-                    cmd(self, args, cmd_name).execute()
+                    cmd(self, args, cmd_name).run()
                 else:
                     # The command the user sent was invalid... tell them so
                     self.update_output("I don't understand \"%s\"\n" % raw_string)
@@ -154,7 +163,10 @@ class User(object):
             elif self.mode.active:
                 self.mode.state()
                 if not self.mode.active:
-                    self.mode = None
+                    if self.last_mode:
+                        self.mode = self.last_mode
+                    else:
+                        self.mode = None
     
     def user_logout(self, broken_pipe=False):
         self.world.db.update_from_dict('user', self.to_dict())
@@ -222,9 +234,9 @@ class User(object):
     
     def look_at_room(self):
         """Return this user's view of the room they are in."""
-        title = self.location.title
+        title = self.location.name
         if self.mode and self.mode.name == 'BuildMode':
-            title = '[id: %s] %s' % (self.location.id, self.location.title)
+            title = '[id: %s] %s' % (self.location.id, self.location.name)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:

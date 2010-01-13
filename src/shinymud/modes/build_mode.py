@@ -24,7 +24,7 @@ class BuildMode(object):
                 if not cmd:
                     cmd = command_list[cmd_name]
                 if cmd:
-                    cmd(self.user, args, cmd_name).execute()
+                    cmd(self.user, args, cmd_name).run()
                 else:
                     # The command the user sent was invalid... tell them so
                     self.user.update_output("I don't understand \"%s\"\n" % raw_string)

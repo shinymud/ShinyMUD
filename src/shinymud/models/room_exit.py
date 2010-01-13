@@ -1,5 +1,6 @@
 from shinymud.models import to_bool
 from shinymud.world import World
+import re
 
 class RoomExit(object):
     
@@ -36,6 +37,16 @@ class RoomExit(object):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('room_exit', save_dict)
+            else:    
+                self.world.db.update_from_dict('room_exit', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('room_exit', self.to_dict())
     
     def destruct(self):
         if self.dbid:
@@ -116,7 +127,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.closed = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'closed': self.closed})
+            self.save({'closed': self.closed})
             return 'Exit attribute "closed" is now %s.\n' % str(boolean)
     
     def set_openable(self, args):
@@ -126,7 +137,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.openable = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'openable': self.openable})
+            self.save({'openable': self.openable})
             return 'Exit attribute "openable" is now %s.\n' % str(boolean)
     
     def set_hidden(self, args):
@@ -136,7 +147,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.hidden = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'hidden': self.hidden})
+            self.save({'hidden': self.hidden})
             return 'Exit attribute "hidden" is now %s.\n' % str(boolean)
     
     def set_locked(self, args):
@@ -146,28 +157,58 @@ class RoomExit(object):
             return str(e)
         else:
             self.locked = boolean
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'locked': self.locked})
+            self.save({'locked': self.locked})
             return 'Exit attribute "locked" is now %s.\n' % str(boolean)
     
     def set_to(self, args):
-        if not len(args) == 2:
-            return 'Usage: set exit <direction> to <area-name> <room-number>\n'
-        area = World.get_world().get_area(args[0])
-        if not area:
-            return 'That area doesn\'t exist.\n'
-        room = area.get_room(args[1])
+        """Set the to_room attribute to point to a new room."""
+        if not args:
+            return 'Usage: set exit <direction> to room <room-id> in area <area-name>\n'
+        exp = r'([ ]+)?room?(?P<room_id>\d+)(([ ]+in)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
+        match = re.match(exp, ''.join(args), re.I)
+        if not match:
+            return 'Usage: set exit <direction> to room <room-id> in area <area-name>\n'
+        
+        room_id, area_name = match.group('room_id', 'area_name')
+        if area_name:
+            area = World.get_world().get_area(area_name)
+            if not area:
+                return 'That area doesn\'t exist.\n'
+        else:
+            area = self.room.area
+        room = area.get_room(room_id)
         if not room:
             return 'That room doesn\'t exist.\n'
         if not room.linked_exit:
             self.to_room = room
-            self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'to_room': self.to_room.dbid})
+            self.save({'to_room': self.to_room.dbid})
             return ' The %s exit now goes to room %s in area %s.\n' % (self.direction,
                                                                        self.to_room.id,
                                                                        self.to_room.area.name)
         else:
             return 'That exit is linked. You should unlink it before you set it to somewhere else.\n'
-
     
     def set_key(self, args):
-        # self.world.db.update_from_dict('room_exit', {'dbid': self.dbid, 'key': self.key.dbid})
-        return 'This functionality coming soon!\n'
+        if not args:
+            return 'Usage: set key <item-id> from area <area-name>\n'
+        exp = r'([ ]+)?(?P<key_id>\d+)(([ ]+in)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
+        match = re.match(exp, ''.join(args), re.I)
+        if not match:
+            return 'Usage: set key <item-id> from area <area-name>\n'
+        key_id, area_name = match.group('key_id', 'area_name')
+        if area_name:
+            area = self.world.get_area(area_name)
+            if not area:
+                return 'That area doesn\'t exist.\n'
+        else:
+            area = self.room.area
+        key = area.get_item(key_id)
+        if not key:
+            return 'That item doesn\'t exist.\n'
+        self.key = key
+        self.save({'key': self.key.dbid})
+        return '%s has been added as a key to room %s\'s %s exit.\n' % (key.name.capitalize(),
+                                                                        self.room.id,
+                                                                        self.direction)
+    
+

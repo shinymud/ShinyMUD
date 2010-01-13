@@ -13,6 +13,7 @@ def initialize_database():
     channels TEXT,
     password TEXT NOT NULL,
     description TEXT,
+    permissions INTEGER NOT NULL DEFAULT 1,
     strength INTEGER NOT NULL DEFAULT 0,
     intelligence INTEGER NOT NULL DEFAULT 0,
     dexterity INTEGER NOT NULL DEFAULT 0,
@@ -36,7 +37,7 @@ def initialize_database():
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
-    title TEXT,
+    name TEXT,
     description TEXT,
     UNIQUE (area, id)
 )''',\
@@ -87,6 +88,7 @@ def initialize_database():
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
     name TEXT,
+    description TEXT,
     UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_npc_resets (
@@ -102,7 +104,8 @@ def initialize_database():
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
     item INTEGER NOT NULL REFERENCES item(dbid),
-    location TEXT,
+    to_room TEXT,
+    to_area TEXT,
     leave_message TEXT,
     entrance_message TEXT,
     emerge_message TEXT
@@ -117,7 +120,8 @@ def initialize_database():
 )''',\
 '''CREATE TABLE IF NOT EXISTS weapon (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid)
+    item INTEGER NOT NULL REFERENCES item(dbid),
+    dmg TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS furniture (
     dbid INTEGER PRIMARY KEY,
