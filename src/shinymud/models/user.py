@@ -28,6 +28,11 @@ class User(object):
         self.strength = args.get('strength', 0)
         self.intelligence = args.get('intelligence', 0)
         self.dexterity = args.get('dexterity', 0)
+        self.hp = args.get('hp', 0)
+        self.mp = args.get('mp', 0)
+        self.max_mp = args.get('max_mp', 0)
+        self.max_hp = args.get('max_hp', 20)
+        self.speed = args.get('speed', 0)
         self.email = str(args.get('email'))
         self.dbid = args.get('dbid')
         if 'channels' in args:
@@ -63,6 +68,11 @@ class User(object):
         d['strength'] = self.strength
         d['intelligence'] = self.intelligence
         d['dexterity'] = self.dexterity
+        d['hp'] = self.hp
+        d['mp'] = self.mp
+        d['max_hp'] = self.max_hp
+        d['max_mp'] = self.max_mp
+        d['speed'] = self.speed
         d['description'] = self.description
         d['gender'] = self.gender
         if self.email:

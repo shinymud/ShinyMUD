@@ -16,6 +16,11 @@ def initialize_database():
     strength INTEGER NOT NULL DEFAULT 0,
     intelligence INTEGER NOT NULL DEFAULT 0,
     dexterity INTEGER NOT NULL DEFAULT 0,
+    hp INTEGER NOT NULL DEFAULT 0,
+    mp INTEGER NOT NULL DEFAULT 0,
+    max_hp INTEGER NOT NULL DEFAULT 20,
+    max_mp INTEGER NOT NULL DEFAULT 0,
+    speed INTEGER NOT NULL DEFAULT 0,
     email TEXT,
     gender TEXT,
     location TEXT
