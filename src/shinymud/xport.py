@@ -184,7 +184,7 @@ class XPort(object):
             # If we fail in the above code for ANY reason, make sure we delete
             # any bits of the area we have imported thus far, then log it.
             
-            self.world.destroy_area(areaname)
+            self.world.destroy_area(areaname, 'XPort: corrupt area file.')
             self.log.error(str(e))
             return 'Error importing area: %s.\n' % str(e)
         

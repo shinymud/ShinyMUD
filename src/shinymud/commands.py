@@ -8,6 +8,13 @@ from shinymud.emotes import *
 import re
 import logging
 
+# Define Permission Constants
+PLAYER = 1
+BUILDER = 2
+DM = 4
+ADMIN = 8
+GOD = 16
+
 class CommandRegister(object):
     
     def __init__(self):
@@ -26,12 +33,23 @@ class CommandRegister(object):
 command_list = CommandRegister()
 
 class BaseCommand(object):
+    required_permissions = PLAYER
     def __init__(self, user, args, alias):
         self.args = args
         self.user = user
         self.alias = alias
         self.world = World.get_world()
         self.log = logging.getLogger('Command')
+        self.allowed = True
+        if not (self.user.permissions & GOD):
+            if not (self.user.permissions & self.required_permissions):
+                self.allowed = False
+    
+    def run(self):
+        if self.allowed:
+            self.execute()
+        else:
+            self.user.update_output("You don't have the authority to do that!\n")
     
     def personalize(self, actor, target, message):
         """Personalize an action message for a user.
@@ -88,10 +106,10 @@ command_list.register(Quit, ['quit', 'exit'])
 class WorldEcho(BaseCommand):
     """Echoes a message to everyone in the world.
     args:
-        args = message to be sent to every user in the wold.
+        args = message to be sent to every user in the world.
     """
+    required_permissions = ADMIN
     def execute(self):
-        # This should definitely require admin privileges in the future.
         for person in self.world.user_list:
             self.world.user_list[person].update_output(self.args + '\n')
     
@@ -100,6 +118,7 @@ command_list.register(WorldEcho, ['wecho', 'worldecho'])
 
 class Apocalypse(BaseCommand):
     """Ends the world. The server gets shutdown."""
+    required_permissions = GOD
     def execute(self):
         # This should definitely require admin privileges in the future.
         message = "%s has stopped the world from turning. Goodbye." % self.user.get_fancy_name()
@@ -144,6 +163,7 @@ command_list.register(Channel, ['channel'])
 
 class Build(BaseCommand):
     """Activate or deactivate build mode."""
+    required_permissions = BUILDER
     def execute(self):
         if self.args == 'exit':
             self.user.set_mode('normal')
@@ -201,6 +221,7 @@ command_list.register(Look, ['look'])
 
 class Goto(BaseCommand):
     """Go to a location."""
+    required_permissions = BUILDER | DM | ADMIN
     def execute(self):
         if self.args:
             exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
@@ -290,6 +311,7 @@ class Say(BaseCommand):
 command_list.register(Say, ['say'])
 
 class Load(BaseCommand):
+    required_permissions = ADMIN | BUILDER | DM
     def execute(self):
         if not self.args:
             self.user.update_output('What do you want to load?\n')
@@ -508,7 +530,7 @@ class Enter(BaseCommand):
                     if 'portal' in obj.item_types:
                         # If the portal is in their inventory, make them drop it first
                         # (a portal can't go through itself)
-                        Drop(self.user, self.args).execute()
+                        Drop(self.user, self.args, 'drop').execute()
                         self.go_portal(obj.item_types['portal'])
                     else:
                         self.user.update_output('That\'s not a portal...\n')
@@ -533,6 +555,7 @@ command_list.register(Enter, ['enter'])
 
 class Purge(BaseCommand):
     """Purge all of the items and npc's in the room."""
+    required_permissions = BUILDER | DM | ADMIN
     def execute(self):
         # TODO: Finish this function
         if not self.args:
@@ -602,12 +625,74 @@ class Emote(BaseCommand):
 
 command_list.register(Emote, EMOTES.keys())
 
+class Bestow(BaseCommand):
+    """Bestow a new class of permissions on a PC."""
+    required_permissions = GOD
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Bestow what authority upon whom?\n')
+            return
+        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<player>\w+))'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output('Type "help bestow" for help on this command.\n')
+            return
+        perm, player = match.group('permission', 'player')
+        user = self.world.get_user(player)
+        permission = globals().get(perm.upper())
+        if not user:
+            self.user.update_output('That player isn\'t on right now.\n')
+            return
+        if not permission:
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            return
+        if user.permissions & permission:
+            self.user.update_output('%s already has that authority.\n' % user.get_fancy_name())
+            return
+        user.permissions = user.permissions | permission
+        self.user.update_output('%s now has the privilige of being %s.\n' % (user.get_fancy_name(), perm.upper()))
+        user.update_output('%s has bestowed the authority of %s upon you!\n' % (self.user.get_fancy_name(), perm.upper()))
+    
+
+command_list.register(Bestow, ['bestow'])
+
+class Revoke(BaseCommand):
+    """Revoke permission privilges for a PC."""
+    required_permissions = GOD
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Revoke whose authority over what?\n')
+            return
+        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(on)?(for)?([ ]+(?P<player>\w+))'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output('Type "help revoke" for help on this command.\n')
+            return
+        perm, player = match.group('permission', 'player')
+        user = self.world.get_user(player)
+        permission = globals().get(perm.upper())
+        if not user:
+            self.user.update_output('That player isn\'t on right now.\n')
+            return
+        if not permission:
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            return
+        if not (user.permissions & permission):
+            self.user.update_output('%s doesn\'t have that authority anyway.\n' % user.get_fancy_name())
+            return
+        user.permissions = user.permissions ^ permission
+        self.user.update_output('%s has had the privilige of %s revoked.\n' % (user.get_fancy_name(), perm))
+        user.update_output('%s has revoked your %s priviliges.\n' % (self.user.get_fancy_name(), perm))
+    
+
+command_list.register(Revoke, ['revoke'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
 
 class Create(BaseCommand):
     """Create a new item, npc, or area."""
+    required_permissions = BUILDER
     def execute(self):
         object_types = ['item', 'npc', 'room']
         if not self.args:
@@ -647,17 +732,22 @@ build_list.register(Create, ['create', 'new'])
 
 class Edit(BaseCommand):
     """Edit an area, object, npc, or room."""
+    required_permissions = BUILDER
     def execute(self):
         args = self.args.lower().split()
         if len(args) < 2:
             self.user.update_output('Type "help edit" to get help using this command.\n')
         else:
             if args[0] == 'area':
-                if args[1] in self.world.areas.keys():
-                    self.user.mode.edit_area = self.world.areas[args[1]]
-                    # Make sure to clear any objects they were working on in the old area
-                    self.user.mode.edit_object = None
-                    self.user.update_output('Now editing area "%s".\n' % args[1])
+                area = self.world.get_area(args[1])
+                if area:
+                    if (self.user.name in area.builders) or (self.user.permissions & GOD):
+                        self.user.mode.edit_area = self.world.areas[args[1]]
+                        # Make sure to clear any objects they were working on in the old area
+                        self.user.mode.edit_object = None
+                        self.user.update_output('Now editing area "%s".\n' % args[1])
+                    else:
+                        self.user.update_output('You aren\'t allowed to edit someone else\'s area.\n')
                 else:
                     self.user.update_output('That area doesn\'t exist. You should create it first.\n')
             elif args[0] in ['room', 'npc', 'item']:
@@ -699,7 +789,7 @@ class List(BaseCommand):
     "list items" will list all of the items that exist in the working area.
     
     """
-    
+    required_permissions = BUILDER
     def execute(self):
         message = 'Type "help list" to get help using this command.\n'
         if not self.args:
@@ -765,6 +855,7 @@ class List(BaseCommand):
 build_list.register(List, ['list'])
 
 class Set(BaseCommand):
+    required_permissions = BUILDER
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
@@ -796,6 +887,7 @@ build_list.register(Set, ['set'])
 
 class Link(BaseCommand):
     """Link two room objects together through their exits."""
+    required_permissions = BUILDER
     def execute(self):
         this_room = self.user.mode.edit_object
         if this_room and (this_room.__class__.__name__ == 'Room'):
@@ -826,6 +918,7 @@ class Link(BaseCommand):
 build_list.register(Link, ['link'])
 
 class Add(BaseCommand):
+    required_permissions = BUILDER
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
@@ -855,6 +948,7 @@ class Add(BaseCommand):
 build_list.register(Add, ['add'])
 
 class Remove(BaseCommand):
+    required_permissions = BUILDER
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
@@ -869,14 +963,14 @@ class Remove(BaseCommand):
             else:
                 func, _, args = match.groups()
                 if hasattr(obj, 'remove_' + func):
-                    self.user.update_output(getattr(obj, 'remove_' + func)(arg))
+                    self.user.update_output(getattr(obj, 'remove_' + func)(args))
                 elif obj.__class__.__name__ == 'Item':
                     # If we didn't find the set function in the object's native set functions,
                     # but the object is of type Item, then we should search the set functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'set_' + func):
-                            message = getattr(iType, 'set_' + func)(arg)
+                            message = getattr(iType, 'set_' + func)(args)
                             break
                     self.user.update_output(message)
     
@@ -887,40 +981,51 @@ class Destroy(BaseCommand):
     """Destroy an area, room, npc, or item, permanently removing it from the system.
     
     NOTE: Player avatars should not be able to be deleted using this."""
+    required_permissions = BUILDER
     def execute(self):
         message = 'Type "help destroy" to get help using this command.\n'
         if not self.args:
                 # Don't ever let them destroy something if they haven't been specific about 
                 # what they want destroyed (i.e, they haven't given us any arguments)
                 message = self.user.update_output('You should be more specific. This command could really cause some damage.\n')
-        else:
-            exp = r'(?P<func>(area)|(npc)|(item)|(room))([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
-            match = re.match(exp, self.args, re.I)
-            message = 'Type "help destroy" to get help using this command.\n'
-            if match:
-                func, obj_id, area_name = match.group('func', 'id', 'area_name')
-                area = self.world.get_area(area_name) or self.user.mode.edit_area
-                if func == 'area':
-                    message = self.world.destroy_area(area_name)
-                elif area and hasattr(area, 'destroy_' + func):
-                    message = getattr(area, 'destroy_' + func)(obj_id)
-                else:
-                    message = 'You can\'t destroy something that does\'t exist.\n'
-                # The destroy function will set the id of whatever it deleted to None
-                # so that any other objects with references will know they should terminate
-                # their reference. If the user destroyed the object they're working on,
-                # make sure that we clear it from their edit_object, and therefore ther prompt 
-                # so they don't try and edit it again before it gets wiped.
-                if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
-                    self.user.mode.edit_object = None
-                if self.user.mode.edit_area and self.user.mode.edit_area.name == None:
-                    self.user.mode.edit_area = None
+                return
+        exp = r'(?P<func>(area)|(npc)|(item)|(room))([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+        match = re.match(exp, self.args, re.I)
+        message = 'Type "help destroy" to get help using this command.\n'
+        if match:
+            func, obj_id, area_name = match.group('func', 'id', 'area_name')
+            if not area_name:
+                area = self.user.mode.edit_area
+            else:
+                area = self.world.get_area(area_name)
+                if not area:
+                    self.user.update_output('That area doesn\'t exist.\n')
+                    return
+                elif not ((self.user.permissions & GOD) or (self.user.name in area.builders)):
+                    self.user.update_output('You\'re not allowed to destroy someone else\'s area.\n')
+                    return
+            if func == 'area':
+                message = self.world.destroy_area(area_name, self.user.name)
+            elif area and hasattr(area, 'destroy_' + func):
+                message = getattr(area, 'destroy_' + func)(obj_id)
+            else:
+                message = 'You can\'t destroy something that does\'t exist.\n'
+            # The destroy function will set the id of whatever it deleted to None
+            # so that any other objects with references will know they should terminate
+            # their reference. If the user destroyed the object they're working on,
+            # make sure that we clear it from their edit_object, and therefore ther prompt 
+            # so they don't try and edit it again before it gets wiped.
+            if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
+                self.user.mode.edit_object = None
+            if self.user.mode.edit_area and self.user.mode.edit_area.name == None:
+                self.user.mode.edit_area = None
         self.user.update_output(message)
     
 
 build_list.register(Destroy, ['destroy'])
 
 class Export(BaseCommand):
+    required_permissions = BUILDER
     def execute(self):
         if not self.args:
             self.user.update_output('Export what?\n')
@@ -937,6 +1042,7 @@ class Export(BaseCommand):
 build_list.register(Export, ['export'])
 
 class Import(BaseCommand):
+    required_permissions = BUILDER
     def execute(self):
         if not self.args:
             self.user.update_output(XPort.list_importable_areas())

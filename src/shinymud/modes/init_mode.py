@@ -131,6 +131,7 @@ class InitMode(object):
             del self.user.inq[0]
     
     def assign_defaults(self):
+        self.user.permissions = 1
         self.user.description = 'You see nothing special about this person.'
         self.user.strength = 0
         self.user.intelligence = 0

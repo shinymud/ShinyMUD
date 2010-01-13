@@ -506,10 +506,10 @@ class Portal(object):
         self.item = args.get('item')
         self.dbid = args.get('dbid')
         # The actual room object this portal points to
-        self.location = None
         # The id of the room this portal points to
         self.to_room = args.get('to_room')
         # the area of the room this portal points to
+        self._location = None
         self.to_area = args.get('to_area')
         self.world = World.get_world()
     
@@ -519,9 +519,8 @@ class Portal(object):
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
         d['item'] = self.item
-        if self.location:
-            d['to_room'] = self.location.id
-            d['to_area'] = self.location.area.name
+        d['to_room'] = self.to_room
+        d['to_area'] = self.to_area
         if self.dbid:
             d['dbid'] = self.dbid
         

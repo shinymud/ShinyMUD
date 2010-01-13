@@ -13,6 +13,7 @@ def initialize_database():
     channels TEXT,
     password TEXT NOT NULL,
     description TEXT,
+    permissions INTEGER NOT NULL DEFAULT 1,
     strength INTEGER NOT NULL DEFAULT 0,
     intelligence INTEGER NOT NULL DEFAULT 0,
     dexterity INTEGER NOT NULL DEFAULT 0,

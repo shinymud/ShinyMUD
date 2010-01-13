@@ -96,7 +96,7 @@ ______________________________________________\n""" % '\n    '.join(names)
             return self.areas[area_name]
         return None
     
-    def destroy_area(self, area_name):
+    def destroy_area(self, area_name, username):
         """Destroy an entire area!
         TODO: whoa nelly, they want to destroy a whole area! We should really
         make sure that's what they want by adding an extra game state that
@@ -109,6 +109,20 @@ ______________________________________________\n""" % '\n    '.join(names)
             if user.location and (user.location.area.name == area.name):
                 user.update_output('You are wisked to safety as the world collapses around you.\n')
                 user.location = self.default_location
+            if user.mode and (user.mode.name == 'BuildMode'):
+                if user.mode.edit_area and (user.mode.edit_area.name == area_name):
+                    user.mode.edit_area = None
+                    user.mode.edit_object = None
+                    if username != user.name:
+                        user.update_output('The area you were working on was just nuked by %s.\n' % 
+                                                                            username.capitalize())
+            if user.last_mode and (user.last_mode.name == 'BuildMode'):
+                if user.last_mode.edit_area and (user.last_mode.edit_area.name == area_name):
+                    user.last_mode.edit_area = None
+                    user.last_mode.edit_object = None
+                    if username != user.name:
+                        user.update_output('The area you were working on was just nuked by %s.\n' %
+                                                                            username.capitalize())
         item_keys = area.items.keys()
         for item in item_keys:
             self.log.debug(area.destroy_item(item))
@@ -121,5 +135,7 @@ ______________________________________________\n""" % '\n    '.join(names)
         area.destruct()
         del self.areas[area.name]
         area.name = None
+        self.log.info('%s desroyed area %s.' % (username, area_name))
         return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
+        
     

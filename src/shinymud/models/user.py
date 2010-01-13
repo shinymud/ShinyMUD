@@ -30,6 +30,7 @@ class User(object):
         self.intelligence = args.get('intelligence', 0)
         self.dexterity = args.get('dexterity', 0)
         self.email = str(args.get('email'))
+        self.permissions = int(args.get('permissions', 1))
         self.dbid = args.get('dbid')
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
@@ -70,6 +71,7 @@ class User(object):
         d['dexterity'] = self.dexterity
         d['description'] = self.description
         d['gender'] = self.gender
+        d['permissions'] = self.permissions
         if self.email:
             d['email'] = self.email
         if self.dbid:
@@ -135,7 +137,7 @@ class User(object):
                 cmd_name, _, args = match.groups()
                 cmd = command_list[cmd_name]
                 if cmd:
-                    cmd(self, args, cmd_name).execute()
+                    cmd(self, args, cmd_name).run()
                 else:
                     # The command the user sent was invalid... tell them so
                     self.update_output("I don't understand \"%s\"\n" % raw_string)
