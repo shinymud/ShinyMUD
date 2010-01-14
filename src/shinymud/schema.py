@@ -83,18 +83,19 @@ def initialize_database():
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
     name TEXT,
+    title TEXT,
+    keywords TEXT,
     description TEXT,
     UNIQUE (area, id)
 )''',\
-'''CREATE TABLE IF NOT EXISTS room_npc_resets (
+'''CREATE TABLE IF NOT EXISTS room_resets (
+    dbid INTEGER PRIMARY KEY,
     room INTEGER NOT NULL REFERENCES room(dbid),
-    npc INTEGER NOT NULL REFERENCES npc(dbid),
-    PRIMARY KEY (room, npc)
-)''',\
-'''CREATE TABLE IF NOT EXISTS room_item_resets (
-    room INTEGER NOT NULL REFERENCES room(dbid),
-    item INTEGER NOT NULL REFERENCES item(dbid),
-    PRIMARY KEY (room, item)
+    reset_object_id TEXT,
+    reset_object_area TEXT,
+    container_id TEXT,
+    reset_type TEXT,
+    spawn_point TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,

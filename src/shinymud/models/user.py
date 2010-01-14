@@ -180,24 +180,14 @@ class User(object):
     def item_add(self, item):
         """Add an item to the user's inventory."""
         item.owner = self.dbid
-        if item.dbid:
-            # update the instance
-            self.world.db.update_from_dict('inventory', {'dbid': item.dbid, 'owner': item.owner})
-        else:
-            # insert it into the db
-            item.dbid = self.world.db.insert_from_dict('inventory', item.to_dict())
-            # If an item has not yet been saved, its item types will not have been
-            # saved either.
-            for key, value in item.item_types.items():
-                value.item = item.dbid
-                value.dbid = self.world.db.insert_from_dict(key, value.to_dict())
+        item.save({'owner': item.owner})
         self.inventory.append(item)
     
     def item_remove(self, item):
         """Remove an item from the user's inventory."""
         if item in self.inventory:
             item.owner = None
-            self.world.db.update_from_dict('inventory', {'dbid': item.dbid, 'owner': item.owner})
+            item.save({'owner': item.owner})
             self.inventory.remove(item)
     
     def go(self, room):
@@ -235,9 +225,12 @@ class User(object):
         for user in self.location.users.values():
             if user.name != self.name:
                 users += user.get_fancy_name() + ' is here.\n'
+        npcs = ''
+        for npc in self.location.npcs:
+            npcs += npc.title + '\n'
         items = ''
         for item in self.location.items:
             items += item.title + '\n'
-        look = """%s\n%s\n%s\n%s%s""" % (title, xits, self.location.description, users, items)
+        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, self.location.description, users, npcs, items)
         return look
     

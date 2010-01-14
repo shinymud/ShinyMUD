@@ -33,11 +33,6 @@ class Area(object):
     
     def load(self):
         if self.dbid:
-            rooms = self.world.db.select("* from room where area=?", [self.dbid])
-            for room in rooms:
-                room['area'] = self
-                self.rooms[str(room['id'])] = Room(**room)
-            
             items = self.world.db.select("* from item where area=?", [self.dbid])
             for item in items:
                 item['area'] = self
@@ -47,6 +42,10 @@ class Area(object):
             for npc in npcs:
                 npc['area'] = self
                 self.npcs[str(npc['id'])] = Npc(**npc)
+            rooms = self.world.db.select("* from room where area=?", [self.dbid])
+            for room in rooms:
+                room['area'] = self
+                self.rooms[str(room['id'])] = Room(**room)
     
     def save(self, save_dict=None):
         if self.dbid:
@@ -159,6 +158,11 @@ ______________________________________________\n""" % (self.name,
         self.level_range = lvlrange
         self.save({'level_range': self.level_range})
         return 'Area levelrange set.\n'
+    
+    def reset(self):
+        """Tell all of this area's rooms to reset."""
+        for room in self.rooms.values():
+            room.reset()
     
 # ************************ Room Functions ************************
 # Here exist all the function that an area uses to manage the rooms

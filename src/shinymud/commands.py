@@ -343,7 +343,7 @@ class Load(BaseCommand):
         """Load an item into the user's inventory."""
         prototype = item_area.get_item(item_id)
         if prototype:
-            item = prototype.load_item()
+            item = prototype.load()
             self.user.item_add(item)
             self.user.update_output('You summon %s into the world.\n' % item.name)
             if self.user.location:
@@ -557,22 +557,25 @@ class Purge(BaseCommand):
     """Purge all of the items and npc's in the room."""
     required_permissions = BUILDER | DM | ADMIN
     def execute(self):
-        # TODO: Finish this function
         if not self.args:
             # If they specified nothing, just purge the room
             if self.user.location:
-                pass
+                self.user.location.purge_room()
+                self.user.update_output('The room has been purged.\n')
             else:
                 self.user.update_output('You\'re in a void, there\'s nothing to purge.\n')
         elif self.args in ['i', 'inventory']:
             # Purge their inventory!
             for item in self.user.inventory:
-                pass
+                self.user.item_remove(item)
+                item.destruct()
             self.user.update_output('Your inventory has been purged.\n')
         else:
+            # Purge a specific npc or item based on keyword
             self.user.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
     
 
+command_list.register(Purge, ['purge'])
 
 class Areas(BaseCommand):
     def execute(self):
@@ -686,6 +689,55 @@ class Revoke(BaseCommand):
     
 
 command_list.register(Revoke, ['revoke'])
+
+class Reset(BaseCommand):
+    required_permissions = DM | BUILDER | ADMIN
+    def execute(self):
+        if not self.args:
+            # Reset the room the user is in
+            if self.user.location:
+                self.user.location.reset()
+                self.user.update_output('Room %s has been reset.\n' % self.user.location.id)
+            else:
+                self.user.update_output('That\'s a pretty useless thing to do in the void.\n')
+        else:
+            exp = r'(room[ ]+(?P<room_id>\d+)([ ]+in)?([ ]+area)?([ ]+(?P<room_area>\w+))?)|(area[ ]+(?P<area>\w+))'
+            match = re.match(exp, self.args, re.I)
+            if not match:
+                self.user.update_output('Type "help resets" to get help with this command.\n')
+                return
+            room_id, room_area, area = match.group('room_id', 'room_area', 'area')
+            if area:
+                # reset an entire area
+                reset_area = self.world.get_area(area)
+                if reset_area:
+                    reset_area.reset()
+                    self.user.update_output('Area %s has been reset.\n' % reset_area.name)
+                    return
+                else:
+                    self.user.update_output('That area doesn\'t exist.\n')
+                    return
+            # Reset a single room
+            if room_area:
+                area = self.world.get_area(room_area)
+                if not area:
+                    self.user.update_output('That area doesn\'t exist.\n')
+                    return
+            else:
+                if self.user.location:
+                    area = self.user.location.area
+                else:
+                    self.user.update_output('Type "help resets" to get help with this command.\n')
+                    return
+            room = area.get_room(room_id)
+            if not room:
+                self.user.update_output('Room %s doesn\'t exist in area %s.\n' % (room_id, 
+                                                                                  area.name))
+            room.reset()
+            self.user.update_output('Room %s in area %s has been reset.\n' % (room.id, area.name))
+    
+
+command_list.register(Reset, ['reset'])
 # ************************ BUILD COMMANDS ************************
 # TODO: Each list of commands should probably be in their own file for extensibility's sake
 build_list = CommandRegister()
