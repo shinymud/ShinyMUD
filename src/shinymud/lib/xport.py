@@ -2,7 +2,7 @@ from shinymud.models.area import Area
 from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
-from shinymud.world import World
+from shinymud.lib.world import World
 from shinymud.config import AREAS_IMPORT_DIR, AREAS_EXPORT_DIR
 
 import os

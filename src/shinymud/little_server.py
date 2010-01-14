@@ -1,7 +1,7 @@
-from connection_handler import ConnectionHandler
-from shinymud.world import World
+from shinymud.lib.connection_handler import ConnectionHandler
+from shinymud.lib.world import World
 from shinymud.models.area import Area
-from shinymud.schema import initialize_database
+from shinymud.models.schema import initialize_database
 from config import *
 
 import logging

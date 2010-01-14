@@ -1,5 +1,5 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.world import World
+from shinymud.lib.world import World
 
 class Npc(object):
     def __init__(self, area=None, id=0, **args):

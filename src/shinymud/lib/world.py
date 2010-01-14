@@ -1,7 +1,7 @@
 import threading
 import time
 import logging
-from shinymud.db import DB
+from shinymud.lib.db import DB
 
 class World(object):
     _instance = None

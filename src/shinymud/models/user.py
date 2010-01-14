@@ -1,7 +1,7 @@
-from shinymud.commands import *
+from shinymud.commands.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
-from shinymud.world import World
+from shinymud.lib.world import World
 from shinymud.models.item import InventoryItem, SLOT_TYPES
 import re
 import logging

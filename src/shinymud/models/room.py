@@ -1,6 +1,6 @@
 from shinymud.models.room_exit import RoomExit
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.world import World
+from shinymud.lib.world import World
 import logging
 import re
 

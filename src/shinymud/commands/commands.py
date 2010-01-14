@@ -2,9 +2,9 @@ from shinymud.models.area import Area
 from shinymud.models.room import Room
 from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
-from shinymud.world import World
-from shinymud.xport import XPort
-from shinymud.emotes import *
+from shinymud.lib.world import World
+from shinymud.lib.xport import XPort
+from shinymud.commands.emotes import *
 import re
 import logging
 

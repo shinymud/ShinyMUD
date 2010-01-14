@@ -1,6 +1,6 @@
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import to_bool
-from shinymud.world import World
+from shinymud.lib.world import World
 import types
 import logging
 import re

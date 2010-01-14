@@ -1,5 +1,5 @@
-from shinymud.commands import *
-from shinymud.world import World
+from shinymud.commands.commands import *
+from shinymud.lib.world import World
 import hashlib
 import re
 

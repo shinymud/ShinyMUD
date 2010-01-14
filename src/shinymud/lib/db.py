@@ -4,8 +4,8 @@ from shinymud.config import DB_NAME
 
 
 class DB(object):
-    def __init__(self):
-        self.conn  = sqlite3.Connection(DB_NAME)
+    def __init__(self, db_name=None):
+        self.conn  = sqlite3.Connection(db_name or DB_NAME)
         self.log = logging.getLogger('DB')
     
     def insert(self, query, params=None):

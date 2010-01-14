@@ -1,4 +1,4 @@
-from shinymud.world import World
+from shinymud.lib.world import World
 from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
