@@ -223,11 +223,11 @@ class Item(object):
         del self.item_types[item_type]
         return 'This item is no longer of type %s.\n' % item_type
     
-    def load_item(self):
+    def load(self, spawn_id=None):
         """Create an inventory item with the same attributes as this prototype item.
         """
         self.log.debug(str(self.to_dict()))
-        item = InventoryItem(**self.to_dict())
+        item = InventoryItem(spawn_id, **self.to_dict())
         self.log.debug(str(item))
         # Clear the prototype's dbid so we don't accidentally overwrite it in the db
         item.dbid = None
@@ -247,12 +247,16 @@ class Item(object):
                 self.world.db.update_from_dict('item', self.to_dict())
         else:
             self.dbid = self.world.db.insert_from_dict('item', self.to_dict())
+            for key, value in self.item_types.items():
+                value.item = item.dbid
+                value.save()
     
 
 class InventoryItem(Item):
-    def __init__(self, **args):
+    def __init__(self, spawn_id=None, **args):
         Item.__init__(self, **args)
         self.owner = None
+        self.spawn_id = spawn_id
     
     def to_dict(self):
         d = Item.to_dict(self)
@@ -261,6 +265,21 @@ class InventoryItem(Item):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('inventory', save_dict)
+            else:    
+                self.world.db.update_from_dict('inventory', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('inventory', self.to_dict())
+            # If an item has not yet been saved, its item types will not have been
+            # saved either.
+            for key, value in self.item_types.items():
+                value.item = item.dbid
+                value.save()
     
 
 class Damage(object):

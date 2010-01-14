@@ -1,4 +1,5 @@
 from shinymud.models.room_exit import RoomExit
+from shinymud.models.reset import Reset
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 import logging
@@ -23,14 +24,14 @@ class Room(object):
                       'up': None,
                       'down': None}
         self.npcs = []
-        self.item_resets = []
-        self.npc_resets = []
+        self.resets = {}
         self.users = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
         self.world = World.get_world()
         if self.dbid:
             self.load_exits()
+            self.load_resets()
     
     def load_exits(self):
         rows = self.world.db.select(""" re.dbid AS dbid, 
@@ -52,6 +53,17 @@ class Room(object):
         for row in rows:
             row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)
+    
+    def load_resets(self):
+        rows = self.world.db.select('* FROM room_resets WHERE room=?', [self.dbid])
+        for row in rows:
+            row['room'] = self
+            area = self.world.get_area(row['reset_object_area'])
+            if area:
+                obj = getattr(area, row['reset_type'] + "s").get(row['reset_object_id'])
+                if obj:
+                    row['obj'] = obj
+                    self.resets[row['dbid']] = Reset(**row)
     
     def to_dict(self):
         d = {}
@@ -87,40 +99,41 @@ class Room(object):
         nice_exits = ''
         for direction, value in self.exits.items():
             if value:
-                nice_exits += '        ' + direction + ': ' + str(value) + '\n'
+                nice_exits += '    ' + direction + ': ' + str(value) + '\n'
             else:
-                nice_exits += '        ' + direction + ': None\n'
-        iresets = ''
-        r = 1
-        for reset in self.item_resets:
-            iresets += '        [%s] Item - id:%s - %s\n' % (str(r),reset.id, reset.name)
-            r+=1
-        if not iresets:
-            iresets = '        None'
-        r = 1
-        nresets = ''
-        for reset in self.npc_resets:
-            nresets += '        [%s] NPC - id:%s - %s\n' % (str(r), reset.id, reset.name)
-            r+=1
-        if not nresets:
-            nresets = '        None'
+                nice_exits += '    ' + direction + ': None\n'
+        resets = ''
+        for reset in self.resets.values():
+            resets += '\n    [%s] %s - %s - spawns %s' % (reset.dbid, reset.reset_type.capitalize(), 
+                                                           reset.reset_object.name, 
+                                                           reset.spawn_point)
+        if not resets:
+            resets = 'None.'
             
         room_list ="""______________________________________________
-Room: 
-    id: %s
-    area: %s
-    name: %s
-    description: 
+id: %s
+area: %s
+name: %s
+description: 
 %s
-    exits: 
+exits: 
 %s
-    item resets:
-%s
-    npc resets:
-%s
+resets: %s
 ______________________________________________\n""" % (self.id, self.area.name, self.name,
-                                                       self.description, nice_exits, iresets, nresets)
+                                                       self.description, nice_exits,
+                                                       resets)
         return room_list
+    
+    def reset(self):
+        """Reset (or respawn) all of the items and npc's that are on this room's reset lists."""
+        # present_items = self._gather_spawn_ids
+        for reset in self.resets.values():
+            # if reset.spawn_id not in present_items:
+            if reset.spawn_point == 'in room':
+                if reset.reset_type == 'npc':
+                    self.npcs.append(reset.spawn())
+                else:
+                    self.items.append(reset.spawn())
     
     def user_add(self, user):
         self.users[user.name] = user
@@ -191,11 +204,10 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             obj = getattr(area, obj_type + "s").get(obj_id)
             if not obj:
                 return '%s number %s does not exist.\n' % (obj_type, obj_id)
-            if obj_type == 'npc':
                 # TODO: We need to be able to save resets to the database
-                self.npc_resets.append(obj)
-            else:
-                self.item_resets.append(obj)
+            reset = Reset(self, obj, obj_type)
+            reset.save()
+            self.resets[reset.dbid] = reset
             return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
         return 'Type "help resets" to get help using this command.\n'
     
@@ -243,7 +255,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         that_exit.save()
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
-            
+    
     def tell_room(self, message, exclude_list=[]):
         """Echo something to everyone in the room, except the people on the exclude list."""
         for person in self.users.values():
@@ -256,14 +268,14 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if keyword in npc.keywords:
                 return npc
         return None
-
+    
     def get_item(self, keyword):
         """Get an item from this room they keyword given matches its keywords."""
         for item in self.items:
             if keyword in item.keywords:
                 return item
         return None
-
+    
     def get_user(self, keyword):
         """Get a user from this room if their name is equal to the keyword given."""
         for user in self.users.values():
@@ -297,3 +309,30 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         """Remove an item from this room."""
         if item in self.items:
             self.items.remove(item)
+    
+    def item_purge(self, item):
+        """Delete this object from the room and the db, if it exists there."""
+        if item in self.items:
+            self.items.remove(item)
+            item.destruct()
+    
+    def npc_add(self, npc):
+        self.npcs.append(npc)
+    
+    def npc_remove(self, npc):
+        if npc in self.npcs:
+            self.npcs.remove(npc)
+    
+    def purge_room(self):
+        """Delete all objects and npcs in this room."""
+        # When npcs are loaded into the room, they're not saved to the db
+        # so we can just wipe the memory instances of them
+        self.npcs = []
+        # The items in the room may have been dropped by a user (and would
+        # therefore have been in the item_inventory db table). We need
+        # to make sure we delete the item from the db if it has an entry.
+        for item in self.items:
+            item.destruct()
+        self.items = []
+    
+

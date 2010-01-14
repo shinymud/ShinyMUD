@@ -5,16 +5,24 @@ class Npc(object):
     def __init__(self, area=None, id=0, **args):
         self.area = area
         self.id = str(id)
-        self.name = args.get('name', 'Shiny McShinerson')
+        self.name = str(args.get('name', 'Shiny McShinerson'))
         self.dbid = args.get('dbid')
+        self.title = args.get('title', '%s is here.' % self.name)
+        self.keywords = [name.lower() for name in self.name.split()]
+        self.keywords.append(self.name.lower())
+        kw = str(args.get('keywords', ''))
+        if kw:
+            self.keywords = kw.split(',')
         self.description = args.get('description', 'You see nothing special about this person.')
         self.world = World.get_world()
     
     def to_dict(self):
         d = {}
+        d['keywords'] = ','.join(self.keywords)
         d['area'] = self.area.dbid
         d['id'] = self.id
         d['name'] = self.name
+        d['title'] = self.title
         d['description'] = self.description
         if self.dbid:
             d['dbid'] = self.dbid
@@ -32,9 +40,12 @@ NPC:
     id: %s
     area: %s
     name: %s
+    title: %s
+    keywords: %s
     description: 
 %s
 ______________________________________________\n""" % (self.id, self.area.name, self.name,
+                                                       self.title, str(self.keywords),
                                                        self.description)
         return npc
     
@@ -52,6 +63,13 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         else:
             self.dbid = self.world.db.insert_from_dict('npc', self.to_dict())
     
+    def load(self, spawn_id=None):
+        new_npc = Npc(**self.to_dict())
+        new_npc.area = self.area
+        new_npc.spawn_id = spawn_id
+        new_npc.dbid = None
+        return new_npc
+    
     def set_description(self, description, user=None):
         """Set the description of this npc."""
         user.last_mode = user.mode
@@ -63,4 +81,25 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         self.name = name
         self.save({'name': self.name})
         return 'Npc name saved.\n'
+    
+    def set_title(self, title, user=None):
+        self.title = title
+        self.save({'title': self.title})
+        return 'Npc title saved.\n'
+    
+    def set_keywords(self, keywords, user=None):
+        """Set the keywords for this npc.
+        The argument keywords should be a string of words separated by commas.
+        """
+        if keywords:
+            word_list = keywords.split(',')
+            self.keywords = [word.strip().lower() for word in word_list]
+            self.save({'keywords': ','.join(self.keywords)})
+            return 'Npc keywords have been set.\n'
+        else:
+            self.keywords = [name.lower() for name in self.name.split()]
+            self.keywords.append(self.name.lower())
+            self.save({'keywords': ','.join(self.keywords)})
+            return 'Npc keywords have been reset.\n'
+        
     
