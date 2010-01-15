@@ -5,7 +5,7 @@
 import sqlite3
 from shinymud.config import DB_NAME
 
-def initialize_database(db_name=None):
+def initialize_database(connection=None):
     queries = [\
 '''CREATE TABLE IF NOT EXISTS user (
     dbid INTEGER PRIMARY KEY,
@@ -129,7 +129,7 @@ def initialize_database(db_name=None):
     item INTEGER NOT NULL REFERENCES item(dbid)
 )''']
     
-    conn = sqlite3.connect(db_name or DB_NAME)
+    conn = connection or sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     for query in queries:
         cursor.execute(query)
