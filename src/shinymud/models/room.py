@@ -6,8 +6,8 @@ import logging
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',
-                      'east': 'west', 'west': 'east',
-                      'up': 'down', 'down': 'up'}
+                 'east': 'west', 'west': 'east',
+                 'up': 'down', 'down': 'up'}
 
 class Room(object):
          
@@ -64,6 +64,12 @@ class Room(object):
                 if obj:
                     row['obj'] = obj
                     self.resets[row['dbid']] = Reset(**row)
+        for reset in self.resets.values():
+            if reset.container:
+                if int(reset.container) in self.resets:
+                    container = self.resets.get(int(reset.container))
+                    reset.container = container
+                    container.add_nested_reset(reset)
     
     def to_dict(self):
         d = {}
@@ -104,9 +110,7 @@ class Room(object):
                 nice_exits += '    ' + direction + ': None\n'
         resets = ''
         for reset in self.resets.values():
-            resets += '\n    [%s] %s - %s - spawns %s' % (reset.dbid, reset.reset_type.capitalize(), 
-                                                           reset.reset_object.name, 
-                                                           reset.spawn_point)
+            resets += '\n    [%s] %s' % (str(reset.dbid), str(reset))
         if not resets:
             resets = 'None.'
             
@@ -129,7 +133,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         # present_items = self._gather_spawn_ids
         for reset in self.resets.values():
             # if reset.spawn_id not in present_items:
-            if reset.spawn_point == 'in room':
+            if reset.get_spawn_point() == 'in room':
                 if reset.reset_type == 'npc':
                     self.npcs.append(reset.spawn())
                 else:
@@ -194,10 +198,15 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         return message
     
     def add_reset(self, args):
-        exp = r'(for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?[ ]+(?P<area_name>\w+))?'
+        exp = r'((for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))' +\
+              r'(([ ]+from)?([ ]+area)([ ]+(?P<area_name>\w+)))?' +\
+              r'(([ ]+((in)|(into)|(inside)))?([ ]+reset)?([ ]+(?P<container>\d+)))?)'
         match = re.match(exp, args, re.I)
         if match:
-            obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
+            obj_type, obj_id, area_name, container = match.group('obj_type', 
+                                                                 'obj_id', 
+                                                                 'area_name',
+                                                                 'container')
             area = World.get_world().get_area(area_name) or self.area
             if not area:
                 return 'That area doesn\'t exist.\n'
@@ -205,11 +214,52 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if not obj:
                 return '%s number %s does not exist.\n' % (obj_type, obj_id)
                 # TODO: We need to be able to save resets to the database
+            if container:
+                if int(container) not in self.resets:
+                    return 'Reset %s doesn\'t exist.\n' % container
+                container_reset = self.resets.get(int(container))
+                c_obj = container_reset.reset_object
+                if container_reset.reset_object.is_container():
+                    reset = Reset(self, obj, obj_type, container_reset)
+                    reset.save()
+                    container_reset.add_nested_reset(reset)
+                    self.resets[reset.dbid] = reset
+                    return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
+                else:
+                    return 'Reset %s is not a container.\n' % container
             reset = Reset(self, obj, obj_type)
             reset.save()
             self.resets[reset.dbid] = reset
             return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
         return 'Type "help resets" to get help using this command.\n'
+    
+    def remove_reset(self, args):
+        exp = r'(?P<reset_num>\d+)'
+        match = re.match(exp, args, re.I)
+        if not match:
+            return 'Type "help resets" to get help using this command.\n'
+        reset_id = int(match.group('reset_num'))
+        if reset_id in self.resets:
+            reset = self.resets[reset_id]
+            del self.resets[reset_id]
+            # If this reset has a container, we need to destroy
+            # that container's link to it
+            if reset.container.dbid in self.resets:
+                self.resets[reset.container.dbid].remove_nested_reset(reset)
+            # Delete all resets that were supposed to be
+            # reset into this container -- their spawn point is being deleted,
+            # so they should no longer be on the reset list.
+            message = 'Reset %s has been removed.\n' % reset_id
+            dependents = ''
+            for sub_reset in reset.nested_resets:
+                if sub_reset.dbid in self.resets:
+                    dependents = ', '.join(dependents, str(sub_reset.dbid))
+                    del self.resets[sub_reset.dbid]
+            reset.destruct()
+            if dependents:
+                message += 'The following dependent resets were also removed: ' + dependents
+            return message
+        return 'Reset #%s doesn\'t exist.\n' % reset_id
     
     def remove_exit(self, args):
         if not args:
@@ -262,21 +312,21 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             if person.name not in exclude_list:
                 person.update_output(message)
     
-    def get_npc(self, keyword):
+    def get_npc_by_kw(self, keyword):
         """Get an NPC from this room if its name is equal to the keyword given."""
         for npc in self.npcs:
             if keyword in npc.keywords:
                 return npc
         return None
     
-    def get_item(self, keyword):
+    def get_item_by_kw(self, keyword):
         """Get an item from this room they keyword given matches its keywords."""
         for item in self.items:
             if keyword in item.keywords:
                 return item
         return None
     
-    def get_user(self, keyword):
+    def get_user_by_kw(self, keyword):
         """Get a user from this room if their name is equal to the keyword given."""
         for user in self.users.values():
             if keyword == user.name:
@@ -287,15 +337,15 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         """Return the first instance of an item, npc, or player that matches the keyword.
         If nothing in the room matches the keyword, return None."""
         # check the items in the room first
-        item = self.get_item(keyword)
+        item = self.get_item_by_kw(keyword)
         if item: return item
         
         # then check the npcs in the room
-        npc = self.get_npc(keyword)
+        npc = self.get_npc_by_kw(keyword)
         if npc: return npc
         
         # then check the PCs in the room
-        user = self.get_user(keyword)
+        user = self.get_user_by_kw(keyword)
         if user: return user
         
         # If we didn't match any of the above, return None
@@ -314,6 +364,9 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         """Delete this object from the room and the db, if it exists there."""
         if item in self.items:
             self.items.remove(item)
+            if item.is_container():
+                for sub_item in item.inventory:
+                    item.destruct()
             item.destruct()
     
     def npc_add(self, npc):
@@ -332,7 +385,8 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         # therefore have been in the item_inventory db table). We need
         # to make sure we delete the item from the db if it has an entry.
         for item in self.items:
-            item.destruct()
+            if item.is_container():
+                item.item_types.get('container').destroy_inventory()
         self.items = []
     
 

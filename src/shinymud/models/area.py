@@ -6,16 +6,6 @@ from shinymud.modes.text_edit_mode import TextEditMode
 
 class Area(object):
     
-    def to_dict(self):
-        d = {}
-        d['name'] = self.name
-        d['level_range'] = self.level_range
-        d['builders'] = ",".join(self.builders)
-        d['description']  = self.description
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
     def __init__(self, name=None, **args):
         self.name = str(name)
         self.rooms = {}
@@ -30,6 +20,16 @@ class Area(object):
         self.description = args.get('description', 'No Description')
         self.dbid = args.get('dbid')
         self.world = World.get_world()
+    
+    def to_dict(self):
+        d = {}
+        d['name'] = self.name
+        d['level_range'] = self.level_range
+        d['builders'] = ",".join(self.builders)
+        d['description']  = self.description
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
     
     def load(self):
         if self.dbid:

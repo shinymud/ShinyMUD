@@ -98,9 +98,8 @@ def initialize_database(db_name=None):
     room INTEGER NOT NULL REFERENCES room(dbid),
     reset_object_id TEXT,
     reset_object_area TEXT,
-    container_id TEXT,
-    reset_type TEXT,
-    spawn_point TEXT
+    container INTEGER REFERENCES room_reset(dbid),
+    reset_type TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
@@ -117,7 +116,15 @@ def initialize_database(db_name=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS container (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid)
+    item INTEGER NOT NULL REFERENCES item(dbid),
+    weight_capacity NUMBER,
+    weight_reduction INTEGER,
+    item_capacity INTEGER,
+    openable TEXT,
+    closed TEXT,
+    locked TEXT,
+    key_area TEXT,
+    key_id TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS weapon (
     dbid INTEGER PRIMARY KEY,
