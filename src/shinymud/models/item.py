@@ -208,7 +208,7 @@ class Item(object):
             new_type = ITEM_TYPES[item_type](**item_dict)
         else:
             new_type = ITEM_TYPES[item_type]()
-        new_type.item = self.dbid
+        new_type.item = self
         new_type.save()
         # new_type.dbid = self.world.db.insert_from_dict(item_type, new_type.to_dict())
         self.item_types[item_type] = new_type
@@ -236,6 +236,7 @@ class Item(object):
         item.area = self.area
         for key,value in self.item_types.items():
             item.item_types[key] = value.load()
+            item.item_types[key].item = item
         return item
     
     def save(self, save_dict=None):
@@ -250,6 +251,11 @@ class Item(object):
             for key, value in self.item_types.items():
                 value.item = item.dbid
                 value.save()
+    
+    def is_container(self):
+        if 'container' in self.item_types:
+            return True
+        return False
     
 
 class InventoryItem(Item):
@@ -278,7 +284,6 @@ class InventoryItem(Item):
             # If an item has not yet been saved, its item types will not have been
             # saved either.
             for key, value in self.item_types.items():
-                value.item = item.dbid
                 value.save()
     
 
@@ -337,7 +342,7 @@ class Weapon(object):
     
     def to_dict(self):
         d = {}
-        d['item'] = self.item
+        d['item'] = self.item.dbid
         d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
         if self.dbid:
             d['dbid'] = self.dbid
@@ -443,13 +448,43 @@ class Container(object):
         self.item_capacity = args.get('item_capacity')
         self.weight_reduction = args.get('weight_reduction', 0)
         self.inventory = []
-        self.dbid = args.get(dbid)
+        self.dbid = args.get('dbid')
+        self.item = args.get('item')
+        self.log = logging.getLogger('Container')
+        self.log.debug('ITEM: ' + str(self.item))
+        self.openable = to_bool(args.get('openable')) or False
+        self.closed = to_bool(args.get('closed')) or False
+        self.locked = to_bool(args.get('locked')) or False
+        self.key = None
+        self.key_area = str(args.get('key_area', ''))
+        self.key_id = str(args.get('key_id', ''))
     
+    def _resolve_key(self):
+        if self._key:
+            return self._key
+        try: 
+            self.key = self.world.get_area(self.key_area).get_item(self.key_id)
+            return self._key
+        except:
+            return None
+    
+    def _set_key(self, key):
+        self._key = key
+    
+    key = property(_resolve_key, _set_key)
+        
     def __str__(self):
+        key = 'None'
+        if self.key:
+            key = '%s (id: %s from area: %s)' % (self.key.name, self.key.id, self.key.area.name)
         string = 'CONTAINER ATTRIBUTES:\n' +\
                  '  weight capacity: ' + str(self.weight_capacity) + '\n' +\
-                 '  weight reduction: ' + str(self.weight_reduction) + '\n' +\
-                 '  item capacity: ' + str(self.item_capacity) + '\n'
+                 '  item capacity: ' + str(self.item_capacity) + '\n' +\
+                 '  weight reduction: ' + str(self.weight_reduction) + '%\n' +\
+                 '  openable: ' + str(self.openable) + '\n' +\
+                 '  closed: ' + str(self.closed) + '\n' +\
+                 '  locked: ' + str(self.locked) + '\n' +\
+                 '  key: ' + key + '\n'
         return string
     
     def to_dict(self):
@@ -457,20 +492,60 @@ class Container(object):
         d['weight_capacity'] = self.weight_capacity
         d['item_capacity'] = self.item_capacity
         d['weight_reduction'] = self.weight_reduction
+        d['key_area'] = self.key_area
+        d['key_id'] = self.key_id
+        d['openable'] = self.openable
+        d['closed'] = self.closed
+        d['locked'] = self.locked
+        self.log.debug('ITEM: ' + str(self.item))
+        d['item'] = self.item.dbid
         if self.dbid:
             d['dbid'] = self.dbid
         return d
     
     def save(self, save_dict=None):
+        world = World.get_world()
         if self.dbid:
             if save_dict:
                 save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('container', save_dict)
+                world.db.update_from_dict('container', save_dict)
             else:    
-                self.world.db.update_from_dict('container', self.to_dict())
+                world.db.update_from_dict('container', self.to_dict())
         else:
-            self.dbid = self.world.db.insert_from_dict('container', self.to_dict())
+            self.dbid = world.db.insert_from_dict('container', self.to_dict())
     
+    def load(self):
+        newc = Container(**self.to_dict())
+        newc.dbid = None
+        newc.item = self.item
+        return newc
+    
+    def destroy_inventory(self):
+        for item in self.inventory:
+            item.destruct()
+    
+    def item_add(self, item):
+        self.inventory.append(item)
+    
+    def item_remove(self, item):
+        if item in self.inventory:
+            self.inventory.remove(item)
+    
+    def get_item_by_kw(self, keyword):
+        for item in self.inventory:
+            if keyword in item.keywords:
+                return item
+        return None
+    
+    def display_inventory(self):
+        if self.closed:
+            return '%s is closed.\n' % self.item.name.capitalize()
+        i = ''
+        for item in self.inventory:
+            i += '  ' + item.name + '\n'
+        if not i:
+            return '%s is empty.\n' % self.item.name.capitalize()
+        return '%s contains:\n%s' % (self.item.name.capitalize(), i)
 
 class Furniture(object):
     def __init__(self, **args):
@@ -537,7 +612,7 @@ class Portal(object):
         d['leave_message'] = self.leave_message
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
-        d['item'] = self.item
+        d['item'] = self.item.dbid
         d['to_room'] = self.to_room
         d['to_area'] = self.to_area
         if self.dbid:

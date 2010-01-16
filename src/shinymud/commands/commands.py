@@ -207,13 +207,19 @@ class Look(BaseCommand):
         if self.user.location:
             obj = self.user.location.check_for_keyword(keyword)
             if obj:
-                return "You look at %s:\n%s\n" % (obj.name, obj.description)
+                message = "You look at %s:\n%s\n" % (obj.name, obj.description)
+                if hasattr(obj, 'is_container') and obj.is_container():
+                    message += obj.item_types.get('container').display_inventory()
+                return message
         return None
     
     def look_in_inventory(self, keyword):
         item = self.user.check_inv_for_keyword(keyword)
         if item:
-            return "You look at %s:\n%s\n" % (item.name, item.description)
+            message = "You look at %s:\n%s\n" % (item.name, item.description)
+            if item.is_container():
+                message += item.item_types.get('container').display_inventory()
+            return message
         return None
     
 
@@ -427,16 +433,45 @@ class Get(BaseCommand):
     def execute(self):
         if not self.args:
             self.user.update_output('What do you want to get?\n')
-        elif not self.user.location:
-            self.user.update_output('Only cold blackness exists in the void. It\'s not the sort of thing you can take.\n')
         else:
-            item = self.user.location.check_for_keyword(self.args)
+            exp = r'((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((?P<item_kw>(\w|[ ])+))'
+            match = re.match(exp, self.args, re.I)
+            if not match:
+                self.user.update_output('Type "help get" for help with this command.\n')
+                return
+            target_kw, source_kw, item_kw = match.group('target_kw', 'source_kw', 'item_kw')
+            if source_kw:
+                source = self.user.location.check_for_keyword(source_kw) or \
+                         self.user.check_inv_for_keyword(source_kw)
+                if not source:
+                    self.user.update_output('"%s" doesn\'t exist.\n' % source_kw)
+                    return
+                if not source.is_container():
+                    self.user.update_output('That\'s not a container.\n')
+                    return
+                source = source.item_types.get('container')
+                item = source.get_item_by_kw(target_kw)
+            else:
+                if not self.user.location:
+                    self.user.update_output('Only cold blackness exists in the void. ' +\
+                                            'It\'s not the sort of thing you can take.\n')
+                    return
+                source = self.user.location
+                item = source.get_item_by_kw(item_kw)
             if item:
-                self.user.location.item_remove(item)
-                self.user.item_add(item)
-                self.user.update_output('You get %s.\n' % item.name)
-                self.user.location.tell_room('%s gets %s\n' % (self.user.get_fancy_name(), item.name), 
-                                                             [self.user.name])
+                if item.carryable or (self.user.permissions & GOD):
+                    source.item_remove(item)
+                    self.user.item_add(item)
+                    self.user.update_output('You get %s.\n' % item.name)
+                    if self.user.location:
+                        if source_kw:
+                            room_tell = '%s gets %s from %s.\n' % (self.user.get_fancy_name(), item.name,
+                                                                   source.item.name)
+                        else:
+                            room_tell = '%s gets %s.\n' % (self.user.get_fancy_name(), item.name)
+                        self.user.location.tell_room((room_tell), [self.user.name])
+                else:
+                    self.user.update_output('You can\'t take that.\n')
             else:
                 self.user.update_output('That doesn\'t exist.\n')
                 
@@ -517,7 +552,7 @@ class Enter(BaseCommand):
         else:
             if self.user.location:
                 # Check the room for the portal object first
-                obj = self.user.location.get_item(self.args)
+                obj = self.user.location.get_item_by_kw(self.args)
                 if obj:
                     if 'portal' in obj.item_types:
                         self.go_portal(obj.item_types['portal'])

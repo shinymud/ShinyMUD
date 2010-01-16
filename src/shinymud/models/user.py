@@ -20,7 +20,7 @@ class User(object):
         self.last_mode = None
         self.dbid = None
         self.world = World.get_world()
-
+    
     def userize(self, **args):
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
