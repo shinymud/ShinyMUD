@@ -690,3 +690,25 @@ class Reset(BaseCommand):
 
 command_list.register(Reset, ['reset'])
 
+class Help(BaseCommand):
+    help = ("Try 'help <command name>' for help with a command\n"
+            "like 'help go' will give details about the go command."
+    )
+    def execute(self):
+        # get the help parameter and see if it matches a command_help alias
+        #     if so, send user the help string
+        #     return
+        # else, look up in database
+        #     if there is a match, send the help string to the user
+        #     return
+        # else, send "I can't help you with that" string to user
+        # return
+        help = command_help[self.args]
+        if help:
+            self.user.update_output(help + '\n')
+        else:
+            self.user.update_output("Sorry, I can't help you with that.\n")
+    
+
+command_list.register(Help, ['help', 'explain', 'describe'])
+command_help.register(Help.help, ['help', 'explain', 'describe'])

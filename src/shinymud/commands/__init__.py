@@ -17,10 +17,16 @@ class CommandRegister(object):
     def register(self, func, aliases):
         for alias in aliases:
             self.commands[alias] = func
-            
+    
+
+# Create the list of command-related Help Pages
+command_help = CommandRegister()
+
 
 class BaseCommand(object):
     required_permissions = PLAYER
+    help = ("We Don't have a help page for this command yet"
+    )
     def __init__(self, user, args, alias):
         self.args = args
         self.user = user
