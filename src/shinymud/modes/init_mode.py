@@ -219,7 +219,6 @@ class InitMode(object):
         header.append("") # one more newline for easier to read input
         self.user.update_output('\n'.join(header))
     
-
     def custom_create(self):
         if len(self.user.inq) > 0:
             m = re.match('(?P<attr>[a-zA-Z]+)[ ]*(?P<amount>-?\d+)?', self.user.inq[0])
@@ -258,3 +257,4 @@ class InitMode(object):
                 self.user.update_output("I don't understand.\n")
             self.display_custom_create()
             del self.user.inq[0]
+    

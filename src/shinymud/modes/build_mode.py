@@ -1,4 +1,5 @@
 from shinymud.commands.commands import *
+from shinymud.commands.build_commands import *
 import re
 
 class BuildMode(object):

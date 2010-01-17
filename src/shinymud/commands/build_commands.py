@@ -1,0 +1,371 @@
+from shinymud.commands import *
+
+build_list = CommandRegister()
+
+class Create(BaseCommand):
+    """Create a new item, npc, or area."""
+    required_permissions = BUILDER
+    def execute(self):
+        object_types = ['item', 'npc', 'room']
+        if not self.args:
+            self.user.update_output('What do you want to create?\n')
+        else:
+            args = self.args.lower().split()
+            if args[0] == 'area':
+                # Areas need to be created with a name argument -- make sure the user has passed one
+                if not len(args) > 1:
+                    self.user.update_output('You can\'t create a new area without a name.\n')
+                else:
+                    new_area = Area.create(args[1])
+                    if type(new_area) == str:
+                        self.user.update_output(new_area)
+                    else:
+                        self.user.mode.edit_area = new_area
+                        new_area.add_builder(self.user.name)
+                        self.user.mode.edit_object = None
+                        self.user.update_output('New area "%s" created.\n' % new_area.name)
+            
+            elif args[0] in object_types:
+                if not self.user.mode.edit_area:
+                    self.user.update_output('You need to be editing an area first.\n')
+                else:
+                    new_obj = getattr(self.user.mode.edit_area, 'new_' + args[0])()
+                    if type(new_obj) == str:
+                        self.user.update_output(new_obj)
+                    else:
+                        self.user.mode.edit_object = new_obj
+                        self.user.update_output('New %s number %s created.\n' % (args[0], 
+                                                                                 new_obj.id))
+            else:
+                self.user.update_output('You can\'t create that.\n')
+    
+
+build_list.register(Create, ['create', 'new'])
+
+class Edit(BaseCommand):
+    """Edit an area, object, npc, or room."""
+    required_permissions = BUILDER
+    def execute(self):
+        args = self.args.lower().split()
+        if len(args) < 2:
+            self.user.update_output('Type "help edit" to get help using this command.\n')
+        else:
+            if args[0] == 'area':
+                area = self.world.get_area(args[1])
+                if area:
+                    if (self.user.name in area.builders) or (self.user.permissions & GOD):
+                        self.user.mode.edit_area = self.world.areas[args[1]]
+                        # Make sure to clear any objects they were working on in the old area
+                        self.user.mode.edit_object = None
+                        self.user.update_output('Now editing area "%s".\n' % args[1])
+                    else:
+                        self.user.update_output('You aren\'t allowed to edit someone else\'s area.\n')
+                else:
+                    self.user.update_output('That area doesn\'t exist. You should create it first.\n')
+            elif args[0] in ['room', 'npc', 'item']:
+                if self.user.mode.edit_area:
+                    obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
+                    if obj:
+                        self.user.mode.edit_object = obj
+                        self.user.update_output(str(self.user.mode.edit_object))
+                    else:
+                        self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
+                else:
+                    self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+            else:
+                self.user.update_output('You can\'t edit that.\n')
+    
+
+build_list.register(Edit, ['edit'])
+
+class List(BaseCommand):
+    """List allows a builder to "see" all of the areas and objects in the world.
+        
+    More specifically, list either returns a string representation of a group of objects/areas, 
+    or a the attributes of a specific object/area, filtered by the criteria passed by the user. 
+    An object-type is one of the following: item, npc, or room.
+        
+    * With no arguments passed, list will return the attributes of the object currently being edited.
+    * If just an object-type is passed, list will return a list of ALL the objects of that type in 
+        the working area.
+    * If an object-type and an area name are passed, list will return a list of ALL objects 
+        of that type in the specified area.
+    * If an object-type and a specific id are passed, list will return a list of attributes for 
+        that specific object in the working area.
+    * If an object-type, a specific id, and an area name are passed, list will return a list of
+        attributes for that specific object in the specified area.
+        
+    examples: 
+    "list room 4 in area bilbos_shire" will show the attributes of room number 4 in the 
+    area bilbos_shire, regardless if that area or that room are being currently edited.
+    "list items" will list all of the items that exist in the working area.
+    
+    """
+    required_permissions = BUILDER
+    def execute(self):
+        message = 'Type "help list" to get help using this command.\n'
+        if not self.args:
+            # The user didn't give a specific item to be listed; show them the current one,
+            # if there is one
+            if self.user.mode.edit_object:
+                message = str(self.user.mode.edit_object)
+            elif self.user.mode.edit_area:
+                message = str(self.user.mode.edit_area)
+            else:
+                message = 'You\'re not editing anything right now.\n'
+        else:
+            # The user wants to see the details of some other object than the one they're editing.
+            exp = r'(?P<func>(area)|(npc)|(item)|(room))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+            match = re.match(exp, self.args, re.I)
+            if not match:
+                message = 'You can\'t list that.\n'
+            else:
+                func, obj_id, area_name = match.group('func', 'id', 'area_name')
+                if func == 'area':
+                    message = self.list_area(obj_id, area_name)
+                else:
+                    message = self.list_object(func, obj_id, area_name)
+        self.user.update_output(message)
+        
+    def list_area(self, obj_id, area_name):
+        if area_name:
+            # The user wants to know the details of a specific area
+            area = self.world.get_area(area_name)
+            if area:
+                return str(area)
+            else:
+                return 'That area doesn\'t exist.\n'
+        else:
+            # No area_name was passed, therefore we want to give the user a
+            # list of all the areas in the world
+            return self.world.list_areas()
+    
+    def list_object(self, obj_type, obj_id, area_name):
+        
+        area = self.world.get_area(area_name) or self.user.mode.edit_area
+        if not area:
+            return 'What area do you want to list %ss for?\n' % obj_type
+        
+        if obj_id:
+            # A specific id was passed -- if an object of the specified type with that
+            # id exists, show the user the attributes for that particular object.
+            obj = getattr(area, obj_type + 's').get(obj_id)
+            if obj:
+                return str(obj)
+            else:
+                return '%s "%s" doesn\'t exist in area "%s".' % (obj_type.capitalize(),
+                                                                 obj_id, area.name)
+        else:
+            # Since we got this far, obj_type will be equal to "npc", "room", or "item",
+            # which means the following will call one of these three functions:
+            # list_rooms(), list_items(), or list_npcs(). Since the user didn't pass us a specific
+            # id, they should get a list of all of the objects of the type they specified
+            # (for the given area they specified).
+            return getattr(area, "list_" + obj_type + "s")()
+    
+
+build_list.register(List, ['list'])
+
+class Set(BaseCommand):
+    required_permissions = BUILDER
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to set its attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to set?\n')
+        else:
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            if not match:
+                message = 'Type "help set" for help setting attributes.\n'
+            else:
+                func, _, arg = match.groups()
+                message = 'You can\'t set that.\n'
+                if hasattr(obj, 'set_' + func):
+                    message = (getattr(obj, 'set_' + func)(arg, self.user))
+                
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the set function in the object's native set functions,
+                    # but the object is of type Item, then we should search the set functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'set_' + func):
+                            message = getattr(iType, 'set_' + func)(arg)
+                            break
+                self.user.update_output(message)
+    
+
+build_list.register(Set, ['set'])
+
+class Link(BaseCommand):
+    """Link two room objects together through their exits."""
+    required_permissions = BUILDER
+    def execute(self):
+        this_room = self.user.mode.edit_object
+        if this_room and (this_room.__class__.__name__ == 'Room'):
+            exp = r'(?P<direct>\w+)([ ]+(?P<area>\w+)([ ]+(?P<room>\d+)))?'
+            match = re.match(exp, self.args, re.I)
+            if match:
+                direction, area, room = match.group('direct', 'area', 'room')
+                if direction in this_room.exits:
+                    if area and room:
+                        link_area = self.world.get_area(area)
+                        link_room = link_area.get_room(room)
+                        if link_area and link_room:
+                            self.user.update_output(this_room.link_exits(direction, link_room))
+                        else:
+                            self.user.update_output('That area/room combo doesn\'t exist.\n')
+                    else:
+                        new_room = this_room.area.new_room()
+                        self.user.update_output('Room %s created.\n' % new_room.id)
+                        self.user.update_output(this_room.link_exits(direction, new_room))
+                else:
+                    self.user.update_output('That direction doesn\'t exist.\n')
+            else:
+                self.user.update_output('Type "help link" for help on this command.\n')
+        else:
+            self.user.update_output('You have to be editing a room to link it to something.\n')
+    
+
+build_list.register(Link, ['link'])
+
+class Add(BaseCommand):
+    required_permissions = BUILDER
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to add attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to add?\n')
+        else:
+            message = 'You can\'t add that.\n'
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            if not match:
+                self.user.update_output('Type "help add" for help with this command.\n')
+            else:
+                func, _, arg = match.groups()
+                if hasattr(obj, 'add_' + func):
+                    self.user.update_output(getattr(obj, 'add_' + func)(arg))
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the add function in the object's native add functions,
+                    # but the object is of type Item, then we should search the add functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'add_' + func):
+                            message = getattr(iType, 'add_' + func)(arg)
+                            break
+                    self.user.update_output(message)
+    
+
+build_list.register(Add, ['add'])
+
+class Remove(BaseCommand):
+    required_permissions = BUILDER
+    def execute(self):
+        obj = self.user.mode.edit_object or self.user.mode.edit_area
+        if not obj:
+            self.user.update_output('You must be editing something to remove attributes.\n')
+        elif not self.args:
+            self.user.update_output('What do you want to remove?\n')
+        else:
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            message = 'You can\'t remove that.\n'
+            if not match:
+                self.user.update_ouput('Type "help remove" for help with this command.\n')
+            else:
+                func, _, args = match.groups()
+                if hasattr(obj, 'remove_' + func):
+                    self.user.update_output(getattr(obj, 'remove_' + func)(args))
+                elif obj.__class__.__name__ == 'Item':
+                    # If we didn't find the set function in the object's native set functions,
+                    # but the object is of type Item, then we should search the set functions
+                    # of that item's item_types (if it has any)
+                    for iType in obj.item_types.values():
+                        if hasattr(iType, 'set_' + func):
+                            message = getattr(iType, 'set_' + func)(args)
+                            break
+                    self.user.update_output(message)
+    
+
+build_list.register(Remove, ['remove'])
+
+class Destroy(BaseCommand):
+    """Destroy an area, room, npc, or item, permanently removing it from the system.
+    
+    NOTE: Player avatars should not be able to be deleted using this."""
+    required_permissions = BUILDER
+    def execute(self):
+        message = 'Type "help destroy" to get help using this command.\n'
+        if not self.args:
+                # Don't ever let them destroy something if they haven't been specific about 
+                # what they want destroyed (i.e, they haven't given us any arguments)
+                message = self.user.update_output('You should be more specific. This command could really cause some damage.\n')
+                return
+        exp = r'(?P<func>(area)|(npc)|(item)|(room))([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+        match = re.match(exp, self.args, re.I)
+        message = 'Type "help destroy" to get help using this command.\n'
+        if match:
+            func, obj_id, area_name = match.group('func', 'id', 'area_name')
+            if not area_name:
+                area = self.user.mode.edit_area
+            else:
+                area = self.world.get_area(area_name)
+                if not area:
+                    self.user.update_output('That area doesn\'t exist.\n')
+                    return
+                elif not ((self.user.permissions & GOD) or (self.user.name in area.builders)):
+                    self.user.update_output('You\'re not allowed to destroy someone else\'s area.\n')
+                    return
+            if func == 'area':
+                message = self.world.destroy_area(area_name, self.user.name)
+            elif area and hasattr(area, 'destroy_' + func):
+                message = getattr(area, 'destroy_' + func)(obj_id)
+            else:
+                message = 'You can\'t destroy something that does\'t exist.\n'
+            # The destroy function will set the id of whatever it deleted to None
+            # so that any other objects with references will know they should terminate
+            # their reference. If the user destroyed the object they're working on,
+            # make sure that we clear it from their edit_object, and therefore ther prompt 
+            # so they don't try and edit it again before it gets wiped.
+            if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
+                self.user.mode.edit_object = None
+            if self.user.mode.edit_area and self.user.mode.edit_area.name == None:
+                self.user.mode.edit_area = None
+        self.user.update_output(message)
+    
+
+build_list.register(Destroy, ['destroy'])
+
+class Export(BaseCommand):
+    required_permissions = BUILDER
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Export what?\n')
+        else:
+            area = self.world.get_area(self.args)
+            if area:
+                self.user.update_output('Exporting area %s. This may take a moment.\n' % area.name)
+                result = XPort().export_to_xml(area)
+                self.user.update_output(result)
+            else:
+                self.user.update_output('That area doesn\'t exist.\n')
+    
+
+build_list.register(Export, ['export'])
+
+class Import(BaseCommand):
+    required_permissions = BUILDER
+    def execute(self):
+        if not self.args:
+            self.user.update_output(XPort.list_importable_areas())
+        else:
+            area = self.world.get_area(self.args)
+            if area:
+                self.user.update_output('That area already exists in your world.\n' +\
+                                        'You\'ll need to destroy it in-game before you try importing it.\n')
+            else:
+                result = XPort().import_from_xml(self.args)
+                self.user.update_output(result)
+    
+
+build_list.register(Import, ['import'])

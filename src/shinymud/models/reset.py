@@ -29,9 +29,9 @@ class Reset(object):
     
     def get_spawn_point(self):
         if self.container:
-            if self.reset_type == 'npc':
-                return 'into %s\'s inventory (R:%s)' % (self.reset_object.name, 
-                                                          str(self.container.dbid))
+            if self.container.reset_type == 'npc':
+                return 'into %s\'s inventory (R:%s)' % (self.container.reset_object.name, 
+                                                        str(self.container.dbid))
             else:
                 return 'into %s (R:%s)' % (self.container.reset_object.name, str(self.container.dbid))
         return 'in room'

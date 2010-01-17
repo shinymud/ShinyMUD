@@ -1,3 +1,4 @@
+from shinymud.commands import *
 from shinymud.commands.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode

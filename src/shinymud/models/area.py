@@ -125,11 +125,11 @@ ______________________________________________\n""" % (self.name,
     def create(cls, name, **area_dict):
         """Create a new area instance and add it to the world's area list."""
         world = World.get_world()
+        if world.get_area(name):
+            return "This area already exists.\n"
         if area_dict:
             new_area = cls(name, **area_dict)
         else:
-            if world.get_area(name):
-                return "This area already exists.\n"
             new_area = cls(name)
         new_area.save()
         world.new_area(new_area)
