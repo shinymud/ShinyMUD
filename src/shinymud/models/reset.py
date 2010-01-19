@@ -37,9 +37,18 @@ class Reset(object):
                 return 'into %s\'s inventory (R:%s)' % (self.container.reset_object.name, 
                                                         str(self.container.dbid))
             else:
-                return 'into %s (R:%s)' % (self.container.reset_object.name, str(self.container.dbid))
+                return 'into %s (R:%s)' % (self.container.reset_object.name, 
+                                           str(self.container.dbid))
         return 'in room'
+    def get_spawn_id(self):
+        if self.dbid:
+            spawn_id = "%s,%s_%s-%s" % (self.room.id, self.room.area.name, 
+                                        self.reset_object.id, 
+                                        str(self.dbid))
+            return spawn_id
+        return None
     
+    spawn_id = property(get_spawn_id)
     def add_nested_reset(self, reset):
         """Add another item to this object's "containee list"."""
         self.nested_resets.append(reset)
@@ -58,10 +67,8 @@ class Reset(object):
             else:
                 world.db.update_from_dict('room_resets', self.to_dict())
         else:
-            self.dbid = world.db.insert_from_dict('room_resets', self.to_dict())
-            # self.spawn_id = "%s,%s_%s-%s" % (self.room.id, self.room.area.name, 
-            #                                  self.reset_object.id, str(self.dbid))
-            # world.db.update_from_dict('room_resets', {'dbid': self.dbid, 'spawn_id': self.spawn_id})
+            self.dbid = world.db.insert_from_dict('room_resets', 
+                                                  self.to_dict())
     
     def destruct(self):
         world = World.get_world()
@@ -73,7 +80,7 @@ class Reset(object):
     def spawn(self):
         """load the object"""
         new_object = self.reset_object.load()
-        # new_object.spawn_id = self.spawn_id
+        new_object.spawn_id = self.get_spawn_id()
         for reset in self.nested_resets:
             container = new_object.item_types.get('container')
             container.item_add(reset.spawn())

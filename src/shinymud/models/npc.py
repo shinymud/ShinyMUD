@@ -15,6 +15,7 @@ class Npc(object):
             self.keywords = kw.split(',')
         self.description = args.get('description', 'You see nothing special about this person.')
         self.world = World.get_world()
+        self.spawn_id = None
     
     def to_dict(self):
         d = {}

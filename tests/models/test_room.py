@@ -106,6 +106,52 @@ class TestRoom(TestCase):
         pass
     
     def test_reset(self):
-        pass
+        proto_item = self.area.new_item()
+        proto_container = self.area.new_item()
+        proto_container.add_type('container')
+        proto_npc = self.area.new_npc()
+        
+        self.room.add_reset('for item %s' % proto_container.id)
+        self.room.add_reset('for item %s in %s' % (proto_item.id, '1'))
+        self.room.add_reset('for npc %s' % npc.id)
+        
+        self.assertEqual(len(self.room.items), 0)
+        self.assertEqual(len(self.room.npcs), 0)
+        self.room.reset()
+        self.assertEqual(len(self.room.items), 1)
+        self.assertEqual(self.room.npcs[0].id, proto_npc.id)
+        self.assertEqual(self.room.npcs[0].area, proto_npc.area)
+        self.assertEqual(len(self.room.npcs), 1)
+        self.assertEqual(self.room.items[0].id, proto_container.id)
+        self.assertEqual(self.room.items[0].area, proto_container.area)
+        
+        c_flag = False
+        for item in self.room.items:
+            if item.is_container():
+                inventory = item.item_types.get('container').inventory
+                c_flag = True
+                # There should be 1 item inside the container item
+                self.assertEqual(len(inventory), 1)
+                self.assertEqual(inventory[0].id, proto_item.id)
+                self.assertEqual(inventory[0].area, proto_item.area)
+        # We better have found a container in the room's items
+        self.assertTrue(c_flag)
+        
+        # Reset again, and make sure that we didn't add the objects that
+        # we already had
+        self.room.reset()
+        self.assertEqual(len(self.room.items), 1)
+        self.assertEqual(len(self.room.npcs), 1)
+        c_flag = False
+        for item in self.room.items:
+            if item.is_container():
+                c_flag = True
+                inventory = item.item_types.get('container').inventory
+                self.assertEqual(inventory[0].id, proto_item.id)
+                self.assertEqual(inventory[0].area, proto_item.area)
+                # There should be 1 item inside the container item
+                self.assertEqual(len(inventory), 1)
+        # We better have found a container in the room's items
+        self.assertTrue(c_flag)
     
 

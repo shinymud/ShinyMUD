@@ -132,10 +132,15 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     
     def reset(self):
         """Reset (or respawn) all of the items and npc's that are on this room's reset lists."""
-        # present_items = self._gather_spawn_ids
+        room_id = '%s,%s' % (self.id, self.area.name)
+        for item in self.items:
+            if item.is_container and (item.spawn_id.startswith(room_id)):
+                self.item_purge(item)
+        present_obj = [item.spawn_id for item in self.items if item.spawn_id]
+        present_obj.extend([npc.spawn_id for npc in self.npcs if npc.spawn_id])
         for reset in self.resets.values():
-            # if reset.spawn_id not in present_items:
-            if reset.get_spawn_point() == 'in room':
+            if reset.spawn_id not in present_obj and \
+               (reset.get_spawn_point() == 'in room'):
                 if reset.reset_type == 'npc':
                     self.npcs.append(reset.spawn())
                 else:
@@ -216,7 +221,6 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             obj = getattr(area, obj_type + "s").get(obj_id)
             if not obj:
                 return '%s number %s does not exist.\n' % (obj_type, obj_id)
-                # TODO: We need to be able to save resets to the database
             if container:
                 if int(container) not in self.resets:
                     return 'Reset %s doesn\'t exist.\n' % container
@@ -368,7 +372,8 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         if item in self.items:
             self.items.remove(item)
             if item.is_container():
-                for sub_item in item.inventory:
+                container = item.item_types.get('container')
+                for sub_item in container.inventory:
                     item.destruct()
             item.destruct()
     
