@@ -3,7 +3,6 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
-from shinymud.lib.xport import XPort
 from shinymud.commands.emotes import *
 from shinymud.commands import *
 import re
@@ -13,11 +12,20 @@ import logging
 command_list = CommandRegister()
 
 class Quit(BaseCommand):
+    help = (
+    """Quit (Command)
+The quit command logs you out of the game, saving your character in the
+process.
+\nALIASES:
+  exit
+    """
+    )
     def execute(self):
         self.user.quit_flag = True
     
 
 command_list.register(Quit, ['quit', 'exit'])
+command_help.register(Quit.help, ['quit', 'exit'])
 
 class WorldEcho(BaseCommand):
     """Echoes a message to everyone in the world.
@@ -61,6 +69,26 @@ command_list.register(Chat, ['chat', 'c'])
 
 class Channel(BaseCommand):
     """Toggles communication channels on and off."""
+    help = (
+"""Channel (command)\n"
+The channel command toggles your communication channels on or off.
+\nUSAGE:
+To turn a channel on:
+  channel <channel-name> on
+To turn a channel off:
+  channel <channel-name> off
+\nExamples:
+If you no longer want to receive chat messages, you can turn your chat channel
+off by doing the following:
+  channel chat off
+\nCHANNELS:
+Current channels that can be turned on and off via Channel:
+  chat
+\nNOTE: If you use a channel that has been turned off (such as trying to sent
+a chat message after you've turned off your chat channel), it will
+automatically be turned back on.
+"""
+    )
     def execute(self):
         toggle = {'on': True, 'off': False}
         args = self.args.split()
@@ -74,12 +102,27 @@ class Channel(BaseCommand):
                 self.user.update_output('You can only turn the %s channel on or off.\n' % channel)
         else:
             self.user.update_output('Which channel do you want to change?\n')
+    
 
 command_list.register(Channel, ['channel'])
+command_help.register(Channel.help, ['channel'])
 
 class Build(BaseCommand):
     """Activate or deactivate build mode."""
     required_permissions = BUILDER
+    help = (
+"""Build (Command)
+The build command allows builders (players with the BUILDER permission) to
+access BuildMode, which allows them to construct areas, rooms, items, etc.
+\nRequired Permissions: BUILDER
+\nUSAGE:
+To enter BuildMode:
+  build
+To exit BuildMode:
+  build exit
+\nFor a list of BuildCommands, see "help build commands".
+"""
+    )
     def execute(self):
         if self.args == 'exit':
             self.user.set_mode('normal')
@@ -89,6 +132,7 @@ class Build(BaseCommand):
             self.user.update_output('Entering BuildMode.\n')
 
 command_list.register(Build, ['build'])
+command_help.register(Build.help, ['build', 'build mode'])
 
 class Look(BaseCommand):
     """Look at a room, item, npc, or PC."""
@@ -144,6 +188,18 @@ command_list.register(Look, ['look'])
 class Goto(BaseCommand):
     """Go to a location."""
     required_permissions = BUILDER | DM | ADMIN
+    help = (
+    """Goto (Command)
+The goto command will transport your character to a specific location.
+\nUSAGE:
+To go to the same room as a specific player:
+  goto <player-name>
+To go to a room in the same area you're in:
+  goto [room] <room-id>
+To go to a room in a different area:
+  goto [room] <room-id> [in area] <area-name>
+    """
+    )
     def execute(self):
         if self.args:
             exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
@@ -185,6 +241,7 @@ class Goto(BaseCommand):
     
 
 command_list.register(Goto, ['goto'])
+command_help.register(Build.help, ['goto', 'go to'])
 
 class Go(BaseCommand):
     """Go to the next room in the direction given."""
@@ -234,6 +291,21 @@ command_list.register(Say, ['say'])
 
 class Load(BaseCommand):
     required_permissions = ADMIN | BUILDER | DM
+    help = (
+    """Load (Command)
+Load a specific item or npc by id.  Npcs will be loaded into your room, 
+and items will be loaded into your inventory. If you do not specify what area
+the item should be loaded from, the item will be loaded from the area you are
+currently located in, or the area you are currently editing (if you're editing
+one).
+\nRequired Permissions: ADMIN, BUILDER, DM
+\nUSAGE:
+To load an item:
+  load item <item-id> [from area <area-name>]
+To load an npc:
+  load npc <npc-id> [from area <area-name>]
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('What do you want to load?\n')
@@ -276,6 +348,7 @@ class Load(BaseCommand):
     
 
 command_list.register(Load, ['load'])
+command_help.register(Load.help, ['load'])
 
 class Inventory(BaseCommand):
     """Show the user their inventory."""
@@ -507,6 +580,17 @@ command_list.register(Enter, ['enter'])
 class Purge(BaseCommand):
     """Purge all of the items and npc's in the room."""
     required_permissions = BUILDER | DM | ADMIN
+    help = (
+    """Purge (Command)
+Purge will destroy all items and npcs in your room or in your inventory. Purge
+cannot, however, destroy players or prototype items/npcs (see "help
+prototypes" if this is confusing).
+USAGE:
+Calling purge without any options will purge the room by default.
+To purge your inventory:
+  purge inventory/i
+    """
+    )
     def execute(self):
         if not self.args:
             # If they specified nothing, just purge the room
@@ -527,6 +611,7 @@ class Purge(BaseCommand):
     
 
 command_list.register(Purge, ['purge'])
+command_help.register(Purge.help, ['purge'])
 
 class Areas(BaseCommand):
     def execute(self):
@@ -582,6 +667,22 @@ command_list.register(Emote, EMOTES.keys())
 class Bestow(BaseCommand):
     """Bestow a new class of permissions on a PC."""
     required_permissions = GOD
+    help = (
+    """Bestow (Command)
+Bestow allows you to extend a player's permissions by giving them another
+permission group.
+\nRequired Permissions: GOD
+\nUSAGE:
+  bestow <permission-group> [upon] <player-name>
+\nPermission Groups:
+  player
+  dm
+  admin
+  god
+\nTo revoke permissions, see "help revoke". For more information on
+permissions and permission groups, see "help permissions".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Bestow what authority upon whom?\n')
@@ -609,6 +710,7 @@ class Bestow(BaseCommand):
     
 
 command_list.register(Bestow, ['bestow'])
+command_help.register(Bestow.help, ['bestow'])
 
 class Revoke(BaseCommand):
     """Revoke permission privilges for a PC."""
@@ -640,9 +742,29 @@ class Revoke(BaseCommand):
     
 
 command_list.register(Revoke, ['revoke'])
+command_help.register(Revoke.help, ['revoke'])
 
 class Reset(BaseCommand):
+    """The command for resetting a room or area."""
     required_permissions = DM | BUILDER | ADMIN
+    help = ("Reset (command)\n"
+    """The reset command is used to force a room to respawn all of the items 
+and npcs on its reset list. If you call reset on an entire area, all of the
+rooms in that area will be told to reset.\n
+USAGE:
+To reset the room you are in, just call reset without any options. If you need
+to reset a room without being inside it (or you want to reset a whole area),
+use one of the following:
+To reset a room:
+    reset [room] <room-id> [in area] <area-name>
+To reset an area:
+    reset [area] <area-name>\n
+Permissions:
+This command requires DM, BUILDER, or ADMIN permissions.\n
+Adding Resets to Rooms
+For help on adding items and npcs to a room's reset list, 
+see "help room resets".""")
+    
     def execute(self):
         if not self.args:
             # Reset the room the user is in
@@ -689,10 +811,11 @@ class Reset(BaseCommand):
     
 
 command_list.register(Reset, ['reset'])
+command_help.register(Reset.help, ['reset', 'resets'])
 
 class Help(BaseCommand):
-    help = ("Try 'help <command name>' for help with a command\n"
-            "like 'help go' will give details about the go command."
+    help = ("Try 'help <command-name>' for help with a command.\n"
+            "For example, 'help go' will give details about the go command."
     )
     def execute(self):
         # get the help parameter and see if it matches a command_help alias
@@ -703,9 +826,12 @@ class Help(BaseCommand):
         #     return
         # else, send "I can't help you with that" string to user
         # return
+        if not self.args:
+            self.user.update_output(self.help + '\n')
+            return
         help = command_help[self.args]
         if help:
-            self.user.update_output(help + '\n')
+            self.user.update_output(help)
         else:
             self.user.update_output("Sorry, I can't help you with that.\n")
     

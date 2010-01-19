@@ -1,4 +1,12 @@
+from shinymud.models.area import Area
+from shinymud.models.room import Room
+from shinymud.models.item import Item, SLOT_TYPES
+from shinymud.models.npc import Npc
+from shinymud.lib.world import World
+from shinymud.lib.xport import XPort
 from shinymud.commands import *
+import re
+import logging
 
 build_list = CommandRegister()
 
@@ -369,3 +377,68 @@ class Import(BaseCommand):
     
 
 build_list.register(Import, ['import'])
+
+# Defining Extra Build-related help pages:
+command_help.register(("Build Commands (BuildMode)\n"
+"""The following are the commands available during BuildMode:
+%s
+See 'help <command-name> for help on any one of these commands.
+""" % ('\n'.join([cmd.__name__.lower() for cmd in build_list.commands.values()]))
+), ['build commands', 'build command'])
+
+command_help.register(("Room Resets (Room Attribute)\n"
+"""Every room has a list of "room resets". A room reset is an object that
+keeps track of an item or npc and a spawn point. When a room is told to Reset
+itself (see "help reset"), it goes through its list of room resets and spawns
+each room reset's item or npc into the place designated by the room reset's
+spawn point. You can only add room resets to a room while you are editing that
+room during BuildMode.\n
+USAGE:
+<object-type> can be "npc" or "item".
+To add a room reset:
+    add reset [for] <object-type> <object-id> [[from area] <object-area>]
+To remove a room reset:
+  remove reset <reset-id>\n
+Examples:
+    add reset for item 1
+    add reset for npc 5 from area bar
+If we list the attributes of the room we were editing, we should see something
+like the following under room resets:
+  [1] Item - a treasure chest (1:foo) - spawns in room
+  [2] Npc - Shiny McShinerson (5:bar) - spawns in room\n
+The first number in brackets is the room reset id. This is how we identify a
+particular reset (so we can remove it, for example). Next we have the object
+type, which tells us if this room reset spawns an item or an npc. Then we have
+the name of the item/npc to be spawned, with its item/npc id and area-name in
+parenthesis next to it. Finally, the last part is the spawn point for the room
+reset's object. We can see here that the default is 'in room', which means
+both the item and the npc will appear inside the room when the room is told to
+Reset. To learn how to set a spawn point so that you can nest room resets (for
+example, tell a dagger to spawn inside of a chest), see "help nested resets".
+"""
+), ['room resets', 'room reset'])
+
+command_help.register(("Nested Resets (Room Attribute)\n"
+"""A nested reset is when we have a room reset that tells an item to spawn
+inside a container item, or inside an npc's inventory.
+USAGE:
+  add reset [for] item <item-id> [in/inside] [reset] <container-reset-id>\n
+Examples:
+Let's say that when a room gets Reset, we want to spawn a chest with a dagger
+inside. First, we need to add a room reset for the containing item (the
+chest), which happens to have an item id of 5:
+  add reset for item 5\n
+Next we add a reset for the dagger, telling it to spawn into the object that
+room reset #1 spawns:
+  add reset for item 2 into reset 1
+If you list the room's attributes, under resets you should see something like
+the following:
+  [1] Item - a treasure chest (5:bar) - spawns in room
+  [2] Item - a dagger (2:bar) - spawns into a treasure chest (R:1)\n
+The (R:1) on the end of the second room reset clarifies that the dagger is
+spawned into reset 1's item.\n
+NOTE: Only items can be nested resets (npcs can't be spawned inside other
+items or npcs). Also, an item can only be spawned into another item if the
+second item is of type container.
+"""
+), ['nested resets', 'nested reset'])

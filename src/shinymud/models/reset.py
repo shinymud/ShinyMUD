@@ -23,8 +23,12 @@ class Reset(object):
         return d
     
     def __str__(self):
-        string = '%s - %s - spawns %s' % (self.reset_type.capitalize(), self.reset_object.name, 
-                                                       self.get_spawn_point())
+        string = ('%s - %s (%s:%s) - spawns %s' % (self.reset_type.capitalize(), 
+                                                   self.reset_object.name,
+                                                   self.reset_object.id,
+                                                   self.reset_object.area.name,
+                                                   self.get_spawn_point())
+                 )
         return string
     
     def get_spawn_point(self):

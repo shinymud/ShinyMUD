@@ -67,13 +67,14 @@ class XPort(object):
             del room_dict['area']
             for key,value in room_dict.items():
                 area_xml += '%s="%s" ' % (key, value)
-            area_xml += '><item_resets>'
-            for reset in room.item_resets:
-                area_xml += '<id>%s</id>' % reset.id
-            area_xml += '</item_resets><npc_resets>'
-            for reset in room.npc_resets:
-                area_xml += '<id>%s</id>' % reset.id
-            area_xml += '</npc_resets><exits>'
+            area_xml += '><resets>'
+            for reset in room.resets.values():
+                area_xml += '<reset '
+                reset_dict = reset.to_dict()
+                for key,value in reset_dict.items():
+                    area_xml += '%s="%s" ' % (key, value)
+                area_xml += '></reset>'
+            area_xml += '</resets><exits>'
             for exit in room.exits.values():
                 if exit and (exit.to_area == area.name):
                     area_xml += '<exit '
@@ -117,7 +118,8 @@ class XPort(object):
                 key = str(itype.attributes['name'].value)
                 item_dict['item_types'][key] = {}
                 for child in itype.childNodes:
-                    item_dict['item_types'][key][str(child.tagName)] = str(child.firstChild.data)
+                    if child.firstChild:
+                        item_dict['item_types'][key][str(child.tagName)] = str(child.firstChild.data)
             items.append(item_dict)
         
         npc_dom = area_dom.getElementsByTagName('npcs')[0]
@@ -130,22 +132,17 @@ class XPort(object):
         rooms = []
         for room in room_dom.childNodes:
             room_dict = dict([(str(key),str(value)) for key,value in room.attributes.items()])
-            room_dict['item_resets'] = []
-            room_dict['npc_resets'] = []
+            room_dict['resets'] = []
             room_dict['exits'] = []
-            ireset_dom = room.getElementsByTagName('item_resets')[0]
-            resets = ireset_dom.getElementsByTagName('id')
-            for reset in resets:
-                room_dict['item_resets'].append(str(reset.firstChild.data))
-            nreset_dom = room.getElementsByTagName('npc_resets')[0]
-            resets = nreset_dom.getElementsByTagName('id')
-            for reset in resets:
-                room_dict['npc_resets'].append(str(reset.firstChild.data))
+            reset_dom = room.getElementsByTagName('reset')
+            for reset in reset_dom:
+                room_dict['resets'].append(dict([(str(key),str(value)) for key,value in reset.attributes.items()]))
             exit_dom = room.getElementsByTagName('exit')
             for exit in exit_dom:
                 exit_dict = dict([(str(key),str(value)) for key,value in exit.attributes.items()])
                 room_dict['exits'].append(exit_dict)
             rooms.append(room_dict)
+            
         
         # Building the area
         try:
@@ -155,24 +152,25 @@ class XPort(object):
                 new_item = new_area.new_item(item_dict)
                 for key, value in item_dict['item_types'].items():
                     self.log.info(new_item.add_type(key, value))
-            
+        
             for npc_dict in npcs:
                 npc_dict['area'] = new_area
                 new_npc = new_area.new_npc(npc_dict)
-        
+    
             # rooms is a list of room dictionaries
             for room_dict in rooms:
                 room_dict['area'] = new_area
                 new_room = new_area.new_room(room_dict)
-                for reset in room_dict['item_resets']:
-                    item_reset = new_area.get_item(reset)
-                    if item_reset:
-                        new_room.item_resets.append(item_reset)
-                for reset in room_dict['npc_resets']:
-                    npc_reset = new_area.get_npc(reset)
-                    if npc_reset:
-                        new_room.npc_resets.append(npc_reset)
-                    
+                new_room.load_resets(room_dict['resets'])
+                # for reset in room_dict['item_resets']:
+                #     item_reset = new_area.get_item(reset)
+                #     if item_reset:
+                #         new_room.item_resets.append(item_reset)
+                # for reset in room_dict['npc_resets']:
+                #     npc_reset = new_area.get_npc(reset)
+                #     if npc_reset:
+                #         new_room.npc_resets.append(npc_reset)
+                
             for room_dict in rooms:
                 room = new_area.get_room(room_dict.get('id'))
                 for exit in room_dict['exits']:
@@ -181,14 +179,13 @@ class XPort(object):
                     exit['to_room'] = None
                     room.new_exit(**exit)
         except Exception, e:
-            # If we fail in the above code for ANY reason, make sure we delete
-            # any bits of the area we have imported thus far, then log it.
-            
+        # If we fail in the above code for ANY reason, make sure we delete
+        # any bits of the area we have imported thus far, then log it.        
             self.world.destroy_area(areaname, 'XPort: corrupt area file.')
             self.log.error(str(e))
             return 'Error importing area: %s.\n' % str(e)
-        
-        area_dom.unlink()
+        finally:
+            area_dom.unlink()
         return 'Area %s has been successfully imported!\n' % new_area.name
     
     @classmethod

@@ -25,7 +25,7 @@ command_help = CommandRegister()
 
 class BaseCommand(object):
     required_permissions = PLAYER
-    help = ("We Don't have a help page for this command yet"
+    help = ("We Don't have a help page for this command yet."
     )
     def __init__(self, user, args, alias):
         self.args = args

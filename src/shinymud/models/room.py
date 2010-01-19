@@ -54,16 +54,18 @@ class Room(object):
             row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)
     
-    def load_resets(self):
-        rows = self.world.db.select('* FROM room_resets WHERE room=?', [self.dbid])
-        for row in rows:
+    def load_resets(self, reset_list=None):
+        self.log.debug(reset_list)
+        if not reset_list:
+            reset_list = self.world.db.select('* FROM room_resets WHERE room=?', [self.dbid])
+        for row in reset_list:
             row['room'] = self
             area = self.world.get_area(row['reset_object_area'])
             if area:
                 obj = getattr(area, row['reset_type'] + "s").get(row['reset_object_id'])
                 if obj:
                     row['obj'] = obj
-                    self.resets[row['dbid']] = Reset(**row)
+                    self.resets[int(row['dbid'])] = Reset(**row)
         for reset in self.resets.values():
             if reset.container:
                 if int(reset.container) in self.resets:
@@ -224,13 +226,13 @@ ______________________________________________\n""" % (self.id, self.area.name, 
                     reset.save()
                     container_reset.add_nested_reset(reset)
                     self.resets[reset.dbid] = reset
-                    return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
+                    return 'A room reset has been added for %s number %s.\n' % (obj_type, obj_id)
                 else:
-                    return 'Reset %s is not a container.\n' % container
+                    return 'Room reset %s is not a container.\n' % container
             reset = Reset(self, obj, obj_type)
             reset.save()
             self.resets[reset.dbid] = reset
-            return 'A reset has been added for %s number %s.\n' % (obj_type, obj_id)
+            return 'A room reset has been added for %s number %s.\n' % (obj_type, obj_id)
         return 'Type "help resets" to get help using this command.\n'
     
     def remove_reset(self, args):
@@ -244,22 +246,22 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             del self.resets[reset_id]
             # If this reset has a container, we need to destroy
             # that container's link to it
-            if reset.container.dbid in self.resets:
+            if reset.container and reset.container.dbid in self.resets:
                 self.resets[reset.container.dbid].remove_nested_reset(reset)
             # Delete all resets that were supposed to be
             # reset into this container -- their spawn point is being deleted,
             # so they should no longer be on the reset list.
-            message = 'Reset %s has been removed.\n' % reset_id
-            dependents = ''
+            message = 'Room reset %s has been removed.\n' % reset_id
+            dependents = ', '.join([str(sub_reset.dbid) for sub_reset in reset.nested_resets])
             for sub_reset in reset.nested_resets:
-                if sub_reset.dbid in self.resets:
-                    dependents = ', '.join(dependents, str(sub_reset.dbid))
-                    del self.resets[sub_reset.dbid]
+                sub_reset.destruct()
+                del self.resets[sub_reset.dbid]
             reset.destruct()
             if dependents:
-                message += 'The following dependent resets were also removed: ' + dependents
+                message += ('The following nested resets were also removed: ' + 
+                            dependents + '.\n')
             return message
-        return 'Reset #%s doesn\'t exist.\n' % reset_id
+        return 'Room reset #%s doesn\'t exist.\n' % reset_id
     
     def remove_exit(self, args):
         if not args:
