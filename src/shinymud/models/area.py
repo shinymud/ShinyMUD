@@ -3,6 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
 from shinymud.modes.text_edit_mode import TextEditMode
+import time
 
 class Area(object):
     
@@ -20,6 +21,8 @@ class Area(object):
         self.description = args.get('description', 'No Description')
         self.dbid = args.get('dbid')
         self.world = World.get_world()
+        self.time_of_last_reset = 0
+        self.times_visited_since_reset = 0
     
     def to_dict(self):
         d = {}
@@ -45,7 +48,11 @@ class Area(object):
             rooms = self.world.db.select("* from room where area=?", [self.dbid])
             for room in rooms:
                 room['area'] = self
-                self.rooms[str(room['id'])] = Room(**room)
+                new_room = Room(**room)
+                new_room.reset()
+                self.rooms[str(room['id'])] = new_room
+            
+            self.time_of_last_reset = time.time()
     
     def save(self, save_dict=None):
         if self.dbid:
@@ -163,6 +170,7 @@ ______________________________________________\n""" % (self.name,
         """Tell all of this area's rooms to reset."""
         for room in self.rooms.values():
             room.reset()
+        self.time_of_last_reset = time.time()
     
 # ************************ Room Functions ************************
 # Here exist all the function that an area uses to manage the rooms
@@ -176,8 +184,9 @@ ______________________________________________\n""" % (self.name,
             doors = room.exits.keys()
             for door in doors:
                 room.remove_exit(door)
-            room.item_resets = []
-            room.npc_resets = []
+            for reset in room.resets:
+                reset.destruct()
+            room.resets = {}
             room.id = None
             del self.rooms[room_id]
             room.destruct()

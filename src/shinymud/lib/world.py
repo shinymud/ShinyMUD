@@ -3,6 +3,8 @@ import time
 import logging
 from shinymud.lib.db import DB
 
+RESET_INTERVAL = 120
+
 class World(object):
     _instance = None
     
@@ -25,10 +27,11 @@ class World(object):
     
     @classmethod
     def get_world(cls):
-        """This will return None if world has never been initialized. Since the first thing 
-        we do in our main thread is create and initialize a new world instance, the only
-        way this could fail is if somehow we tried to grab the world before the main thread
-        started, which really aught to be impossible."""
+        """This will return None if world has never been initialized. Since
+        the first thing we do in our main thread is create and initialize a
+        new world instance, the only way this could fail is if somehow we
+        tried to grab the world before the main thread started, which really
+        aught to be impossible."""
         return cls._instance
     
     def has_user(self, name):
@@ -45,23 +48,24 @@ class World(object):
         self.user_list[user.name] = user
     
     def user_remove(self, username):
-        """Add a user's name to the world's delete list so they get removed from the userlist
-        on the next turn."""
+        """Add a user's name to the world's delete list so they get removed
+        from the userlist on the next turn."""
         self.user_delete.append(username)
     
     def new_area(self, area):
         self.areas[area.name] = area
     
     def cleanup(self):
-        """Do any cleanup that needs to be done after a turn.
-        This includes deleting users from the userlist if they have
-        logged out."""
+        """Do any cleanup that needs to be done after a turn. This includes
+        deleting users from the userlist if they have logged out."""
         for user in self.user_delete:
             del self.user_list[user]
         self.user_delete = []
     
     def start_turning(self):
         while not self.shutdown_flag:
+            start = time.time()
+            # Manage user list
             self.user_list_lock.acquire()
             list_keys = self.user_list.keys()
             for key in list_keys:
@@ -72,7 +76,19 @@ class World(object):
                 self.user_list[key].send_output()
             self.user_list_lock.release()
             
-            time.sleep(0.25)
+            # Reset areas that have had activity
+            for area in self.areas.values():
+                if area.times_visited_since_reset > 0:
+                    now = time.time()
+                    if (now - area.time_of_last_reset) >= RESET_INTERVAL:
+                        area.reset()
+                        self.log.info('Area %s has been reset.' % area.name)
+            
+            finish = time.time() - start
+            if finish >= 1:
+                self.log.critical('WORLD: Turn took longer than a sec!')
+            elif finish < 0.25:
+                time.sleep(0.25 - finish)
         self.listening = False
     
 # ************************ Area Functions ************************
@@ -97,11 +113,9 @@ ______________________________________________\n""" % '\n    '.join(names)
         return None
     
     def destroy_area(self, area_name, username):
-        """Destroy an entire area!
-        TODO: whoa nelly, they want to destroy a whole area! We should really
-        make sure that's what they want by adding an extra game state that
-        blocks all actions until they confirm.
-        """
+        """Destroy an entire area! TODO: whoa nelly, they want to destroy a
+        whole area! We should really make sure that's what they want by adding
+        an extra game state that blocks all actions until they confirm. """
         area = self.get_area(area_name)
         if not area:
             return 'Area %s doesn\'t exist.\n' % area_name

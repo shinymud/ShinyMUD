@@ -143,6 +143,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     
     def user_add(self, user):
         self.users[user.name] = user
+        self.area.times_visited_since_reset += 1
     
     def user_remove(self, user):
         if self.users.get(user.name):
