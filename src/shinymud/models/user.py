@@ -92,27 +92,38 @@ class User(object):
         
         return d
         
-    def update_output(self, data):
+    def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the user's output queue."""
+        if strip_nl:
+            # Since we need to terminate with lf and cr for telnet anyway,
+            # we might as well strip all extra newlines off the end of
+            # everything anyway. If for some reason the output needs to have
+            # extra newlines at the end, pass strip_nl=False
+            data = data.rstrip('\n')
+        if terminate_ln:
+            # If you want the user to enter input on the same line as the
+            # last output, pass terminate_ln=False. Otherwise the line will
+            # be terminated and a prompt will be added.
+            data += '\r\n'
         self.outq.append(data)
     
     def get_input(self):
         """Gets raw input from the user and queues it for later processing."""
         try:
             new_stuff = self.conn.recv(256)
-            self.inq.append(new_stuff.replace('\n', ''))
+            self.inq.append(new_stuff.replace('\n', '').replace('\r', ''))
         except Exception, e:
             pass
     
     def send_output(self):
         """Sends all data from the user's output queue to the user."""
         try:
-            sent_output = False
+            sent_output = ''
             while len(self.outq) > 0:
                 self.conn.send(self.outq[0])
+                sent_output = self.outq[0]
                 del self.outq[0]
-                sent_output = True
-            if sent_output:
+            if sent_output.endswith('\r\n'):
                 self.conn.send(self.get_prompt())
         except Exception, e:
             # If we die here, it's probably because we got a broken pipe.
@@ -121,12 +132,9 @@ class User(object):
             print str(e)
     
     def get_prompt(self):
+        default = '>'
         if not self.mode:
-            return '>'
-        elif self.mode.name == 'TextEditMode':
-            return '>'
-        elif self.mode.name == 'InitMode':
-            return ''
+            return default
         elif self.mode.name == 'BuildMode':
             prompt = '<Build'
             if self.mode.edit_area:
@@ -135,6 +143,8 @@ class User(object):
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
             prompt += '>'
             return prompt
+        else:
+            return default
     
     
     def parse_command(self):

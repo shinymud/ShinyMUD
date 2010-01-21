@@ -161,13 +161,13 @@ class Look(BaseCommand):
         if self.user.location:
             return self.user.look_at_room()
         else:
-            return 'You see a dark void.\n'
+            return 'You see a dark void.'
     
     def look_in_room(self, keyword):
         if self.user.location:
             obj = self.user.location.check_for_keyword(keyword)
             if obj:
-                message = "You look at %s:\n%s\n" % (obj.name, obj.description)
+                message = "You look at %s:\n%s" % (obj.name, obj.description)
                 if hasattr(obj, 'is_container') and obj.is_container():
                     message += obj.item_types.get('container').display_inventory()
                 return message
@@ -176,7 +176,7 @@ class Look(BaseCommand):
     def look_in_inventory(self, keyword):
         item = self.user.check_inv_for_keyword(keyword)
         if item:
-            message = "You look at %s:\n%s\n" % (item.name, item.description)
+            message = "You look at %s:\n%s" % (item.name, item.description)
             if item.is_container():
                 message += item.item_types.get('container').display_inventory()
             return message

@@ -113,7 +113,7 @@ class TestRoom(TestCase):
         
         self.room.add_reset('for item %s' % proto_container.id)
         self.room.add_reset('for item %s in %s' % (proto_item.id, '1'))
-        self.room.add_reset('for npc %s' % npc.id)
+        self.room.add_reset('for npc %s' % proto_npc.id)
         
         self.assertEqual(len(self.room.items), 0)
         self.assertEqual(len(self.room.npcs), 0)

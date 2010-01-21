@@ -18,7 +18,7 @@ class InitMode(object):
     
     def __init__(self, user):
         self.user = user
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.\n>'
+        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.>'
         self.user.update_output(intro_message)
         self.state = self.verify_username
         self.inner_state = None
@@ -32,20 +32,20 @@ class InitMode(object):
             if username:
                 if username == 'new':
                     self.state = self.new_username
-                    self.user.update_output('Please choose a username. It should be a single word, using only letters.\n>')
+                    self.user.update_output('Please choose a username. It should be a single word, using only letters.')
                 else:
-                    self.username = username.replace('\n', '')
+                    self.username = username
                     row = self.world.db.select('password,dbid FROM user WHERE name=?', [self.username])
                     if row:
                         # Awesome, a user with this name does exist! Let's check their password!
                         self.password = row[0]['password']
                         self.dbid = row[0]['dbid']
                         self.state = self.verify_password
-                        self.user.update_output("Enter password: ")
+                        self.user.update_output("Enter password: ", False)
                     else:
                         # The user entered a name that doesn't exist.. they should create
                         # a new character or try entering the name again.
-                        self.user.update_output('That user doesn\'t exist. Would you like to create a new character by the name of %s? (Yes/No)\n>' % self.username)
+                        self.user.update_output('That user doesn\'t exist. Would you like to create a new character by the name of %s? (Yes/No)' % self.username)
                         self.state = self.verify_new_character
             del self.user.inq[0]
     
@@ -65,10 +65,10 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             if self.user.inq[0][0].lower() == 'y':
                 self.user.name = self.username
-                self.user.update_output('Please choose a password.\n>')
+                self.user.update_output('Please choose a password:')
                 self.state = self.create_password
             else:
-                self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.\n>')
+                self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.')
                 self.state = self.verify_username
             del self.user.inq[0]
     
@@ -89,11 +89,11 @@ class InitMode(object):
             row = self.world.db.select("dbid from user where name=?", [username.lower()])
             if row:
                 self.user.update_output('That username is already taken.\n')
-                self.user.update_output('Please choose a username. It should be a single word, using only letters.\n>')
+                self.user.update_output('Please choose a username. It should be a single word, using only letters.')
             else:
                 #TODO: CHECK FOR VALIDITY!
                 self.user.name = username
-                self.user.update_output('Please choose a password.\n>')
+                self.user.update_output('Please choose a password.')
                 self.state = self.create_password
             del self.user.inq[0]
     
@@ -102,22 +102,23 @@ class InitMode(object):
             self.user.password = hashlib.sha1(self.user.inq[0]).hexdigest()
             del self.user.inq[0]
             self.user.update_output("What gender shall your character be?\n" +\
-                                    "Choose from: neutral, female, or male.\n>")
+                                    "Choose from: neutral, female, or male.")
             self.state = self.choose_gender
             
     
     def choose_gender(self):
         if len(self.user.inq) > 0:
-            if self.user.inq[0] in ['male', 'female', 'neutral']:
-                self.user.gender = self.user.inq[0]
+            gender = self.user.inq[0]
+            if gender in ['male', 'female', 'neutral']:
+                self.user.gender = gender
                 self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
                                         'your password if you forget it (otherwise, you\'re out of luck ' +\
                                         'if you forget!).\n' +\
                                         'Would you like to add an e-mail address to this character? ' +\
-                                        '(Y/N)\n>')
+                                        '(Y/N)')
                 self.state = self.add_email
             else:
-                self.user.update_output('Please choose from: male, female, or neutral.\n>')
+                self.user.update_output('Please choose from: male, female, or neutral:')
             del self.user.inq[0]
     
     def add_email(self):
@@ -126,7 +127,7 @@ class InitMode(object):
                 self.inner_state = 'yes_email'
                 self.user.update_output('We promise not to use your e-mail for evil ' +\
                                         '(you can type "help email" for details).\n' +\
-                                        'Please enter your e-mail address:\n>')
+                                        'Please enter your e-mail address:')
             elif self.user.inq[0][0].lower() == 'n':
                 self.state = self.assign_defaults
                 self.user.email = None
@@ -139,7 +140,7 @@ class InitMode(object):
                 self.state = self.assign_defaults
                 self.user.update_output(choose_class_string)
             else:
-                self.user.update_output('This is a "yes or no" type of question. Try again:\n\n')
+                self.user.update_output('This is a "yes or no" type of question. Try again:')
             del self.user.inq[0]
     
     def assign_defaults(self):
@@ -192,7 +193,7 @@ class InitMode(object):
             else:
                 # user's input didn't make any sense
                 del self.user.inq[0]
-                self.user.update_output("I don't understand.\n" + choose_class_string)
+                self.user.update_output("I don't understand." + choose_class_string)
     
     def display_custom_create(self):
         header = []
@@ -237,7 +238,7 @@ class InitMode(object):
                         self.custom_points['left'] = new_balance
                 elif attr == 'DONE':
                     if self.custom_points['left'] > 0:
-                        self.user.update_output('You still have points left to spend!\n')
+                        self.user.update_output('You still have points left to spend!')
                     else:
                         self.user.strength = self.custom_points['STR']
                         self.user.intelligence = self.custom_points['INT']
@@ -252,9 +253,9 @@ class InitMode(object):
                         self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
                         return
                 else:
-                    self.user.update_output("I don't understand.\n")
+                    self.user.update_output("I don't understand.")
             else:
-                self.user.update_output("I don't understand.\n")
+                self.user.update_output("I don't understand.")
             self.display_custom_create()
             del self.user.inq[0]
     
