@@ -95,9 +95,14 @@ class XPort(object):
         
         filename = area.name + '.xml'
         filepath = os.path.join(AREAS_EXPORT_DIR, filename)
-        
-        with open(filepath, 'w') as f:
+        try:
+            f = open(filepath, 'w')
+        except Exception, e:
+            self.log.debug(str(e))
+        else:
             f.write(area_xml)
+        finally:
+            f.close()
         return 'Export complete! Your area can be found at:\n%s\n' % filepath
     
     def import_from_xml(self, areaname):

@@ -18,7 +18,7 @@ class InitMode(object):
     
     def __init__(self, user):
         self.user = user
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.>'
+        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.'
         self.user.update_output(intro_message)
         self.state = self.verify_username
         self.inner_state = None
