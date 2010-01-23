@@ -1,1 +1,25 @@
-Welcome to ShinyMUD.
+Welcome to ShinyMUD, a text-based Multi-User-Dungeon from the silly folks at
+Incendiary Software.
+
+-- Software Requirements --
+
+To run ShinyMUD you'll need:
+* Python, version 2.5 or higher
+* A Unix-based operating system (Linux, MacOSX)
+
+If you're developing ShinyMUD, you'll also want Nose for running unit tests.
+See http://shiny.game-host.org/wiki/UnitTesting for more details.
+
+-- Starting ShinyMUD --
+
+1) Open a terminal and cd to the shinymud directory (the directory this README file is in).
+
+2) Run the following command: python src/shinymud/main.py start
+
+ShinyMUD will start running on the default port of 4111. You can change the
+port number (as well as lots of other things) in: src/data/config.py
+
+-- Authors and License --
+
+A list of ShinyMUD authors and the License for ShinyMUD can be found in the
+AUTHORS file and the LICENSE file, respectively.

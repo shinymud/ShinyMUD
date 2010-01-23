@@ -11,8 +11,9 @@ path = os.path.abspath(os.path.dirname(__file__))
 index = path.rfind('shinymud')
 path = path[:index]
 pypath = path + ':' + os.environ.get('PYTHONPATH', '')
-
-
+# Create the logs folder if it doesn't exist
+if not os.path.exists(path + 'shinymud/data/logs'):
+    os.mkdir(path + 'shinymud/data/logs')
 
 def check_running():
     if os.path.exists(path + 'shinymud/data/.shinypid'):
@@ -30,17 +31,16 @@ def check_running():
         else:
             return pid
     return False
-    
 
 def start():
     # if 'start':
-    #   Fork new process, that calls "python little_server.py"
+    #   Fork new process, that calls "python shiny_server.py"
     #   write the Process Id in shinymud/data/.shinypid
     #   close the file, and we are done
     
     # build the path to the directory above shinymud
     if not check_running():
-        pid = Popen(['python', path + 'shinymud/lib/little_server.py'], env={'PYTHONPATH': pypath}).pid
+        pid = Popen(['python', path + 'shinymud/lib/shiny_server.py'], env={'PYTHONPATH': pypath}).pid
         f = open(path + 'shinymud/data/.shinypid', 'w')
         f.write(str(pid))
         f.close()
@@ -65,8 +65,6 @@ def stop():
     else:
         print "ShinyMUD is not running!"
 
-
-
 # Then we check input for 'start' 'restart' and 'stop' (maybe 'help' later?)
 if len(sys.argv) == 2:
     option = sys.argv[1].lower()
@@ -85,3 +83,4 @@ if len(sys.argv) == 2:
         print "options: start | stop | restart\n"
 else:
     print "options: start | stop | restart\n"
+
