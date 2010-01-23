@@ -2,7 +2,7 @@ from shinymud.lib.connection_handler import ConnectionHandler
 from shinymud.lib.world import World
 from shinymud.models.area import Area
 from shinymud.models.schema import initialize_database
-from config import *
+from shinymud.data.config import *
 
 import logging
 initialize_database()
@@ -10,7 +10,6 @@ format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d %(message)s
 logging.basicConfig(filename=LOG_FILE, level=LOG_LEVEL, format=format)
 logger = logging.getLogger('little_server')
 world = World()
-
 
 # load the entities in the world from the database
 for area in world.db.select("* from area"):

@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from shinymud.config import DB_NAME    
+from shinymud.data.config import DB_NAME    
 
 
 class DB(object):
