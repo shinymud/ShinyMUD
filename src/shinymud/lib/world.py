@@ -2,7 +2,7 @@ import threading
 import time
 import logging
 from shinymud.lib.db import DB
-from shinymud.config import RESET_INTERVAL
+from shinymud.data.config import RESET_INTERVAL
 
 class World(object):
     _instance = None

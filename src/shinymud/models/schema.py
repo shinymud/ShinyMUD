@@ -3,7 +3,7 @@
 
 
 import sqlite3
-from shinymud.config import DB_NAME
+from shinymud.data.config import DB_NAME
 
 def initialize_database(connection=None):
     queries = [\

@@ -1,5 +1,5 @@
 from shinymud.lib.db import *
-from shinymud.config import ROOT_DIR
+from shinymud.data.config import ROOT_DIR
 from unittest import TestCase
 
 class TestDB(TestCase):
