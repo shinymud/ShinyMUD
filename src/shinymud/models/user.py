@@ -21,6 +21,7 @@ class User(object):
         self.last_mode = None
         self.dbid = None
         self.world = World.get_world()
+        self.channels = {'chat': False}
     
     def userize(self, **args):
         self.name = str(args.get('name'))
@@ -187,7 +188,7 @@ class User(object):
         if self.location:
             self.location.user_remove(self)
         self.world.user_remove(self.name)
-        WorldEcho(self, "%s has left the world." % self.get_fancy_name(), ['wecho']).execute()
+        self.world.tell_users("%s has left the world." % self.get_fancy_name())
     
     def get_fancy_name(self):
         return self.name.capitalize()

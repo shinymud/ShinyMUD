@@ -33,12 +33,18 @@ class WorldEcho(BaseCommand):
         args = message to be sent to every user in the world.
     """
     required_permissions = ADMIN
+    help = (
+    """WorldEcho (Command)
+WorldEcho echoes a message to all users currently in the world.
+\nRequired Permissions: ADMIN
+    """
+    )
     def execute(self):
-        for person in self.world.user_list:
-            self.world.user_list[person].update_output(self.args + '\n')
+        self.world.tell_users(self.args)
     
 
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
+command_help.register(WorldEcho.help, ['wecho', 'world echo', 'worldecho'])
 
 class Apocalypse(BaseCommand):
     """Ends the world. The server gets shutdown."""
@@ -46,8 +52,7 @@ class Apocalypse(BaseCommand):
     def execute(self):
         # This should definitely require admin privileges in the future.
         message = "%s has stopped the world from turning. Goodbye." % self.user.get_fancy_name()
-        WorldEcho(self.user, message, self.alias).execute()
-        
+        self.world.tell_users(message)
         self.world.shutdown_flag = True
     
 
@@ -55,24 +60,32 @@ command_list.register(Apocalypse, ['apocalypse', 'die'])
 
 class Chat(BaseCommand):
     """Sends a message to every user on the chat channel."""
+    help = (
+    """Chat (command)
+The Chat command will let you send a message to everyone in the world whose
+chat channels are on. See "help channel" for help on turning you chat
+channel off.
+    """
+    )
     def execute(self):
         if not self.user.channels['chat']:
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
         message = '%s chats, "%s"\n' % (self.user.get_fancy_name(), self.args)
-        for person in self.world.user_list:
-            if self.world.user_list[person].channels['chat']:
-                self.world.user_list[person].update_output(message)
+        exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
+        self.world.tell_users(message, exclude)
     
 
 command_list.register(Chat, ['chat', 'c'])
+command_help.register(Chat.help, ['chat'])
 
 class Channel(BaseCommand):
     """Toggles communication channels on and off."""
     help = (
-"""Channel (command)\n"
+"""Channel (command)
 The channel command toggles your communication channels on or off.
 \nUSAGE:
+To see which channels you have on/off, just call channel with no options.
 To turn a channel on:
   channel <channel-name> on
 To turn a channel off:
@@ -84,12 +97,21 @@ off by doing the following:
 \nCHANNELS:
 Current channels that can be turned on and off via Channel:
   chat
-\nNOTE: If you use a channel that has been turned off (such as trying to sent
+\nNOTE: If you use a channel that has been turned off (such as trying to send
 a chat message after you've turned off your chat channel), it will
 automatically be turned back on.
 """
     )
     def execute(self):
+        if not self.args:
+            chnls = 'Channels:'
+            for key, value in self.user.channels.items():
+                if value:
+                    chnls += '\n  ' + key + ': ' + 'on'
+                else:
+                    chnls += '\n  ' + key + ': ' + 'off'
+            self.user.update_output(chnls)
+            return
         toggle = {'on': True, 'off': False}
         args = self.args.split()
         channel = args[0].lower()
@@ -241,7 +263,7 @@ To go to a room in a different area:
     
 
 command_list.register(Goto, ['goto'])
-command_help.register(Build.help, ['goto', 'go to'])
+command_help.register(Goto.help, ['goto', 'go to'])
 
 class Go(BaseCommand):
     """Go to the next room in the direction given."""

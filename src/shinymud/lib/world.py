@@ -33,27 +33,6 @@ class World(object):
         aught to be impossible."""
         return cls._instance
     
-    def has_user(self, name):
-        """Return true if the world has this user's name in its user list."""
-        if name in self.user_list:
-            return True
-        return False
-    
-    def get_user(self, name):
-        """Return a user if that user's name exists in the user list."""
-        return self.user_list.get(name)
-    
-    def user_add(self, user):
-        self.user_list[user.name] = user
-    
-    def user_remove(self, username):
-        """Add a user's name to the world's delete list so they get removed
-        from the userlist on the next turn."""
-        self.user_delete.append(username)
-    
-    def new_area(self, area):
-        self.areas[area.name] = area
-    
     def cleanup(self):
         """Do any cleanup that needs to be done after a turn. This includes
         deleting users from the userlist if they have logged out."""
@@ -90,9 +69,14 @@ class World(object):
                 time.sleep(0.25 - finish)
         self.listening = False
     
+    
 # ************************ Area Functions ************************
-# Here exist all the function that the world uses to manage the areas
+# Here exist all the functions that the world uses to manage the areas
 # it contains.
+    
+    def new_area(self, area):
+        self.areas[area.name] = area
+    
     def list_areas(self):
         names = self.areas.keys()
         area_list = """______________________________________________
@@ -151,4 +135,38 @@ ______________________________________________\n""" % '\n    '.join(names)
         self.log.info('%s desroyed area %s.' % (username, area_name))
         return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
         
+    
+    
+# ************************ User Functions ************************
+# Here exist all the functions that the world uses to manage the users
+# it contains.
+    def tell_users(self, message, exclude_list=[]):
+        """Tell all available users in the world a message.
+        A user is considered unavailable if the are on the exclude list,
+        or not in BuildMode or NormalMode."""
+        for user in self.user_list.values():
+            if user.name in exclude_list:
+                pass
+            elif user.mode and user.mode.name != 'BuildMode':
+                pass
+            else:
+                user.update_output(message)
+    
+    def has_user(self, name):
+        """Return true if the world has this user's name in its user list."""
+        if name in self.user_list:
+            return True
+        return False
+    
+    def get_user(self, name):
+        """Return a user if that user's name exists in the user list."""
+        return self.user_list.get(name)
+    
+    def user_add(self, user):
+        self.user_list[user.name] = user
+    
+    def user_remove(self, username):
+        """Add a user's name to the world's delete list so they get removed
+        from the userlist on the next turn."""
+        self.user_delete.append(username)
     

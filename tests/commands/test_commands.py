@@ -11,8 +11,8 @@ from shinymud.models.schema import initialize_database
 class TestGeneralCommands(TestCase):
     def setUp(self):
         self.world = World()
-        self.db = DB(':memory:')
-        initialize_database(self.db.conn)
+        self.world.db = DB(':memory:')
+        initialize_database(self.world.db.conn)
         
     def tearDown(self):
         World._instance = None
@@ -28,7 +28,36 @@ class TestGeneralCommands(TestCase):
                          "Registered command 'sam' returned wrong value.")
         self.assertEqual(cmds['bob'], cmds['sam'],
                          "Registered aliases 'bob' and 'sam' did not return same function.")
+    
+    def test_chat_command(self):
+        bob = User(('bob', 'bar'))
+        alice = User(('alice', 'bar'))
+        sam = User(('sam', 'bar'))
+        bob.mode = None
+        bob.userize(name='bob')
+        bob.outq = []
+        sam.mode = None
+        sam.userize(name='sam')
+        sam.outq = []
+        self.world.user_add(bob)
+        self.world.user_add(sam)
+        self.world.user_add(alice)
         
+        Chat(bob, 'lol, hey guys!', 'chat').execute()
+        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in sam.outq)
+        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in bob.outq)
+        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in alice.outq)
+        
+        sam.channels['chat'] = False
+        sam.outq = []
+        bob.outq = []
+        alice.outq = []
+        
+        Chat(bob, 'lol, hey guys!', 'chat').execute()
+        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in sam.outq)
+        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in bob.outq)
+        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in alice.outq)
+    
 
 class TestBuildCommands(TestCase):
     def setUp(self):
