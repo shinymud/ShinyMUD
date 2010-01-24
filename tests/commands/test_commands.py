@@ -1,4 +1,5 @@
 from shinymud.lib.world import *
+from shinymud.data.config import *
 from shinymud.models.user import *
 from shinymud.commands import *
 from unittest import TestCase
@@ -44,9 +45,10 @@ class TestGeneralCommands(TestCase):
         self.world.user_add(alice)
         
         Chat(bob, 'lol, hey guys!', 'chat').execute()
-        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in sam.outq)
-        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in bob.outq)
-        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in alice.outq)
+        chat = chat_color + 'Bob chats, "lol, hey guys!"' + clear_fcolor + '\r\n'
+        self.assertTrue(chat in sam.outq)
+        self.assertTrue(chat in bob.outq)
+        self.assertFalse(chat in alice.outq)
         
         sam.channels['chat'] = False
         sam.outq = []
@@ -54,9 +56,9 @@ class TestGeneralCommands(TestCase):
         alice.outq = []
         
         Chat(bob, 'lol, hey guys!', 'chat').execute()
-        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in sam.outq)
-        self.assertTrue('Bob chats, "lol, hey guys!"\r\n' in bob.outq)
-        self.assertFalse('Bob chats, "lol, hey guys!"\r\n' in alice.outq)
+        self.assertFalse(chat in sam.outq)
+        self.assertTrue(chat in bob.outq)
+        self.assertFalse(chat in alice.outq)
     
 
 class TestBuildCommands(TestCase):
