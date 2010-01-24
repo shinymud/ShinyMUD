@@ -1,3 +1,4 @@
+from shinymud.data.config import *
 from shinymud.commands import *
 from shinymud.commands.commands import *
 from shinymud.modes.init_mode import InitMode
@@ -236,23 +237,28 @@ class User(object):
     
     def look_at_room(self):
         """Return this user's view of the room they are in."""
-        title = self.location.name
+        title = room_title_color + self.location.name + clear_fcolor
         if self.mode and self.mode.name == 'BuildMode':
-            title = '[id: %s] %s' % (self.location.id, self.location.name)
+            title = '%s[id: %s]%s %s%s%s' % (room_id_color, 
+            self.location.id, clear_fcolor, room_title_color,
+            self.location.name, clear_fcolor)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:
             xits = 'exits: ' + ', '.join(exit_list)
+        xits = room_exit_color + xits + clear_fcolor
         users = ''
         for user in self.location.users.values():
             if user.name != self.name:
-                users += user.get_fancy_name() + ' is here.\n'
+                users += user_color + user.get_fancy_name() + ' is here.' +\
+                         clear_fcolor + '\n'
         npcs = ''
         for npc in self.location.npcs:
-            npcs += npc.title + '\n'
+            npcs += npc_color + npc.title + clear_fcolor + '\n'
         items = ''
         for item in self.location.items:
-            items += item.title + '\n'
-        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, self.location.description, users, npcs, items)
+            items += item_color + item.title + clear_fcolor + '\n'
+        desc = room_body_color + self.location.description + clear_fcolor
+        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, users, npcs, items)
         return look
     

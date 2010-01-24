@@ -3,6 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
+from shinymud.data.config import *
 from shinymud.commands.emotes import *
 from shinymud.commands import *
 import re
@@ -71,7 +72,8 @@ channel off.
         if not self.user.channels['chat']:
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
-        message = '%s chats, "%s"\n' % (self.user.get_fancy_name(), self.args)
+        message = '%s chats, "%s"' % (self.user.get_fancy_name(), self.args)
+        message = chat_color + message + clear_fcolor
         exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
         self.world.tell_users(message, exclude)
     
@@ -301,7 +303,8 @@ class Say(BaseCommand):
     def execute(self):
         if self.args:
             if self.user.location:
-                message = '%s says, "%s"\n' % (self.user.get_fancy_name(), self.args)
+                message = '%s says, "%s"' % (self.user.get_fancy_name(), self.args)
+                message = say_color + message + clear_fcolor
                 self.user.location.tell_room(message)
             else:
                 self.user.update_output('Your words are sucked into the void.\n')
@@ -710,7 +713,7 @@ permissions and permission groups, see "help permissions".
             self.user.update_output('Bestow what authority upon whom?\n')
             return
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<player>\w+))'
-        match = re.match(exp, self.args, re.I)
+        match = re.match(exp, self.args.lower(), re.I)
         if not match:
             self.user.update_output('Type "help bestow" for help on this command.\n')
             return
@@ -742,7 +745,7 @@ class Revoke(BaseCommand):
             self.user.update_output('Revoke whose authority over what?\n')
             return
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(on)?(for)?([ ]+(?P<player>\w+))'
-        match = re.match(exp, self.args, re.I)
+        match = re.match(exp, self.args.lower(), re.I)
         if not match:
             self.user.update_output('Type "help revoke" for help on this command.\n')
             return
