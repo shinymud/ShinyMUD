@@ -236,7 +236,7 @@ class Item(object):
         item.area = self.area
         for key,value in self.item_types.items():
             item.item_types[key] = value.load()
-            item.item_types[key].item = item
+            item.item_types[key].inv_item = item
         return item
     
     def save(self, save_dict=None):
@@ -284,6 +284,8 @@ class InventoryItem(Item):
             # If an item has not yet been saved, its item types will not have been
             # saved either.
             for key, value in self.item_types.items():
+                value.inv_item = self
+                value.item = None
                 value.save()
     
 
@@ -316,6 +318,7 @@ class Weapon(object):
     def __init__(self, **args):
         dmg = args.get('dmg')
         self.item = args.get('item')
+        self.inv_item = args.get('inv_item')
         self.dmg = []
         if dmg:
             d_list = dmg.split('|')
@@ -342,7 +345,10 @@ class Weapon(object):
     
     def to_dict(self):
         d = {}
-        d['item'] = self.item.dbid
+        if self.item:
+            d['item'] = self.item.dbid
+        if self.inv_item:
+            d['inv_item'] = self.inv_item.dbid
         d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
         if self.dbid:
             d['dbid'] = self.dbid
@@ -414,6 +420,8 @@ class Food(object):
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
         self.dbid = args.get(dbid)
+        self.item = args.get('item')
+        self.inv_item = args.get('inv_item')
     
     def __str__(self):
         if self.on_eat:
@@ -427,6 +435,10 @@ class Food(object):
     def to_dict(self):
         d = {}
         d['on_eat'] = ','.join(self.eat_effects)
+        if self.item:
+            d['item'] = self.item
+        if self.inv_item:
+            d['inv_item'] = self.inv_item
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -450,6 +462,7 @@ class Container(object):
         self.inventory = []
         self.dbid = args.get('dbid')
         self.item = args.get('item')
+        self.inv_item = args.get('inv_item')
         self.log = logging.getLogger('Container')
         self.log.debug('ITEM: ' + str(self.item))
         self.openable = to_bool(args.get('openable')) or False
@@ -498,7 +511,10 @@ class Container(object):
         d['closed'] = self.closed
         d['locked'] = self.locked
         self.log.debug('ITEM: ' + str(self.item))
-        d['item'] = self.item.dbid
+        if self.item:
+            d['item'] = self.item.dbid
+        if self.inv_item:
+            d['inv_item'] = self.inv_item.dbid
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -517,7 +533,7 @@ class Container(object):
     def load(self):
         newc = Container(**self.to_dict())
         newc.dbid = None
-        newc.item = self.item
+        newc.item = None
         return newc
     
     def destroy_inventory(self):
@@ -555,6 +571,8 @@ class Furniture(object):
         # of users that can use this piece of furniture at one time.
         self.capacity = args.get('capacity')
         self.dbid = args.get('dbid')
+        self.item = args.get('item')
+        self.inv_item = args.get('inv_item')
     
     def __str__(self):
         if self.sit_effects:
@@ -577,6 +595,10 @@ class Furniture(object):
         d['sit_effects'] = ','.join(self.sit_effects)
         d['sleep_effects'] = ','.join(self.sleep_effects)
         d['capacity'] = ','.join(self.capacity)
+        if self.item:
+            d['item'] = self.item
+        if self.inv_item:
+            d['inv_item'] = self.inv_item
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -598,6 +620,7 @@ class Portal(object):
         self.entrance_message = args.get('entrance_message', 'You enter a portal.')
         self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
         self.item = args.get('item')
+        self.inv_item = args.get('inv_item')
         self.dbid = args.get('dbid')
         # The actual room object this portal points to
         # The id of the room this portal points to
@@ -612,7 +635,10 @@ class Portal(object):
         d['leave_message'] = self.leave_message
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
-        d['item'] = self.item.dbid
+        if self.item:
+            d['item'] = self.item
+        if self.inv_item:
+            d['inv_item'] = self.inv_item
         d['to_room'] = self.to_room
         d['to_area'] = self.to_area
         if self.dbid:
@@ -624,6 +650,8 @@ class Portal(object):
         """Return a new copy of this instance so it can be loaded for an inventory item."""
         newp = Portal()
         newp.location = self.location
+        newp.to_area = self.to_area
+        newp.to_room = self.to_room
         newp.leave_message = self.leave_message
         newp.entrance_message = self.entrance_message
         newp.emerge_message = self.emerge_message

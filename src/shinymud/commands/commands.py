@@ -485,7 +485,7 @@ class Equip(BaseCommand):
             item = self.user.check_inv_for_keyword(self.args)
             if not item:
                 message = 'You don\'t have it.\n'
-            elif not self.user.equipped.get(item.equip_slot, ''): #if item has a slot that exists.
+            elif self.user.equipped.get(item.equip_slot, None) == None: #if item has a slot that exists.
                 message = 'You can\'t equip that!\n'
             else:
                 if self.user.equipped[item.equip_slot]: #if slot not empty

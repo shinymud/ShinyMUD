@@ -103,7 +103,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid),
+    item INTEGER NULL REFERENCES item(dbid),
+    inv_item INTEGER NULL REFERENCES inventory(dbid),
     to_room TEXT,
     to_area TEXT,
     leave_message TEXT,
@@ -112,11 +113,13 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS food (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid)
+    item INTEGER NULL REFERENCES item(dbid),
+    inv_item INTEGER NULL REFERENCES inventory(dbid)
 )''',\
 '''CREATE TABLE IF NOT EXISTS container (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid),
+    item INTEGER NULL REFERENCES item(dbid),
+    inv_item INTEGER NULL REFERENCES inventory(dbid),
     weight_capacity NUMBER,
     weight_reduction INTEGER,
     item_capacity INTEGER,
@@ -128,12 +131,14 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS weapon (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid),
+    item INTEGER NULL REFERENCES item(dbid),
+    inv_item INTEGER NULL REFERENCES inventory(dbid),
     dmg TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS furniture (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NOT NULL REFERENCES item(dbid)
+    item INTEGER NULL REFERENCES item(dbid),
+    inv_item INTEGER NULL REFERENCES inventory(dbid)
 )''']
     
     conn = connection or sqlite3.connect(DB_NAME)
