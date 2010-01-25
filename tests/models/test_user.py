@@ -8,8 +8,9 @@ from shinymud.models.schema import initialize_database
 class TestUser(TestCase):
     def setUp(self):
         self.world = World()
-        self.db = DB(':memory:')
-        initialize_database(self.db.conn)
+        self.world.db = DB(':memory:')
+        initialize_database(self.world.db.conn)
+        self.area = Area.create('boo')
     
     def tearDown(self):
         World._instance = None

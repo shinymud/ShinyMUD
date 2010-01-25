@@ -2,7 +2,7 @@ import threading
 import time
 import logging
 from shinymud.lib.db import DB
-from shinymud.data.config import RESET_INTERVAL
+from shinymud.data.config import *
 
 class World(object):
     _instance = None
@@ -140,10 +140,11 @@ ______________________________________________\n""" % '\n    '.join(names)
 # ************************ User Functions ************************
 # Here exist all the functions that the world uses to manage the users
 # it contains.
-    def tell_users(self, message, exclude_list=[]):
+    def tell_users(self, message, exclude_list=[], color=wecho_color):
         """Tell all available users in the world a message.
         A user is considered unavailable if the are on the exclude list,
         or not in BuildMode or NormalMode."""
+        message = color + message + clear_fcolor
         for user in self.user_list.values():
             if user.name in exclude_list:
                 pass

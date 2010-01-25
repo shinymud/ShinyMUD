@@ -44,7 +44,7 @@ class TestGeneralCommands(TestCase):
         self.world.user_add(sam)
         self.world.user_add(alice)
         
-        Chat(bob, 'lol, hey guys!', 'chat').execute()
+        Chat(bob, 'lol, hey guys!', 'chat').run()
         chat = chat_color + 'Bob chats, "lol, hey guys!"' + clear_fcolor + '\r\n'
         self.assertTrue(chat in sam.outq)
         self.assertTrue(chat in bob.outq)
@@ -55,10 +55,51 @@ class TestGeneralCommands(TestCase):
         bob.outq = []
         alice.outq = []
         
-        Chat(bob, 'lol, hey guys!', 'chat').execute()
+        Chat(bob, 'lol, hey guys!', 'chat').run()
         self.assertFalse(chat in sam.outq)
         self.assertTrue(chat in bob.outq)
         self.assertFalse(chat in alice.outq)
+    
+    def test_give_command(self):
+        area = Area.create('blarg')
+        room = area.new_room()
+        bob = User(('bob', 'bar'))
+        bob.mode = None
+        bob.userize(name='bob')
+        alice = User(('alice', 'bar'))
+        alice.mode = None
+        alice.userize(name='alice')
+        self.world.user_add(bob)
+        self.world.user_add(alice)
+        
+        room.user_add(bob)
+        room.user_add(alice)
+        alice.location = room
+        bob.location = room
+        npc = area.new_npc()
+        room.npc_add(npc)
+        
+        item = area.new_item()
+        item.set_keywords('bauble', bob)
+        item.set_name('a bauble', bob)
+        bob.item_add(item.load())
+        
+        self.assertEqual(len(bob.inventory), 1)
+        Give(bob, 'bauble to alice', 'give').run()
+        self.assertEqual(len(bob.inventory), 0)
+        self.assertEqual(len(alice.inventory), 1)
+        to_alice = 'Bob gives you a bauble.\r\n'
+        self.assertTrue(to_alice in alice.outq)
+        to_bob = 'You give a bauble to Alice.\r\n'
+        self.assertTrue(to_bob in bob.outq)
+        
+        Give(alice, 'bauble to shiny', 'give').run()
+        self.assertEqual(len(alice.inventory), 0)
+        self.assertEqual(len(npc.inventory), 1)
+        to_alice = 'You give a bauble to %s.\r\n' % npc.name
+        self.assertTrue(to_alice in alice.outq)
+        to_shiny = 'Alice gives you a bauble.'
+        self.assertTrue(to_shiny in npc.actionq)
     
 
 class TestBuildCommands(TestCase):

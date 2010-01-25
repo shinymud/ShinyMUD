@@ -1,5 +1,6 @@
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
+import logging
 
 class Npc(object):
     def __init__(self, area=None, id=0, **args):
@@ -16,6 +17,9 @@ class Npc(object):
         self.description = args.get('description', 'You see nothing special about this person.')
         self.world = World.get_world()
         self.spawn_id = None
+        self.inventory = []
+        self.actionq = []
+        self.log = logging.getLogger('Npc')
     
     def to_dict(self):
         d = {}
@@ -71,6 +75,12 @@ ______________________________________________\n""" % (self.id, self.area.name, 
         new_npc.dbid = None
         return new_npc
     
+    def update_output(self, message):
+        self.actionq.append(message)
+    
+    def get_fancy_name(self):
+        return self.name
+    
     def set_description(self, description, user=None):
         """Set the description of this npc."""
         user.last_mode = user.mode
@@ -102,5 +112,11 @@ ______________________________________________\n""" % (self.id, self.area.name, 
             self.keywords.append(self.name.lower())
             self.save({'keywords': ','.join(self.keywords)})
             return 'Npc keywords have been reset.\n'
-        
+    
+    def item_add(self, item):
+        self.inventory.append(item)
+    
+    def item_remove(self, item):
+        if item in self.inventory:
+            self.inventory.remove(item)
     

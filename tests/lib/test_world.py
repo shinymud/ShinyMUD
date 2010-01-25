@@ -3,8 +3,11 @@ from shinymud.models.user import *
 from shinymud.modes.build_mode import *
 from shinymud.commands import *
 from shinymud.lib.db import DB
+from shinymud.data.config import *
 from shinymud.models.schema import initialize_database
 from unittest import TestCase
+
+import logging
 
 class TestReset(TestCase):
     def setUp(self):
@@ -15,33 +18,34 @@ class TestReset(TestCase):
     def test_tell_users(self):
         bob = User(('bob', 'bar'))
         alice = User(('alice', 'bar'))
+        self.world.user_add(bob)
+        self.world.user_add(alice)
+        
         bob.mode = None
         bob.outq = []
         alice.mode = None
         alice.outq = []
-        self.world.user_add(bob)
-        self.world.user_add(alice)
         
         self.world.tell_users('hello world!')
-        
-        self.assertTrue('hello world!\r\n' in bob.outq)
-        self.assertTrue('hello world!\r\n' in alice.outq)
+        echo = wecho_color + 'hello world!' + clear_fcolor + '\r\n'
+        self.assertTrue(echo in bob.outq)
+        self.assertTrue(echo in alice.outq)
         
         bob.mode = InitMode(bob)
         bob.outq = []
         alice.outq = []
         
         self.world.tell_users('hello all!')
-        
-        self.assertTrue('hello all!\r\n' not in bob.outq)
-        self.assertTrue('hello all!\r\n' in alice.outq)
+        echo = wecho_color + 'hello all!' + clear_fcolor + '\r\n'
+        self.assertTrue(echo not in bob.outq)
+        self.assertTrue(echo in alice.outq)
         
         bob.mode = BuildMode(bob)
         bob.outq = []
         alice.outq = []
         
         self.world.tell_users('hello!', ['alice'])
-        
-        self.assertTrue('hello!\r\n' in bob.outq)
-        self.assertTrue('hello!\r\n' not in alice.outq)
+        echo = wecho_color + 'hello!' + clear_fcolor + '\r\n'
+        self.assertTrue(echo in bob.outq)
+        self.assertTrue(echo not in alice.outq)
     

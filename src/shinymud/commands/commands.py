@@ -73,9 +73,8 @@ channel off.
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
         message = '%s chats, "%s"' % (self.user.get_fancy_name(), self.args)
-        message = chat_color + message + clear_fcolor
         exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
-        self.world.tell_users(message, exclude)
+        self.world.tell_users(message, exclude, chat_color)
     
 
 command_list.register(Chat, ['chat', 'c'])
@@ -193,7 +192,7 @@ class Look(BaseCommand):
             if obj:
                 message = "You look at %s:\n%s" % (obj.name, obj.description)
                 if hasattr(obj, 'is_container') and obj.is_container():
-                    message += obj.item_types.get('container').display_inventory()
+                    message += '\n' + obj.item_types.get('container').display_inventory()
                 return message
         return None
     
@@ -202,7 +201,7 @@ class Look(BaseCommand):
         if item:
             message = "You look at %s:\n%s" % (item.name, item.description)
             if item.is_container():
-                message += item.item_types.get('container').display_inventory()
+                message += '\n' + item.item_types.get('container').display_inventory()
             return message
         return None
     
@@ -233,10 +232,11 @@ To go to a room in a different area:
                 name, area_name, room = match.group('name', 'area', 'room_id')
                 if name:
                     # go to the same room that user is in
-                    per = self.world.user_list.get(name)
+                    per = self.world.get_user(name)
                     if per:
                         if per.location:
-                            self.user.go(self.world.user_list.get(name).location)
+                            self.user.go(per.location, self.user.goto_appear, 
+                                         self.user.goto_disappear)
                         else:
                             self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
                     else:
@@ -251,7 +251,8 @@ To go to a room in a different area:
                     if area:
                         room = area.get_room(room)
                         if room:
-                            self.user.go(room)
+                            self.user.go(room, self.user.goto_appear, 
+                                         self.user.goto_disappear)
                         else:
                             self.user.update_output('That room doesn\'t exist.\n')
                     else:
@@ -277,7 +278,14 @@ class Go(BaseCommand):
                     self.user.update_output('The door is closed.\n')
                 else:
                     if go_exit.to_room:
-                        self.user.go(go_exit.to_room)
+                        if go_exit.linked_exit:
+                            tell_new = '%s arrives from the %s.' % (self.user.get_fancy_name(),
+                                                                    go_exit.linked_exit)
+                        else:
+                            tell_new = '%s suddenly appears in the room.' % self.user.get_fancy_name()
+                        tell_old = '%s leaves to the %s.' % (self.user.get_fancy_name(),
+                                                             go_exit.direction)
+                        self.user.go(go_exit.to_room, tell_new, tell_old)
                     else:
                         # SOMETHING WENT BADLY WRONG IF WE GOT HERE!!!
                         # somehow the room that this exit pointed to got deleted without informing
@@ -356,7 +364,16 @@ To load an npc:
     
     def load_npc(self, npc_id, npc_area):
         """Load an npc into the same room as the user."""
-        self.user.update_output('Npc\'s don\'t exist yet.\n')
+        if not self.user.location:
+            self.user.update_output('But you\'re in a void!')
+            return
+        prototype = npc_area.get_npc(npc_id)
+        if prototype:
+            npc = prototype.load()
+            self.user.location.npc_add(npc)
+            self.user.update_output('You summon %s into the world.\n' % npc.name)
+        else:
+            self.user.update_output('That npc doesn\'t exist.')
     
     def load_item(self, item_id, item_area):
         """Load an item into the user's inventory."""
@@ -390,7 +407,14 @@ class Inventory(BaseCommand):
 command_list.register(Inventory, ['i', 'inventory'])
 
 class Give(BaseCommand):
-    """Give an item to another player."""
+    """Give an item to another player or npc."""
+    help = (
+    """Give (Command)
+Give an object to another player or an npc.
+\nUSAGE:
+give <item-keyword> to <npc/player-name>
+    """
+    )
     def execute(self):
         exp = r'(?P<thing>.*?)([ ]to[ ])(?P<givee>\w+)'
         match = re.match(exp, self.args, re.I)
@@ -400,24 +424,25 @@ class Give(BaseCommand):
             self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
             thing, person = match.group('thing', 'givee')
-            givee = self.user.location.get_user(person)
+            givee = self.user.location.get_user_by_kw(person) or self.user.location.get_npc_by_kw(person)
             item = self.user.check_inv_for_keyword(thing)
             if not givee:
-                self.user.update_output('%s isn\'t here.\n' % person.capitalize())
+                self.user.update_output('%s isn\'t here.' % person.capitalize())
             elif not item:
-                self.user.update_output('You don\'t have %s.\n' % thing)
+                self.user.update_output('You don\'t have %s.' % thing)
             else:
                 self.user.item_remove(item)
                 givee.item_add(item)
-                self.user.update_output('You give %s to %s.\n' % (item.name, givee.get_fancy_name()))
-                givee.update_output('%s gives you %s.\n' % (self.user.get_fancy_name(), item.name))
-                self.user.location.tell_room('%s gives %s to %s\n.' % (self.user.get_fancy_name(),
+                self.user.update_output('You give %s to %s.' % (item.name, givee.get_fancy_name()))
+                givee.update_output('%s gives you %s.' % (self.user.get_fancy_name(), item.name))
+                self.user.location.tell_room('%s gives %s to %s.' % (self.user.get_fancy_name(),
                                                                       item.name,
                                                                       givee.get_fancy_name()),
                                             [self.user.name, givee.name])
     
 
 command_list.register(Give, ['give'])
+command_help.register(Give.help, ['give'])
 
 class Drop(BaseCommand):
     """Drop an item from the user's inventory into the user's current room."""

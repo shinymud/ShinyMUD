@@ -24,7 +24,9 @@ def initialize_database(connection=None):
     speed INTEGER NOT NULL DEFAULT 0,
     email TEXT,
     gender TEXT,
-    location TEXT
+    location TEXT,
+    goto_appear,
+    goto_disappear
 )''',\
 '''CREATE TABLE IF NOT EXISTS area (
     dbid INTEGER PRIMARY KEY,

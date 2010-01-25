@@ -19,6 +19,7 @@ clear_bcolor = COLOR_BG_RESET # DON'T CHANGE THIS ONE EITHER!
 # Communication colors
 chat_color = COLOR_FG_CYAN
 say_color = COLOR_FG_YELLOW
+wecho_color = COLOR_FG_BLUE
 
 # Object colors
 npc_color = COLOR_FG_YELLOW

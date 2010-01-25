@@ -40,6 +40,10 @@ class User(object):
         self.email = str(args.get('email'))
         self.permissions = int(args.get('permissions', 1))
         self.dbid = args.get('dbid')
+        self.goto_appear = args.get('goto_appear', 
+            '%s appears in the room.' % self.get_fancy_name())
+        self.goto_disappear = args.get('goto_disappear', 
+            '%s disappears in a cloud of smoke.' % self.get_fancy_name())
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
@@ -85,6 +89,8 @@ class User(object):
         d['description'] = self.description
         d['gender'] = self.gender
         d['permissions'] = self.permissions
+        d['goto_appear'] = self.goto_appear
+        d['goto_disappear'] = self.goto_disappear
         if self.email:
             d['email'] = self.email
         if self.dbid:
@@ -213,17 +219,19 @@ class User(object):
             item.save({'owner': item.owner})
             self.inventory.remove(item)
     
-    def go(self, room):
+    def go(self, room, tell_new=None, tell_old=None):
         """Go to a specific room."""
         if self.location:
-            # Tell the old room you are leaving.
+            if tell_old:
+                self.location.tell_room(tell_old, [self.name])
             self.location.user_remove(self)
         if self.location and self.location == room:
             self.update_output('You\'re already there.\n')
         else:
             self.location = room
             self.location.user_add(self)
-            # Tell the new room you have arrived
+            if tell_new:
+                self.location.tell_room(tell_new, [self.name])
             self.update_output(self.look_at_room())
     
     def check_inv_for_keyword(self, keyword):
