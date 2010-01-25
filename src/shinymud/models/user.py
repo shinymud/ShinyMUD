@@ -41,9 +41,9 @@ class User(object):
         self.permissions = int(args.get('permissions', 1))
         self.dbid = args.get('dbid')
         self.goto_appear = args.get('goto_appear', 
-            '%s appears in the room.' % self.get_fancy_name())
+            '%s appears in the room.' % self.fancy_name())
         self.goto_disappear = args.get('goto_disappear', 
-            '%s disappears in a cloud of smoke.' % self.get_fancy_name())
+            '%s disappears in a cloud of smoke.' % self.fancy_name())
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
@@ -195,9 +195,9 @@ class User(object):
         if self.location:
             self.location.user_remove(self)
         self.world.user_remove(self.name)
-        self.world.tell_users("%s has left the world." % self.get_fancy_name())
+        self.world.tell_users("%s has left the world." % self.fancy_name())
     
-    def get_fancy_name(self):
+    def fancy_name(self):
         return self.name.capitalize()
     
     def set_mode(self, mode):
@@ -258,7 +258,7 @@ class User(object):
         users = ''
         for user in self.location.users.values():
             if user.name != self.name:
-                users += user_color + user.get_fancy_name() + ' is here.' +\
+                users += user_color + user.fancy_name() + ' is here.' +\
                          clear_fcolor + '\n'
         npcs = ''
         for npc in self.location.npcs:

@@ -52,7 +52,7 @@ class Apocalypse(BaseCommand):
     required_permissions = GOD
     def execute(self):
         # This should definitely require admin privileges in the future.
-        message = "%s has stopped the world from turning. Goodbye." % self.user.get_fancy_name()
+        message = "%s has stopped the world from turning. Goodbye." % self.user.fancy_name()
         self.world.tell_users(message)
         self.world.shutdown_flag = True
     
@@ -72,7 +72,7 @@ channel off.
         if not self.user.channels['chat']:
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
-        message = '%s chats, "%s"' % (self.user.get_fancy_name(), self.args)
+        message = '%s chats, "%s"' % (self.user.fancy_name(), self.args)
         exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
         self.world.tell_users(message, exclude, chat_color)
     
@@ -238,7 +238,7 @@ To go to a room in a different area:
                             self.user.go(per.location, self.user.goto_appear, 
                                          self.user.goto_disappear)
                         else:
-                            self.user.update_output('You can\'t reach %s.\n' % per.get_fancy_name())
+                            self.user.update_output('You can\'t reach %s.\n' % per.fancy_name())
                     else:
                         self.user.update_output('That person doesn\'t exist.\n')
                 elif room:
@@ -279,11 +279,11 @@ class Go(BaseCommand):
                 else:
                     if go_exit.to_room:
                         if go_exit.linked_exit:
-                            tell_new = '%s arrives from the %s.' % (self.user.get_fancy_name(),
+                            tell_new = '%s arrives from the %s.' % (self.user.fancy_name(),
                                                                     go_exit.linked_exit)
                         else:
-                            tell_new = '%s suddenly appears in the room.' % self.user.get_fancy_name()
-                        tell_old = '%s leaves to the %s.' % (self.user.get_fancy_name(),
+                            tell_new = '%s suddenly appears in the room.' % self.user.fancy_name()
+                        tell_old = '%s leaves to the %s.' % (self.user.fancy_name(),
                                                              go_exit.direction)
                         self.user.go(go_exit.to_room, tell_new, tell_old)
                     else:
@@ -311,7 +311,7 @@ class Say(BaseCommand):
     def execute(self):
         if self.args:
             if self.user.location:
-                message = '%s says, "%s"' % (self.user.get_fancy_name(), self.args)
+                message = '%s says, "%s"' % (self.user.fancy_name(), self.args)
                 message = say_color + message + clear_fcolor
                 self.user.location.tell_room(message)
             else:
@@ -383,7 +383,7 @@ To load an npc:
             self.user.item_add(item)
             self.user.update_output('You summon %s into the world.\n' % item.name)
             if self.user.location:
-                self.user.location.tell_room('%s summons %s into the world.\n' % (self.user.get_fancy_name(), item.name), 
+                self.user.location.tell_room('%s summons %s into the world.\n' % (self.user.fancy_name(), item.name), 
                                                                                 self.user.name)
         else:
             self.user.update_output('That item doesn\'t exist.\n')
@@ -433,11 +433,11 @@ give <item-keyword> to <npc/player-name>
             else:
                 self.user.item_remove(item)
                 givee.item_add(item)
-                self.user.update_output('You give %s to %s.' % (item.name, givee.get_fancy_name()))
-                givee.update_output('%s gives you %s.' % (self.user.get_fancy_name(), item.name))
-                self.user.location.tell_room('%s gives %s to %s.' % (self.user.get_fancy_name(),
+                self.user.update_output('You give %s to %s.' % (item.name, givee.fancy_name()))
+                givee.update_output('%s gives you %s.' % (self.user.fancy_name(), item.name))
+                self.user.location.tell_room('%s gives %s to %s.' % (self.user.fancy_name(),
                                                                       item.name,
-                                                                      givee.get_fancy_name()),
+                                                                      givee.fancy_name()),
                                             [self.user.name, givee.name])
     
 
@@ -456,7 +456,7 @@ class Drop(BaseCommand):
                 self.user.update_output('You drop %s.\n' % item.name)
                 if self.user.location:
                     self.user.location.item_add(item)
-                    self.user.location.tell_room('%s drops %s.\n' % (self.user.get_fancy_name(), 
+                    self.user.location.tell_room('%s drops %s.\n' % (self.user.fancy_name(), 
                                                                      item.name), [self.user.name])
                 else:
                     self.user.update_output('%s disappears into the void.\n' % item.name)
@@ -504,10 +504,10 @@ class Get(BaseCommand):
                     self.user.update_output('You get %s.\n' % item.name)
                     if self.user.location:
                         if source_kw:
-                            room_tell = '%s gets %s from %s.\n' % (self.user.get_fancy_name(), item.name,
+                            room_tell = '%s gets %s from %s.\n' % (self.user.fancy_name(), item.name,
                                                                    source.item.name)
                         else:
-                            room_tell = '%s gets %s.\n' % (self.user.get_fancy_name(), item.name)
+                            room_tell = '%s gets %s.\n' % (self.user.fancy_name(), item.name)
                         self.user.location.tell_room((room_tell), [self.user.name])
                 else:
                     self.user.update_output('You can\'t take that.\n')
@@ -752,11 +752,11 @@ permissions and permission groups, see "help permissions".
             self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
             return
         if user.permissions & permission:
-            self.user.update_output('%s already has that authority.\n' % user.get_fancy_name())
+            self.user.update_output('%s already has that authority.\n' % user.fancy_name())
             return
         user.permissions = user.permissions | permission
-        self.user.update_output('%s now has the privilige of being %s.\n' % (user.get_fancy_name(), perm.upper()))
-        user.update_output('%s has bestowed the authority of %s upon you!\n' % (self.user.get_fancy_name(), perm.upper()))
+        self.user.update_output('%s now has the privilige of being %s.\n' % (user.fancy_name(), perm.upper()))
+        user.update_output('%s has bestowed the authority of %s upon you!\n' % (self.user.fancy_name(), perm.upper()))
     
 
 command_list.register(Bestow, ['bestow'])
@@ -784,11 +784,11 @@ class Revoke(BaseCommand):
             self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
             return
         if not (user.permissions & permission):
-            self.user.update_output('%s doesn\'t have that authority anyway.\n' % user.get_fancy_name())
+            self.user.update_output('%s doesn\'t have that authority anyway.\n' % user.fancy_name())
             return
         user.permissions = user.permissions ^ permission
-        self.user.update_output('%s has had the privilige of %s revoked.\n' % (user.get_fancy_name(), perm))
-        user.update_output('%s has revoked your %s priviliges.\n' % (self.user.get_fancy_name(), perm))
+        self.user.update_output('%s has had the privilige of %s revoked.\n' % (user.fancy_name(), perm))
+        user.update_output('%s has revoked your %s priviliges.\n' % (self.user.fancy_name(), perm))
     
 
 command_list.register(Revoke, ['revoke'])

@@ -164,10 +164,15 @@ ______________________________________________\n""" % '\n    '.join(names)
         return self.user_list.get(name)
     
     def user_add(self, user):
-        self.user_list[user.name] = user
+        key = user.name
+        if isinstance(key, str):
+            key = key.lower()
+        self.user_list[key] = user
     
     def user_remove(self, username):
         """Add a user's name to the world's delete list so they get removed
         from the userlist on the next turn."""
+        if isinstance(username, str):
+            username = username.lower()
         self.user_delete.append(username)
     

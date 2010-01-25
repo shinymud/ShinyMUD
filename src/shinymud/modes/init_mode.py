@@ -30,7 +30,7 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             username = self.user.inq[0]
             if username:
-                if username == 'new':
+                if username.lower() == 'new':
                     self.state = self.new_username
                     self.user.update_output('Please choose a username. It should be a single word, using only letters.')
                 else:
@@ -75,7 +75,7 @@ class InitMode(object):
     def join_world(self):
         self.active = False
         self.user.update_output('You have entered the world of ShinyMUD.')
-        self.world.tell_users("%s has entered the world." % self.user.get_fancy_name())
+        self.world.tell_users("%s has entered the world." % self.user.fancy_name())
     
     def character_cleanup(self):
         self.user.inq = []
@@ -152,8 +152,8 @@ class InitMode(object):
                 self.user.location = None
                 self.user.permissions = 1
                 self.user.description = 'You see nothing special about this person.'
-                self.user.goto_appear = '%s appears in the room.' % self.user.get_fancy_name()
-                self.user.goto_disappear = '%s disappears in a cloud of smoke.' % self.user.get_fancy_name()
+                self.user.goto_appear = '%s appears in the room.' % self.user.fancy_name()
+                self.user.goto_disappear = '%s disappears in a cloud of smoke.' % self.user.fancy_name()
                 if self.user.inq[0][0].lower() == 'c':
                     # Custom stats creation
                     self.state = self.custom_create

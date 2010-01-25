@@ -69,7 +69,7 @@ class BaseCommand(object):
         hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #That thing is hers/his.
         her_possesive = {'female': 'her', 'male': 'his', 'neutral': 'its'} #Person lost her/his thingy.
         
-        message = message.replace('#actor', actor.get_fancy_name())
+        message = message.replace('#actor', actor.fancy_name())
         message = message.replace('#a_she/he', she_pronouns.get(actor.gender)) 
         message = message.replace('#a_her/him', her_pronouns.get(actor.gender)) 
         message = message.replace('#a_hers/his', hers_possesive.get(actor.gender))
@@ -78,7 +78,7 @@ class BaseCommand(object):
         # We should always have an actor, but we don't always have a target.
         # Expect them to be able to pass None for the target
         if target:
-            message = message.replace('#target', target.get_fancy_name())
+            message = message.replace('#target', target.fancy_name())
             message = message.replace('#t_she/he', she_pronouns.get(target.gender))
             message = message.replace('#t_her/him', her_pronouns.get(target.gender))
             message = message.replace('#t_hers/his', hers_possesive.get(target.gender))

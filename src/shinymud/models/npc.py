@@ -78,7 +78,7 @@ ______________________________________________\n""" % (self.id, self.area.name, 
     def update_output(self, message):
         self.actionq.append(message)
     
-    def get_fancy_name(self):
+    def fancy_name(self):
         return self.name
     
     def set_description(self, description, user=None):
