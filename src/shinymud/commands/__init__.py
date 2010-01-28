@@ -6,6 +6,16 @@ DM = 4
 ADMIN = 8
 GOD = 16
 
+def get_permission_names(perm_int):
+    """Takes an integer representing a set of permissions and returns a list
+    of corresponding permission names."""
+    pms = {'God': 16, 'Admin': 8, 'Builder': 2, 'Player': 1, 'DM': 4}
+    perm_list = []
+    for key, value in pms.items():
+        if perm_int & value:
+            perm_list.append(key)
+    return perm_list
+
 class CommandRegister(object):
     
     def __init__(self):

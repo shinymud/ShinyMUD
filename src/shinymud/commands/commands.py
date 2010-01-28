@@ -570,16 +570,39 @@ command_list.register(Unequip, ['unequip'])
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
+    help = (
+    """Who (Command)
+The Who command returns a list of all the players currently in the game.
+\nUSAGE:
+  who
+    """
+    )
     def execute(self):
-        persons = [name for name in self.world.user_list.keys() if (type(name) == str)]
-        message = """Currently Online:\n______________________________________________\n"""
-        for person in persons:
-            message += person.capitalize() + '\n'
-        message += "______________________________________________\n"
+        persons = [per for per in self.world.user_list.values() if isinstance(per.name, str)]
+        message = 'Currently Online'.center(50, '-') + '\n'
+        for per in persons:
+            if per.permissions > PLAYER:
+                # We want to list the permissions of the people who have perms
+                # higher than player so other players know where they can go
+                # for help
+                perm_list = get_permission_names(per.permissions)
+                # Everyone's a player -- don't bother listing that one
+                if 'Player' in perm_list:
+                    perm_list.remove('Player')
+                # God trumps everything else...
+                if 'God' in perm_list:
+                    perms = 'God'
+                else:
+                    perms = ', '.join(perm_list)
+                message += '%s (%s) - %s\n' % (per.fancy_name(), perms, per.title)
+            else:
+                message += '%s - %s\n' % (per.fancy_name(), per.title)
+        message += '-'.center(50, '-')
         self.user.update_output(message)
     
 
 command_list.register(Who, ['who'])
+command_help.register(Who.help, ['who'])
 
 class Enter(BaseCommand):
     """Enter a portal."""

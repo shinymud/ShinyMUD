@@ -29,6 +29,7 @@ class User(object):
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
         self.description = str(args.get('description','You see nothing special about this person.'))
+        self.title = str(args.get('title', ''))
         self.gender = str(args.get('gender', 'neutral'))
         self.strength = args.get('strength', 0)
         self.intelligence = args.get('intelligence', 0)
@@ -92,6 +93,7 @@ class User(object):
         d['permissions'] = self.permissions
         d['goto_appear'] = self.goto_appear
         d['goto_disappear'] = self.goto_disappear
+        d['title'] = self.title
         if self.email:
             d['email'] = self.email
         if self.dbid:
@@ -228,6 +230,16 @@ class User(object):
         self.last_mode = self.mode
         self.mode = TextEditMode(self, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.'
+    
+    def set_title(self, title):
+        if not title:
+            return 'What do you want your title to be?'
+        if len(title) > 30:
+            return ('That\'s too long for a title. '
+                    'Try something under 30 characters.')
+        self.title = title
+        self.save({'title': self.title})
+        return 'Your title is now "%s".' % self.title
     
     def set_goto_appear(self, appear):
         if self.permissions & (DM | ADMIN | BUILDER | GOD):

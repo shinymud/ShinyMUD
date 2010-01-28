@@ -101,6 +101,38 @@ class TestGeneralCommands(TestCase):
         to_shiny = 'Alice gives you a bauble.'
         self.assertTrue(to_shiny in npc.actionq)
     
+    def test_set_command(self):
+        bob = User(('bob', 'bar'))
+        bob.mode = None
+        bob.userize(name='bob')
+        
+        # Test setting e-mail
+        Set(bob, 'email bob@bob.com', 'set').run()
+        self.assertEqual('bob@bob.com', bob.email)
+        
+        # Test setting title
+        Set(bob, 'title is the best EVAR', 'set').run()
+        self.assertEqual('is the best EVAR', bob.title)
+        
+        # Try to set goto_appear and goto_disappear (both should fail
+        # since this user shouldn't have permissions)
+        Set(bob, 'goto_appear Bob pops in from nowhere.', 'set').run()
+        eresult = 'You don\'t have the permissions to set that.\r\n'
+        self.assertTrue(eresult in bob.outq)
+        bob.outq = []
+        Set(bob, 'goto_disappear foo', 'set').run()
+        self.assertTrue(eresult in bob.outq)
+        
+        bob.permissions = bob.permissions | BUILDER
+        
+        # Try to set goto_appear and goto_disappear (both should now
+        # succeed now that the user has adequate permissions)
+        Set(bob, 'goto_appear Bob pops in from nowhere.', 'set').run()
+        self.assertEqual('Bob pops in from nowhere.', bob.goto_appear)
+        bob.outq = []
+        Set(bob, 'goto_disappear foo', 'set').run()
+        self.assertEqual('foo', bob.goto_disappear)
+    
 
 class TestBuildCommands(TestCase):
     def setUp(self):
