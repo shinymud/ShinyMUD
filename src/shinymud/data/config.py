@@ -2,6 +2,7 @@ from shinymud.lib.ansi_codes import *
 import os
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+VERSION = '1.0, Alpha'
 
 HOST = ''
 PORT = 4111
@@ -10,7 +11,8 @@ LOG_LEVEL = 10 # 10 is the equivalent of "DEBUG"
 DB_NAME = ROOT_DIR + '/shinymud.db'
 AREAS_IMPORT_DIR = ROOT_DIR + '/areas'
 AREAS_EXPORT_DIR = ROOT_DIR + '/areas'
-RESET_INTERVAL = 120 # Amount of time (in seconds) that should pass before an area resets
+RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an area resets
+DEFAULT_LOCATION = ('foo', '1')
 
 # Color constants:
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!

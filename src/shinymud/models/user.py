@@ -276,18 +276,22 @@ class User(object):
     
     def go(self, room, tell_new=None, tell_old=None):
         """Go to a specific room."""
-        if self.location:
-            if tell_old:
-                self.location.tell_room(tell_old, [self.name])
-            self.location.user_remove(self)
-        if self.location and self.location == room:
-            self.update_output('You\'re already there.\n')
+        if room:
+            if self.location:
+                if tell_old:
+                    self.location.tell_room(tell_old, [self.name])
+                self.location.user_remove(self)
+            if self.location and self.location == room:
+                self.update_output('You\'re already there.\n')
+            else:
+                self.location = room
+                self.location.user_add(self)
+                if tell_new:
+                    self.location.tell_room(tell_new, [self.name])
+                self.update_output(self.look_at_room())
         else:
-            self.location = room
-            self.location.user_add(self)
-            if tell_new:
-                self.location.tell_room(tell_new, [self.name])
-            self.update_output(self.look_at_room())
+            self.log.debug('We gave %s a nonexistant room.' % self.name)
+            # self.user.update_output('An anomaly has flung you into the void.')
     
     def check_inv_for_keyword(self, keyword):
         """Check all of the items in a user's inventory for a specific keyword.

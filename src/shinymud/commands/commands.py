@@ -47,17 +47,17 @@ WorldEcho echoes a message to all users currently in the world.
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
 command_help.register(WorldEcho.help, ['wecho', 'world echo', 'worldecho'])
 
-class Apocalypse(BaseCommand):
-    """Ends the world. The server gets shutdown."""
-    required_permissions = GOD
-    def execute(self):
-        # This should definitely require admin privileges in the future.
-        message = "%s has stopped the world from turning. Goodbye." % self.user.fancy_name()
-        self.world.tell_users(message)
-        self.world.shutdown_flag = True
-    
-
-command_list.register(Apocalypse, ['apocalypse', 'die'])
+# class Apocalypse(BaseCommand):
+#     """Ends the world. The server gets shutdown."""
+#     required_permissions = GOD
+#     def execute(self):
+#         # This should definitely require admin privileges in the future.
+#         message = "%s has stopped the world from turning. Goodbye." % self.user.fancy_name()
+#         self.world.tell_users(message)
+#         self.world.shutdown_flag = True
+#     
+# 
+# command_list.register(Apocalypse, ['apocalypse', 'die'])
 
 class Chat(BaseCommand):
     """Sends a message to every user on the chat channel."""
@@ -959,3 +959,20 @@ Options you can set:
 
 command_list.register(Set, ['set', 'cset'])
 command_help.register(Set.help, ['set'])
+
+class Version(BaseCommand):
+    """Display the credits and the version of ShinyMUD currently running."""
+    help = (
+    """** ShinyMUD, version %s **
+\nDeveloped by (and copyright):
+  Jess Coulter (Surrey) 
+  Patrick Murphy (Murph)
+  Nickolaus Saint (Nick)""" % VERSION
+    )
+    
+    def execute(self):
+        self.user.update_output(self.help)
+    
+
+command_list.register(Version, ['version', 'credit', 'credits'])
+command_help.register(Version.help, ['version', 'credit', 'credits'])

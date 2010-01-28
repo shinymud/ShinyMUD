@@ -17,6 +17,14 @@ for area in world.db.select("* from area"):
 for area in world.areas.values():
     area.load()
 
+try:
+    dloc = world.get_area(DEFAULT_LOCATION[0]).get_room(DEFAULT_LOCATION[1])
+except Exception, e:
+    dloc = None
+    logger.debug(str(e))
+finally:
+    world.default_location = dloc
+
 # Start listening for connections on a different thread
 conn_handler = ConnectionHandler(PORT, HOST, world)
 conn_handler.start()
