@@ -905,3 +905,34 @@ Clears your screen of text and gives you a new prompt.
 
 command_list.register(Clear, ['clear'])
 command_help.register(Clear.help, ['clear'])
+
+class Set(BaseCommand):
+    """Set a (settable) player attribute."""
+    help = (
+    """Set (Command)
+The Set command allows you to set details and options about your character.
+\nUSAGE:
+set <option> <argument>
+Options you can set:
+  email - your e-mail address
+  title - the title of your character
+  description - your character's description
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.user.update_output('What do you want to set?\n')
+        else:
+            match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
+            if not match:
+                message = 'Type "help set" for help with this command.\n'
+            else:
+                func, _, arg = match.groups()
+                message = 'You can\'t set that.\n'
+                if hasattr(self.user, 'set_' + func):
+                    message = (getattr(self.user, 'set_' + func)(arg))
+                self.user.update_output(message)
+    
+
+command_list.register(Set, ['set', 'cset'])
+command_help.register(Set.help, ['set'])

@@ -176,6 +176,12 @@ build_list.register(List, ['list'])
 
 class Set(BaseCommand):
     required_permissions = BUILDER
+    help = (
+    """Set (BuildCommand)
+Set allows you to set attributes of whatever object you are editing. If you
+wish to set your character attributes, you must exit BuildMode first.
+    """
+    )
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
@@ -204,6 +210,7 @@ class Set(BaseCommand):
     
 
 build_list.register(Set, ['set'])
+# command_help.register(Set.help, ['set', 'bset'])
 
 class Link(BaseCommand):
     """Link two room objects together through their exits."""

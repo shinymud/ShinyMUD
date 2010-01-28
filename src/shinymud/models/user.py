@@ -3,6 +3,7 @@ from shinymud.commands import *
 from shinymud.commands.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
+from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 from shinymud.models.item import InventoryItem, SLOT_TYPES
 import re
@@ -99,7 +100,17 @@ class User(object):
             d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
         
         return d
-        
+    
+    def save(self, save_dict=None):
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                self.world.db.update_from_dict('user', save_dict)
+            else:    
+                self.world.db.update_from_dict('user', self.to_dict())
+        else:
+            self.dbid = self.world.db.insert_from_dict('user', self.to_dict())
+    
     def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the user's output queue."""
         if strip_nl:
@@ -154,7 +165,6 @@ class User(object):
         else:
             return default
     
-    
     def parse_command(self):
         """Parses the lines in the user's input buffer and then calls
         the appropriate commands (if they exist)"""
@@ -205,6 +215,39 @@ class User(object):
             self.mode = BuildMode(self)
         elif mode == 'normal':
             self.mode.active = False
+    
+    def set_email(self, email):
+        if not email:
+            return 'What do you want to set your email address to?'
+        self.email = email
+        self.save({'email': self.email})
+        return 'Your e-mail address is now "%s".' % email
+    
+    def set_description(self, description):
+        """Set the description for this user."""
+        self.last_mode = self.mode
+        self.mode = TextEditMode(self, self, 'description', self.description)
+        return 'ENTERING TextEditMode: type "@help" for help.'
+    
+    def set_goto_appear(self, appear):
+        if self.permissions & (DM | ADMIN | BUILDER | GOD):
+            if not appear:
+                return 'What do you want to set your goto_appear message to?'
+            self.goto_appear = appear
+            self.save({'goto_appear': self.goto_appear})
+            return 'Goto-appear message set.'
+        else:
+            return 'You don\'t have the permissions to set that.'
+    
+    def set_goto_disappear(self, disappear):
+        if self.permissions & (DM | ADMIN | BUILDER | GOD):
+            if not disappear:
+                return 'What do you want to set your goto_disappear message to?'
+            self.goto_disappear = disappear
+            self.save({'goto_disappear': self.goto_disappear})
+            return 'Goto-disappear message set.'
+        else:
+            return 'You don\'t have the permissions to set that.'
     
     def item_add(self, item):
         """Add an item to the user's inventory."""
