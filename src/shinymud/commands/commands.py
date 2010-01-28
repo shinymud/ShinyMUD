@@ -687,20 +687,27 @@ command_list.register(Purge, ['purge'])
 command_help.register(Purge.help, ['purge'])
 
 class Areas(BaseCommand):
+    help = (
+    """Areas (Command)
+The Areas command gives a list of all the areas in the game along with a
+suggested level range.
+    """
+    )
     def execute(self):
         """Give a list of areas in the world, as well as their level ranges."""
-        the_areas = self.world.areas.keys()
-        message = 'Area  |  Level Range\n______________________________________________\n'
+        the_areas = ['%s (level range: %s) ' % (area.title, area.level_range) \
+                     for area in self.world.areas.values()]
+        message = ' Areas '.center(50, '-') + '\n'
         if not the_areas:
-            message += 'Sorry, God has taken a day off. There are no areas yet.\n'
-        for eachone in the_areas:
-            message += eachone + '  |  ' + self.world.get_area(eachone).level_range + '\n'
-        message += '______________________________________________\n'
+            message += 'Sorry, God has taken a day off. There are no areas yet.'
+        else:
+            message += '\n'.join(the_areas)
+        message += '\n' + ('-' * 50)
         self.user.update_output(message)
-        
-  
+    
 
 command_list.register(Areas, ['areas'])
+command_help.register(Areas.help, ['areas'])
 
 class Emote(BaseCommand):
     """Emote to another player or ones self. (slap them, cry hysterically, etc.)"""

@@ -9,6 +9,7 @@ class Area(object):
     
     def __init__(self, name=None, **args):
         self.name = str(name)
+        self.title = args.get('title', 'New Area')
         self.rooms = {}
         self.items = {}
         self.npcs = {}
@@ -30,6 +31,7 @@ class Area(object):
         d['level_range'] = self.level_range
         d['builders'] = ",".join(self.builders)
         d['description']  = self.description
+        d['title'] = self.title
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -87,45 +89,48 @@ class Area(object):
         """Print out a nice string representation of this area's attributes."""
         
         builders = ', '.join(self.builders)
-        area_list = """______________________________________________
- Area: %s
-    Level Range: %s
-    Builders: %s
-    Number of rooms: %s
-    Number of items: %s
-    Number of npc's: %s
-    Description: \n        %s
-______________________________________________\n""" % (self.name, 
-                                                         self.level_range, 
-                                                         builders.capitalize(),
-                                                         str(len(self.rooms.keys())),
-                                                         str(len(self.items.keys())),
-                                                         str(len(self.npcs.keys())),
-                                                         self.description)
+        area_list = ' Area '.center(50, '-')
+        area_list +="""
+Name: %s (not changeable)
+Title: %s
+Level Range: %s
+Builders: %s
+Number of rooms: %s
+Number of items: %s
+Number of npc's: %s
+Description: \n    %s""" % (self.name, 
+                            self.title,
+                            self.level_range, 
+                            builders.capitalize(),
+                            str(len(self.rooms.keys())),
+                            str(len(self.items.keys())),
+                            str(len(self.npcs.keys())),
+                            self.description)
+        area_list += '\n' + '-'.center(50, '-')
         return area_list
     
     def list_rooms(self):
         names = self.rooms.keys()
-        room_list = '______________________________________________\nRooms in area "%s":\n' % self.name
+        room_list = (' Rooms in area "%s" ' % self.name).center(50, '-') + '\n'
         for key, value in self.rooms.items():
-            room_list += '    %s - %s\n' % (key, value.name)
-        room_list += '______________________________________________\n'
+            room_list += '%s - %s\n' % (key, value.name)
+        room_list += '-'.center(50, '-')
         return room_list
     
     def list_items(self):
         names = self.items.keys()
-        item_list = '______________________________________________\nItems in area "%s":\n' % self.name
+        item_list = (' Items in area "%s" ' % self.name).center(50, '-') + '\n'
         for key, value in self.items.items():
-            item_list += '    %s - %s\n' % (key, value.name)
-        item_list += '______________________________________________\n'
+            item_list += '%s - %s\n' % (key, value.name)
+        item_list += '-'.center(50, '-')
         return item_list
     
     def list_npcs(self):
         names = self.npcs.keys()
-        npc_list = '______________________________________________\nNpcs in area "%s":\n' % self.name
+        npc_list = (' Npcs in area "%s" ' % self.name).center(50, '-') + '\n'
         for key, value in self.npcs.items():
-            npc_list += '    %s - %s\n' % (key, value.name)
-        npc_list += '______________________________________________\n'
+            npc_list += '%s - %s\n' % (key, value.name)
+        npc_list += '-'.center(50, '-')
         return npc_list
     
     @classmethod
@@ -164,7 +169,15 @@ ______________________________________________\n""" % (self.name,
         """Set this area's level range."""
         self.level_range = lvlrange
         self.save({'level_range': self.level_range})
-        return 'Area levelrange set.\n'
+        return 'Area levelrange set.'
+    
+    def set_title(self, title, user=None):
+        """Set this area's title."""
+        if not title:
+            return 'Type "help areas" for help setting area attributes.'
+        self.title = title
+        self.save({'title': self.title})
+        return 'Area title set.'
     
     def reset(self):
         """Tell all of this area's rooms to reset."""

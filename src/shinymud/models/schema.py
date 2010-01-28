@@ -32,6 +32,7 @@ def initialize_database(connection=None):
 '''CREATE TABLE IF NOT EXISTS area (
     dbid INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
+    title TEXT,
     level_range TEXT,
     builders TEXT,
     description TEXT

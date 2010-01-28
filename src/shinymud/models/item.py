@@ -94,18 +94,20 @@ class Item(object):
             item_types = ', '.join(self.item_types.keys())
         else:
             item_types = 'No special item types.'
-        string = 'id: ' + str(self.id) + '\n' + \
-                 'name: ' + self.name + '\n' + \
-                 'title: ' + self.title + '\n' + \
-                 'item types: ' + item_types + '\n' +\
-                 'description: ' + self.description + '\n' + \
-                 'equip location: ' + str(self.equip_slot) + '\n' + \
-                 'keywords: ' + str(self.keywords) + '\n' + \
-                 'weight: ' + str(self.weight) + '\n' + \
-                 'carryable: ' + str(self.carryable) + '\n' + \
-                 'base value: ' + str(self.base_value) + '\n'
+        string = (' Item %s from Area %s ' % (self.id, self.area.name)
+                  ).center(50, '-') + '\n'
+        string += 'name: ' + self.name + '\n' + \
+                  'title: ' + self.title + '\n' + \
+                  'item types: ' + item_types + '\n' +\
+                  'description:\n    ' + self.description + '\n' + \
+                  'equip location: ' + str(self.equip_slot) + '\n' + \
+                  'keywords: ' + str(self.keywords) + '\n' + \
+                  'weight: ' + str(self.weight) + '\n' + \
+                  'carryable: ' + str(self.carryable) + '\n' + \
+                  'base value: ' + str(self.base_value) + '\n'
         for itype in self.item_types.values():
             string += str(itype)
+        string += ('-' * 50)
         return string
     
     def destruct(self):

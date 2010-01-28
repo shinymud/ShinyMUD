@@ -69,6 +69,25 @@ class World(object):
                 time.sleep(0.25 - finish)
         self.listening = False
     
+    def has_location(self, area_name, room_id):
+        """Check if a location (room) exists given an area name and a room id.
+        Returns True if the room exists, false if it doesn't.
+        """
+        if area_name in self.areas:
+            room = self.areas.get(area_name).get_room(str(room_id))
+            if room:
+                return True
+        return False
+    
+    def get_location(self, area_name, room_id):
+        """Get a location (room) given an area name and a room id.
+        Returns a room object, if the location exists.
+        Returns false if the location doesn't exist.
+        """
+        if not self.has_location(area_name, room_id):
+            return None
+        room = self.areas.get(area_name).get_room(str(room_id))
+        return room
     
 # ************************ Area Functions ************************
 # Here exist all the functions that the world uses to manage the areas
@@ -78,11 +97,14 @@ class World(object):
         self.areas[area.name] = area
     
     def list_areas(self):
-        names = self.areas.keys()
-        area_list = """______________________________________________
-Areas:
-    %s
-______________________________________________\n""" % '\n    '.join(names)
+        names = ['%s - "%s"' % (key, value.title) for key,value in self.areas.items()]
+        area_list = ' Areas '.center(50, '-') + '\n'
+        if names:
+            area_list += '\n  '.join(names)
+        else:
+            area_list += 'You have no areas yet. Create some!\n'
+        area_list += '\n' + '-'.center(50, '-')
+        
         return area_list
     
     def area_exists(self, area_name):
@@ -134,8 +156,6 @@ ______________________________________________\n""" % '\n    '.join(names)
         area.name = None
         self.log.info('%s desroyed area %s.' % (username, area_name))
         return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
-        
-    
     
 # ************************ User Functions ************************
 # Here exist all the functions that the world uses to manage the users

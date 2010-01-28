@@ -325,7 +325,7 @@ class User(object):
         items = ''
         for item in self.location.items:
             items += item_color + item.title + clear_fcolor + '\n'
-        desc = room_body_color + self.location.description + clear_fcolor
+        desc = room_body_color + '  ' + self.location.description + clear_fcolor
         look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, users, npcs, items)
         return look
     

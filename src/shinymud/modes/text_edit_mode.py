@@ -159,7 +159,7 @@ class TextEditMode(object):
     def _format(self, text):
         """Formats the text into an english-style paragraph."""
         # add an indent to the beginning of the paragraph
-        text = '    ' + text.strip()
+        text = text.strip()
         text = text.replace('\n', ' ')
         index = 0
         while len(text[index:]) > 72:

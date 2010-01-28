@@ -40,19 +40,15 @@ class Npc(object):
         return new_npc
     
     def __str__(self):
-        npc = room_list ="""______________________________________________
-NPC: 
-    id: %s
-    area: %s
-    name: %s
-    title: %s
-    keywords: %s
-    description: 
-%s
-______________________________________________\n""" % (self.id, self.area.name, self.name,
-                                                       self.title, str(self.keywords),
-                                                       self.description)
-        return npc
+        string = ('NPC %s from Area %s' % (self.id, self.area.name)
+                   ).center(50, '-') + '\n'
+        string += """name: %s
+title: %s
+keywords: %s
+description:
+    %s""" % (self.name, self.title, str(self.keywords), self.description)
+        string += '\n' + ('-' * 50)
+        return string
     
     def destruct(self):
         if self.dbid:

@@ -116,18 +116,15 @@ class Room(object):
         if not resets:
             resets = 'None.'
             
-        room_list ="""______________________________________________
-id: %s
-area: %s
-name: %s
+        room_list = (' Room %s in Area %s ' % (self.id, self.area.name)
+                     ).center(50, '-') + '\n'
+        room_list += """name: %s
 description: 
 %s
 exits: 
 %s
-resets: %s
-______________________________________________\n""" % (self.id, self.area.name, self.name,
-                                                       self.description, nice_exits,
-                                                       resets)
+resets: %s""" % (self.name, self.description, nice_exits, resets)
+        room_list += '\n' + ('-' * 50)
         return room_list
     
     def reset(self):
