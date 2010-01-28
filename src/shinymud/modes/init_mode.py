@@ -2,6 +2,7 @@ from shinymud.commands.commands import *
 from shinymud.lib.world import World
 import hashlib
 import re
+import logging
 
 choose_class_string = """Choose a class, or pick custom:
 Fighter    Thief      Wizard     Custom
@@ -12,7 +13,15 @@ SPD:  1    SPD:  3    SPD:  0    SPD: ?
  HP: 35     HP: 20     HP: 20     HP: ?
  MP:  0     MP:  0     MP:  6     MP: ?
 """
-
+# Some useful telnet protocal constants that will probably be moved to their
+# own file if we need them elsewhere.
+IAC = chr(255)
+HIDE = chr(133)
+NOECHO = chr(131)
+ECHO = chr(1)
+DO = chr(253)
+WILL = chr(251)
+WONT = chr(252)
 
 class InitMode(object):
     
@@ -25,6 +34,8 @@ class InitMode(object):
         self.active = True
         self.name = 'InitMode'
         self.world = World.get_world()
+        self.log = logging.getLogger('InitMode')
+        self.echoing = False
     
     def verify_username(self):
         if len(self.user.inq) > 0:
@@ -40,8 +51,9 @@ class InitMode(object):
                         # Awesome, a user with this name does exist! Let's check their password!
                         self.password = row[0]['password']
                         self.dbid = row[0]['dbid']
-                        self.state = self.verify_password
+                        # self.state = self.verify_password
                         self.user.update_output("Enter password: ", False)
+                        self.negotiate_hide(self.verify_password)
                     else:
                         # The user entered a name that doesn't exist.. they should create
                         # a new character or try entering the name again.
@@ -55,18 +67,21 @@ class InitMode(object):
             if password == self.password:
                 # Wicked cool, our user exists AND the right person is logging in
                 self.user.userize(**self.world.db.select('* FROM user WHERE dbid=?', [self.dbid])[0])
-                self.state = self.character_cleanup
+                # self.state = self.character_cleanup
+                self.negotiate_unhide(self.character_cleanup)
             else:
-                self.state = self.verify_username
-                self.user.update_output("Bad username or password.\nEnter username: ")
+                # self.state = self.verify_username
+                self.negotiate_unhide(self.verify_username)
+                self.user.update_output("\r\nBad username or password. Enter username:")
             del self.user.inq[0]
     
     def verify_new_character(self):
         if len(self.user.inq) > 0:
             if self.user.inq[0][0].lower() == 'y':
                 self.user.name = self.username
-                self.user.update_output('Please choose a password:')
-                self.state = self.create_password
+                self.user.update_output('Please choose a password: ', False)
+                self.password = None
+                self.negotiate_hide(self.create_password)
             else:
                 self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.')
                 self.state = self.verify_username
@@ -74,7 +89,7 @@ class InitMode(object):
     
     def join_world(self):
         self.active = False
-        self.user.update_output('You have entered the world of ShinyMUD.')
+        self.user.update_output('\nYou have entered the world of ShinyMUD.')
         self.world.tell_users("%s has entered the world." % self.user.fancy_name())
     
     def character_cleanup(self):
@@ -82,6 +97,44 @@ class InitMode(object):
         self.world.user_add(self.user)
         self.world.user_remove(self.user.conn)
         self.state = self.join_world
+    
+    def negotiate_unhide(self, next_func=None):
+        if next_func:
+            if self.echoing:
+                self.user.update_output(IAC + WONT + ECHO, False)
+                self.inner_state = next_func
+                self.state = self.negotiate_unhide
+            else:
+                # If we weren't echoing to begin with, we might as well just
+                # move on to the next state.
+                self.state = next_func
+        elif len(self.user.inq) > 0:
+            if '\xff\xfe\x01' in self.user.inq:
+                self.echoing = False
+            elif '\xff\xfd\x01' in self.user.inq:
+                # I have no idea what we would do if they refuse to start
+                # echoing again... I'm not sure it's possible for the client
+                # to refuse to start echoing, but if it happens, I don't think
+                # there's anything we can do about it.
+                self.log.critical('Telnet just refused to start echoing ' +\
+                                  'client side. Thought you aught to know.')
+            del self.user.inq[0]
+            self.state = self.inner_state
+    
+    def negotiate_hide(self, next_func=None):
+        if next_func:
+            self.user.update_output(IAC + WILL + ECHO, False)
+            self.inner_state = next_func
+            self.state = self.negotiate_hide
+        elif len(self.user.inq) > 0:
+            if '\xff\xfd\x01' in self.user.inq:
+                # awesome, they agreed to hide!
+                self.echoing = True
+            elif '\xff\xfc\x01' in self.user.inq:
+                self.echoing = False
+            
+            del self.user.inq[0]
+            self.state = self.inner_state
     
     # ************Character creation below!! *************
     def new_username(self):
@@ -91,20 +144,33 @@ class InitMode(object):
             if row:
                 self.user.update_output('That username is already taken.\n')
                 self.user.update_output('Please choose a username. It should be a single word, using only letters.')
+                del self.user.inq[0]
             else:
                 #TODO: CHECK FOR VALIDITY!
                 self.user.name = username
-                self.user.update_output('Please choose a password.')
-                self.state = self.create_password
-            del self.user.inq[0]
+                self.user.update_output('Please choose a password: ', False)
+                self.password = None
+                del self.user.inq[0]
+                self.negotiate_hide(self.create_password)
     
     def create_password(self):
         if len(self.user.inq) > 0:
-            self.user.password = hashlib.sha1(self.user.inq[0]).hexdigest()
-            del self.user.inq[0]
-            self.user.update_output("What gender shall your character be?\n" +\
-                                    "Choose from: neutral, female, or male.")
-            self.state = self.choose_gender
+            passwd = self.user.inq[0]
+            if not self.password:
+                self.password = passwd
+                self.user.update_output('\r\nRe-enter your password to confirm: ', False)
+                del self.user.inq[0]
+            else:
+                if self.password == passwd:
+                    self.user.password = hashlib.sha1(self.user.inq[0]).hexdigest()
+                    del self.user.inq[0]
+                    self.negotiate_unhide(self.choose_gender)
+                    self.user.update_output("\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
+                else:
+                    self.user.update_output('\r\nPasswords did not match.' +\
+                                            '\r\nPlease choose a password:', False)
+                    self.password = None
+                    del self.user.inq[0]
             
     
     def choose_gender(self):

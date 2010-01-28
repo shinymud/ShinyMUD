@@ -898,11 +898,9 @@ Clears your screen of text and gives you a new prompt.
     )
     def execute(self):
         # First send the ANSI command to clear the entire screen, then
-        # send the ANSI command to move the cursor up to the top of the
-        # screen (I just put 1000 here as the number of columns to move up,
-        # since once the cursor hits the top of the screen it stops and no
-        # one will probably have a screen taller than 1000 columns :)
-        self.user.update_output('\x1b[2J' + '\x1b[1000A')
+        # send the ANSI command to move the cursor to the "home" position 
+        # (the upper left position in the terminal)
+        self.user.update_output('\x1b[2J' + '\x1b[H')
     
 
 command_list.register(Clear, ['clear'])
