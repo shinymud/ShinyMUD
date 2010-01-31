@@ -59,21 +59,14 @@ class User(object):
         if rows:
             for row in rows:
                 item = InventoryItem(**row)
+                if item.is_container():
+                    item.item_types.get('container').load_contents()
                 self.inventory.append(item)
         self.location = args.get('location')
         if self.location:
             loc = args.get('location').split(',')
             self.log.debug(loc)
-            try:
-                self.location = self.world.get_area(loc[0]).get_room(loc[1])
-            except:
-                # This should only EVER happen if for some reason the location
-                # of the user was deleted while they were offline.  This probably
-                # shouldn't happen often. Also, instead of being None, this should
-                # be the Default starting location when that becomes
-                # applicable
-                self.location = None
-            
+            self.location = self.world.get_location(loc[0], loc[1])
     
     def to_dict(self):
         d = {}

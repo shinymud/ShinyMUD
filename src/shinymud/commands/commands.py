@@ -468,54 +468,92 @@ class Drop(BaseCommand):
 command_list.register(Drop, ['drop'])
 
 class Get(BaseCommand):
-    """Get an item that exists in the user's current room."""
+    """Get an item and store it in the user's inventory."""
+    help = (
+    """Get (Command)
+The Get command is used to transfer an item from the room into your inventory,
+or from a containing item into your inventory. 
+\nUSAGE:
+To get an item you see in a room:
+  get <item-keyword>
+To get an item from a container (the container can exist in the room, or
+can be in your inventory):
+  get <item-keyword> from <container-item-keyword>
+\nEXAMPLES:
+Let's say you see a loot bag sitting in your room. You could take it by typing:
+  get loot bag
+Let's say you were to look at the loot bag (using the Look command) and see
+that it contained a golden ring. You could transfer that ring from the loot
+bag into your inventory by typing:
+  get ring from loot bag
+You could have also gotten the ring out of the loot bag, using the same method
+just mentioned, even if you hadn't gotten the loot bag from the room first
+(i.e, you don't have to get the loot bag before you can take the ring from
+it).
+\nNOTE: Containers must be open before you can see anything inside them, or
+take anything out of them. For help with opening containers, see "help open".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('What do you want to get?\n')
+            return
+        exp = r'((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((?P<item_kw>(\w|[ ])+))'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output('Type "help get" for help with this command.')
+            return
+        target_kw, source_kw, item_kw = match.group('target_kw', 'source_kw', 
+                                                    'item_kw')
+        if source_kw:
+            message = self.get_item_from_container(source_kw, target_kw)
         else:
-            exp = r'((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((?P<item_kw>(\w|[ ])+))'
-            match = re.match(exp, self.args, re.I)
-            if not match:
-                self.user.update_output('Type "help get" for help with this command.\n')
-                return
-            target_kw, source_kw, item_kw = match.group('target_kw', 'source_kw', 'item_kw')
-            if source_kw:
-                source = self.user.location.check_for_keyword(source_kw) or \
-                         self.user.check_inv_for_keyword(source_kw)
-                if not source:
-                    self.user.update_output('"%s" doesn\'t exist.\n' % source_kw)
-                    return
-                if not source.is_container():
-                    self.user.update_output('That\'s not a container.\n')
-                    return
-                source = source.item_types.get('container')
-                item = source.get_item_by_kw(target_kw)
-            else:
-                if not self.user.location:
-                    self.user.update_output('Only cold blackness exists in the void. ' +\
-                                            'It\'s not the sort of thing you can take.\n')
-                    return
-                source = self.user.location
-                item = source.get_item_by_kw(item_kw)
-            if item:
-                if item.carryable or (self.user.permissions & GOD):
-                    source.item_remove(item)
-                    self.user.item_add(item)
-                    self.user.update_output('You get %s.\n' % item.name)
-                    if self.user.location:
-                        if source_kw:
-                            room_tell = '%s gets %s from %s.\n' % (self.user.fancy_name(), item.name,
-                                                                   source.item.name)
-                        else:
-                            room_tell = '%s gets %s.\n' % (self.user.fancy_name(), item.name)
-                        self.user.location.tell_room((room_tell), [self.user.name])
-                else:
-                    self.user.update_output('You can\'t take that.\n')
-            else:
-                self.user.update_output('That doesn\'t exist.\n')
-                
+            message = self.get_item_from_room(item_kw)
+        self.user.update_output(message)
+    
+    def get_item_from_container(self, source_kw, target_kw):
+        c_item = self.user.location.check_for_keyword(source_kw) or \
+                    self.user.check_inv_for_keyword(source_kw)
+        if not c_item:
+            return '"%s" doesn\'t exist.' % source_kw
+        if not c_item.is_container():
+            return 'That\'s not a container.'
+        container = c_item.item_types.get('container')
+        if container.closed:
+            return '%s is closed.' % c_item.name.capitalize()
+        item = container.get_item_by_kw(target_kw)
+        if not item:
+            return '%s doesn\'t exist.' % target_kw.capitalize()
+        if item.carryable or (self.user.permissions & GOD):
+            container.item_remove(item)
+            self.user.item_add(item)
+            if self.user.location:
+                room_tell = '%s gets %s from %s.\n' % (self.user.fancy_name(),
+                                                       item.name, c_item.name)
+                self.user.location.tell_room(room_tell, [self.user.name])
+            return 'You get %s.' % item.name
+        else:
+            return 'You can\'t take that.'
+    
+    def get_item_from_room(self, item_kw):
+        if not self.user.location:
+            return 'Only cold blackness exists in the void. ' +\
+                   'It\'s not the sort of thing you can take.'
+        item = self.user.location.get_item_by_kw(item_kw)
+        if not item:
+            return '%s doesn\'t exist.' % item_kw
+        if item.carryable or (self.user.permissions & GOD):
+            self.user.location.item_remove(item)
+            self.user.item_add(item)
+            room_tell = '%s gets %s.' % (self.user.fancy_name(), item.name)
+            self.user.location.tell_room(room_tell, [self.user.name])
+            return 'You get %s.' % item.name
+        else:
+            return 'You can\'t take that.'
+    
 
 command_list.register(Get, ['get', 'take'])
+command_help.register(Get.help, ['get', 'take'])
 
 class Equip(BaseCommand):
     """Equip an item from the user's inventory."""
@@ -674,7 +712,8 @@ To purge your inventory:
                 self.user.update_output('You\'re in a void, there\'s nothing to purge.\n')
         elif self.args in ['i', 'inventory']:
             # Purge their inventory!
-            for item in self.user.inventory:
+            for i in range(len(self.user.inventory)):
+                item = self.user.inventory[0]
                 self.user.item_remove(item)
                 item.destruct()
             self.user.update_output('Your inventory has been purged.\n')
@@ -966,6 +1005,68 @@ Options you can set:
 
 command_list.register(Set, ['set', 'cset'])
 command_help.register(Set.help, ['set'])
+
+class ToggleOpen(BaseCommand):
+    help = (
+    """Open (Command)
+The open command can be used to open doors or containers.
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Open what?')
+            return
+        exp = r'(?P<dir>(north)|(south)|(east)|(west))|(?P<kw>(\w|[ ])+)'
+        match = re.match(exp, self.args.lower(), re.I)
+        if not match:
+            self.user.update_output('Type "help open" for help with this command.')
+            return
+        direction, kw = match.group('dir', 'kw')
+        if direction:
+            message = self.toggle_door(direction, self.alias)
+        elif kw:
+            message = self.toggle_container(kw, self.alias)
+        self.user.update_output(message)
+    
+    def toggle_door(self, direction, toggle):
+        if not self.user.location:
+            return 'There aren\'t any doors in the void.'
+        exit = self.user.location.exits.get(direction)
+        if not exit:
+            return 'There isn\'t a door there.'
+        if toggle == 'open':
+            return exit.open_me(self.user.fancy_name())
+        else:
+            return exit.close_me(self.user.fancy_name())
+    
+    def toggle_container(self, kw, toggle):
+        obj = self.user.check_inv_for_keyword(kw)
+        # if nothing in inventory, check room
+        if not obj:
+            obj = self.user.location.get_item_by_kw(kw)
+            if not obj:
+                return 'You don\'t see that here.'
+        if not obj.is_container():
+            return 'That\'s not a container.'
+        container = obj.item_types.get('container')
+        if toggle == 'close':
+            if not container.openable:
+                return '%s defies your attempts to close it.' % obj.name.capitalize()
+            if container.closed:
+                return 'It\'s already closed.'
+            container.closed = True
+            return 'You close %s.' % obj.name
+        else:
+            if not container.openable:
+                return '%s defies your attempts to open it.' % obj.name.capitalize()
+            if not container.closed:
+                return 'It\'s already open.'
+            container.closed = False
+            return 'You open %s.' % obj.name
+    
+
+command_list.register(ToggleOpen, ['open', 'close'])
+command_help.register(ToggleOpen.help, ['open'])
 
 class Version(BaseCommand):
     """Display the credits and the version of ShinyMUD currently running."""

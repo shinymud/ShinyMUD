@@ -56,11 +56,13 @@ class Item(object):
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Item')
         self.item_types = {}
-        for key, value in ITEM_TYPES.items():
-            row = self.world.db.select('* FROM %s WHERE item=?' % key, [self.dbid])
-            if row:
-                row[0]['item'] = self
-                self.item_types[key] = value(**row[0])
+        if self.dbid:
+            for key, value in ITEM_TYPES.items():
+                row = self.world.db.select('* FROM %s WHERE item=?' % key,
+                                           [self.dbid])
+                if row:
+                    row[0]['item'] = self
+                    self.item_types[key] = value(**row[0])
     
     def to_dict(self):
         d = {}
@@ -230,7 +232,6 @@ class Item(object):
         """
         self.log.debug(str(self.to_dict()))
         item = InventoryItem(spawn_id, **self.to_dict())
-        self.log.debug(str(item))
         # Clear the prototype's dbid so we don't accidentally overwrite it in the db
         item.dbid = None
         # to_dict will return the area as an integer -- make sure we reset it here
@@ -263,8 +264,17 @@ class Item(object):
 class InventoryItem(Item):
     def __init__(self, spawn_id=None, **args):
         Item.__init__(self, **args)
-        self.owner = None
+        self.owner = args.get('owner')
         self.spawn_id = spawn_id
+        self.container = args.get('container')
+        
+        if self.dbid:
+            for key, value in ITEM_TYPES.items():
+                row = self.world.db.select('* FROM %s WHERE inv_item=?' % key,
+                                           [self.dbid])
+                if row:
+                    row[0]['inv_item'] = self
+                    self.item_types[key] = value(**row[0])
     
     def to_dict(self):
         d = Item.to_dict(self)
@@ -272,6 +282,8 @@ class InventoryItem(Item):
         d['owner'] = self.owner
         if self.dbid:
             d['dbid'] = self.dbid
+        if self.container:
+            d['container'] = self.container.dbid
         return d
     
     def save(self, save_dict=None):
@@ -285,10 +297,10 @@ class InventoryItem(Item):
             self.dbid = self.world.db.insert_from_dict('inventory', self.to_dict())
             # If an item has not yet been saved, its item types will not have been
             # saved either.
-            for key, value in self.item_types.items():
-                value.inv_item = self
-                value.item = None
-                value.save()
+        for key, value in self.item_types.items():
+            value.inv_item = self
+            value.item = None
+            value.save()
     
 
 class Damage(object):
@@ -466,10 +478,9 @@ class Container(object):
         self.item = args.get('item')
         self.inv_item = args.get('inv_item')
         self.log = logging.getLogger('Container')
-        self.log.debug('ITEM: ' + str(self.item))
-        self.openable = to_bool(args.get('openable')) or False
-        self.closed = to_bool(args.get('closed')) or False
-        self.locked = to_bool(args.get('locked')) or False
+        self.openable = to_bool(str(args.get('openable'))) or False
+        self.closed = to_bool(str(args.get('closed'))) or False
+        self.locked = to_bool(str(args.get('locked'))) or False
         self.key = None
         self.key_area = str(args.get('key_area', ''))
         self.key_id = str(args.get('key_id', ''))
@@ -531,6 +542,11 @@ class Container(object):
                 world.db.update_from_dict('container', self.to_dict())
         else:
             self.dbid = world.db.insert_from_dict('container', self.to_dict())
+        
+        for item in self.inventory:
+            if item.container != self.inv_item:
+                item.container = self.inv_item
+            item.save()
     
     def load(self):
         newc = Container(**self.to_dict())
@@ -544,10 +560,25 @@ class Container(object):
     
     def item_add(self, item):
         self.inventory.append(item)
+        if self.inv_item.dbid and (item.container != self.inv_item):
+            item.container = self.inv_item
+            item.save({'container': item.container.dbid})
+    
+    def load_contents(self):
+        rows = World.get_world().db.select("* FROM inventory WHERE container=?", [self.inv_item.dbid])
+        self.log.debug(rows)
+        for row in rows:
+            item = InventoryItem(**row)
+            if item.is_container():
+                item.item_types.get('container').load_contents()
+            self.item_add(item)
     
     def item_remove(self, item):
         if item in self.inventory:
             self.inventory.remove(item)
+            item.container = None
+            if self.inv_item.dbid:
+                item.save({'container':item.container})
     
     def get_item_by_kw(self, keyword):
         for item in self.inventory:
@@ -557,13 +588,38 @@ class Container(object):
     
     def display_inventory(self):
         if self.closed:
-            return '%s is closed.\n' % self.item.name.capitalize()
+            return '%s is closed.\n' % self.inv_item.name.capitalize()
         i = ''
         for item in self.inventory:
             i += '  ' + item.name + '\n'
         if not i:
-            return '%s is empty.\n' % self.item.name.capitalize()
-        return '%s contains:\n%s' % (self.item.name.capitalize(), i)
+            return '%s is empty.\n' % self.inv_item.name.capitalize()
+        return '%s contains:\n%s' % (self.inv_item.name.capitalize(), i)
+    
+    def set_openable(self, args, user=None):
+        boolean = to_bool(args)
+        if not boolean:
+            return 'Acceptable values for this attribute are true or false.'
+        else:
+            self.openable = boolean
+            self.save({'openable': self.openable})
+            return 'Openable has been set to %s.' % boolean
+    
+    def set_closed(self, args, user=None):
+        boolean = to_bool(args)
+        if not boolean:
+            return 'Acceptable values for this attribute are true or false.'
+        else:
+            self.closed = boolean
+            self.save({'closed': self.closed})
+            return 'Closed has been set to %s.' % boolean
+    
+    def set_key(self, args, user=None):
+        return 'Not implemented yet.'
+    
+    def set_locked(self, args, user=None):
+        return 'Not implemented yet.'
+    
 
 class Furniture(object):
     def __init__(self, **args):

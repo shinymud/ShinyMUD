@@ -100,7 +100,7 @@ class World(object):
         names = ['%s - "%s"' % (key, value.title) for key,value in self.areas.items()]
         area_list = ' Areas '.center(50, '-') + '\n'
         if names:
-            area_list += '\n  '.join(names)
+            area_list += '\n'.join(names)
         else:
             area_list += 'You have no areas yet. Create some!\n'
         area_list += '\n' + '-'.center(50, '-')

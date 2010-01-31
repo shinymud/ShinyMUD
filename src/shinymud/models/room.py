@@ -128,11 +128,15 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         return room_list
     
     def reset(self):
-        """Reset (or respawn) all of the items and npc's that are on this room's reset lists."""
+        """Reset (or respawn) all of the items and npc's that are on this 
+        room's reset lists.
+        """
+        self.clean_resets()
         room_id = '%s,%s' % (self.id, self.area.name)
         for item in self.items:
-            if item.is_container and (item.spawn_id.startswith(room_id)):
-                self.item_purge(item)
+            if item.is_container():
+                if item.spawn_id and (item.spawn_id.startswith(room_id)):
+                    self.item_purge(item)
         present_obj = [item.spawn_id for item in self.items if item.spawn_id]
         present_obj.extend([npc.spawn_id for npc in self.npcs if npc.spawn_id])
         for reset in self.resets.values():
@@ -142,6 +146,30 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                     self.npcs.append(reset.spawn())
                 else:
                     self.items.append(reset.spawn())
+    
+    def clean_resets(self):
+        """Make sure that all of the resets for this room are valid, and
+        remove the ones that aren't.
+        """
+        room_resets = self.resets.values()
+        for reset in room_resets:
+            # Make sure any resets that have nested resets still have their
+            # container item_type -- if they don't, we need to remove them
+            # and their nested resets, because otherwise things will break
+            # when they try to add other items to a container object that
+            # doesn't exist.
+            if reset.nested_resets:
+                if not reset.reset_object.is_container():
+                    # Somehow the container item type was removed from this
+                    # object (perhaps a builder edited it and forgot to
+                    # remove this reset). We should delete all resets that
+                    # were supposed to have objects spawned inside this one
+                    for sub_reset in reset.nested_resets:
+                        if int(sub_reset.dbid) in self.resets:
+                            sub_reset.destruct()
+                            del self.resets[int(sub_reset.dbid)]
+                    reset.destruct()
+                    del self.resets[int(reset.dbid)]
     
     def user_add(self, user):
         self.users[user.name] = user
@@ -153,9 +181,12 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     
     def set_name(self, name, user=None):
         """Set the name of a room."""
+        if not name:
+            return 'Set the name to what?'
+        name = ' '.join([name.strip().capitalize() for name in name.split()])
         self.name = name
         self.save({'name': self.name})
-        return 'Room %s name set.\n' % self.id
+        return 'Room %s name set.' % self.id
     
     def set_description(self, args, user=None):
         """Set the description of a room."""
@@ -370,8 +401,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
             self.items.remove(item)
             if item.is_container():
                 container = item.item_types.get('container')
-                for sub_item in container.inventory:
-                    item.destruct()
+                container.destroy_inventory()
             item.destruct()
     
     def npc_add(self, npc):
@@ -389,9 +419,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         # The items in the room may have been dropped by a user (and would
         # therefore have been in the item_inventory db table). We need
         # to make sure we delete the item from the db if it has an entry.
-        for item in self.items:
-            if item.is_container():
-                item.item_types.get('container').destroy_inventory()
-        self.items = []
+        for i in range(len(self.items)):
+            self.item_purge(self.items[0])
     
 

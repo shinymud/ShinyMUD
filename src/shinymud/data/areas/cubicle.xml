@@ -1,0 +1,2 @@
+<area name="cubicle" title="The Cubicle" level_range="All" builders="surrey" description="The Cubicle is a small cafe with friendly workers and a mean liquor
+license." ><items></items><npcs></npcs><rooms><room description="This is a shiny new room!" id="1" name="The Cubicle Lounge" ><resets></resets><exits></exits></room><room description="This is a shiny new room!" id="2" name="New Room" ><resets></resets><exits></exits></room></rooms></area>
