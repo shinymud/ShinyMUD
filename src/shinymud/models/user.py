@@ -299,9 +299,9 @@ class User(object):
         """Return this user's view of the room they are in."""
         title = room_title_color + self.location.name + clear_fcolor
         if self.mode and self.mode.name == 'BuildMode':
-            title = '%s[id: %s]%s %s%s%s' % (room_id_color, 
-            self.location.id, clear_fcolor, room_title_color,
-            self.location.name, clear_fcolor)
+            title = '%s[id: %s, %s]%s %s%s%s' % (room_id_color, 
+            self.location.id, self.location.area.name, clear_fcolor,
+            room_title_color, self.location.name, clear_fcolor)
         exit_list = [key for key, value in self.location.exits.items() if value != None]
         xits = 'exits: None'
         if exit_list:

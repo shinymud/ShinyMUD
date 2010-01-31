@@ -47,18 +47,6 @@ WorldEcho echoes a message to all users currently in the world.
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
 command_help.register(WorldEcho.help, ['wecho', 'world echo', 'worldecho'])
 
-# class Apocalypse(BaseCommand):
-#     """Ends the world. The server gets shutdown."""
-#     required_permissions = GOD
-#     def execute(self):
-#         # This should definitely require admin privileges in the future.
-#         message = "%s has stopped the world from turning. Goodbye." % self.user.fancy_name()
-#         self.world.tell_users(message)
-#         self.world.shutdown_flag = True
-#     
-# 
-# command_list.register(Apocalypse, ['apocalypse', 'die'])
-
 class Chat(BaseCommand):
     """Sends a message to every user on the chat channel."""
     help = (
@@ -224,45 +212,49 @@ To go to a room in a different area:
     """
     )
     def execute(self):
-        if self.args:
-            exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
-            match = re.match(exp, self.args)
-            message = 'Type "help goto" for help with this command.\n'
-            if match:
-                name, area_name, room = match.group('name', 'area', 'room_id')
-                if name:
-                    # go to the same room that user is in
-                    per = self.world.get_user(name)
-                    if per:
-                        if per.location:
-                            self.user.go(per.location, self.user.goto_appear, 
-                                         self.user.goto_disappear)
-                        else:
-                            self.user.update_output('You can\'t reach %s.\n' % per.fancy_name())
-                    else:
-                        self.user.update_output('That person doesn\'t exist.\n')
-                elif room:
-                    # See if they specified an area -- if they did, go there
-                    area = self.world.get_area(area_name)
-                    # if they didn't, lets try to take them to that room number in the area
-                    # they are currently in
-                    if not area and self.user.location:
-                        area = self.user.location.area
-                    if area:
-                        room = area.get_room(room)
-                        if room:
-                            self.user.go(room, self.user.goto_appear, 
-                                         self.user.goto_disappear)
-                        else:
-                            self.user.update_output('That room doesn\'t exist.\n')
-                    else:
-                        self.user.update_output(message)
+        if not self.args:
+            self.user.update_output('Where did you want to go to?')
+            return
+        exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
+        match = re.match(exp, self.args)
+        message = 'Type "help goto" for help with this command.'
+        if not match:
+            self.user.update_output(message)
+            return
+        name, area_name, room_id = match.group('name', 'area', 'room_id')
+        # They're trying to go to the same room as another user
+        if name:
+            # go to the same room that user is in
+            per = self.world.get_user(name)
+            if per:
+                if per.location:
+                    self.user.go(per.location, self.user.goto_appear, 
+                                 self.user.goto_disappear)
                 else:
-                    self.user.update_output('You can\'t get there.\n')
+                    self.user.update_output('You can\'t reach %s.\n' % per.fancy_name())
             else:
-                self.user.update_output(message)
+                self.user.update_output('That person doesn\'t exist.\n')
+        # They're trying to go to a specific room
+        elif room_id:
+            # See if they specified an area -- if they did, go there
+            if area_name:
+                area = self.world.get_area(area_name)
+                if not area:
+                    self.user.update_output('Area "%s" doesn\'t exist.' % area_name)
+                    return
+            else:
+                if not self.user.location:
+                    self.user.update_output(message)
+                    return
+                area = self.user.location.area
+            room = area.get_room(room_id)
+            if room:
+                self.user.go(room, self.user.goto_appear, 
+                             self.user.goto_disappear)
+            else:
+                self.user.update_output('Room "%s" doesn\'t exist in area %s.' % (room_id, area.name))
         else:
-            self.user.update_output('Where did you want to go?\n')
+            self.user.update_output(message)
     
 
 command_list.register(Goto, ['goto'])
@@ -1007,9 +999,17 @@ command_list.register(Set, ['set', 'cset'])
 command_help.register(Set.help, ['set'])
 
 class ToggleOpen(BaseCommand):
-    help = (
-    """Open (Command)
-The open command can be used to open doors or containers.
+    """Open/Close doors and containers."""
+    open_help = (
+    """Open, Close (Command)
+The open and close commands can be used to open/close doors or containers.
+\nUSAGE:
+To open a door:
+  open <door-direction> [door]
+To open a container:
+  open <container-keyword>
+To close a door or container, use the same syntax as above, but replace "open"
+with "close."
     """
     )
     def execute(self):
@@ -1066,7 +1066,7 @@ The open command can be used to open doors or containers.
     
 
 command_list.register(ToggleOpen, ['open', 'close'])
-command_help.register(ToggleOpen.help, ['open'])
+command_help.register(ToggleOpen.help, ['open', 'close'])
 
 class Version(BaseCommand):
     """Display the credits and the version of ShinyMUD currently running."""

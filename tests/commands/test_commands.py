@@ -133,6 +133,52 @@ class TestGeneralCommands(TestCase):
         Set(bob, 'goto_disappear foo', 'set').run()
         self.assertEqual('foo', bob.goto_disappear)
     
+    def test_goto_command(self):
+        blarg_area = Area.create('blarg')
+        foo_area = Area.create('foo')
+        blarg_room = blarg_area.new_room()
+        foo_room = foo_area.new_room()
+        bob = User(('bob', 'bar'))
+        bob.mode = None
+        bob.userize(name='bob')
+        self.world.user_add(bob)
+        bob.permissions = bob.permissions | BUILDER
+        generic_fail = 'Type "help goto" for help with this command.\r\n'
+        
+        # We should fail if we only specify a room number when we aren't in
+        # an area 
+        Goto(bob, '%s' % foo_room.id, 'goto').run()
+        self.assertEqual(bob.location, None)
+        bob.log.debug(bob.outq)
+        self.assertTrue(generic_fail in bob.outq)
+        
+        # We should fail if we try to go to a room in an area that doesn't 
+        # exist
+        message = 'Area "food" doesn\'t exist.\r\n'
+        Goto(bob, '1 food', 'goto').run()
+        self.assertEqual(bob.location, None)
+        bob.log.debug(bob.outq)
+        self.assertTrue(message in bob.outq)
+        
+        # We should fail if we try to go to a room that doesn't exist (in an
+        # area that does)
+        message = 'Room "4005" doesn\'t exist in area blarg.\r\n'
+        Goto(bob, '4005 blarg', 'goto').run()
+        self.assertEqual(bob.location, None)
+        bob.log.debug(bob.outq)
+        self.assertTrue(message in bob.outq)
+        
+        # We should succeed in going to a room and area that exists
+        Goto(bob, '%s %s' % (foo_room.id, foo_room.area.name), 'goto').run()
+        self.assertEqual(bob.location, foo_room)
+        
+        Goto(bob, '%s %s' % (blarg_room.id, blarg_room.area.name), 'goto').run()
+        self.assertEqual(bob.location, blarg_room)
+        
+        blarg_r2 = blarg_area.new_room()
+        Goto(bob, '%s' % (blarg_r2.id), 'goto').run()
+        self.assertEqual(bob.location, blarg_r2)
+    
 
 class TestBuildCommands(TestCase):
     def setUp(self):
