@@ -49,42 +49,69 @@ class Create(BaseCommand):
     
 
 build_list.register(Create, ['create', 'new'])
+command_help.register(Create.help, ['create', 'new'])
 
 class Edit(BaseCommand):
     """Edit an area, object, npc, or room."""
     required_permissions = BUILDER
+    help = (
+    """Edit (BuildCommand)
+\nThe Edit command allows you to edit areas and their rooms, npcs, and items. 
+Remember, you must be editing an area before you can edit the rooms, npcs and
+items associated with it!
+You will only be able to edit areas if you are on that area's Builder's List.
+You will be automatically added to the Builder's List on any area you
+personally create (see "help create"). If you want permission to edit an area
+that someone else has created, you will have to ask the creator to add you to
+their area's Builder's List.
+\nRequired Permissions: BUILDER
+\nUSAGE:
+To start editing an area:
+  edit <area-name>
+Once you are editing an area, you may use the following to edit its contents:
+  edit npc <npc-id>
+  edit room <room-id>
+  edit item <item-id>
+    """
+    )
     def execute(self):
-        args = self.args.lower().split()
+        help_message = 'Type "help edit" to get help using this command.'
+        if not self.args:
+            self.user.update_output(help_message)
+            return
+        args = [arg.strip().lower() for arg in self.args.split()]
         if len(args) < 2:
-            self.user.update_output('Type "help edit" to get help using this command.\n')
-        else:
-            if args[0] == 'area':
-                area = self.world.get_area(args[1])
-                if area:
-                    if (self.user.name in area.builders) or (self.user.permissions & GOD):
-                        self.user.mode.edit_area = self.world.areas[args[1]]
-                        # Make sure to clear any objects they were working on in the old area
-                        self.user.mode.edit_object = None
-                        self.user.update_output('Now editing area "%s".\n' % args[1])
-                    else:
-                        self.user.update_output('You aren\'t allowed to edit someone else\'s area.\n')
+            self.user.update_output(help_message)
+            return
+        if args[0] == 'area':
+            area = self.world.get_area(args[1])
+            if area:
+                if (self.user.name in area.builders) or (self.user.permissions & GOD):
+                    self.user.mode.edit_area = self.world.areas[args[1]]
+                    # Make sure to clear any objects they were working on in the old area
+                    self.user.mode.edit_object = None
+                    self.user.update_output('Now editing area "%s".' % args[1])
                 else:
-                    self.user.update_output('That area doesn\'t exist. You should create it first.\n')
-            elif args[0] in ['room', 'npc', 'item']:
-                if self.user.mode.edit_area:
-                    obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
-                    if obj:
-                        self.user.mode.edit_object = obj
-                        self.user.update_output(str(self.user.mode.edit_object))
-                    else:
-                        self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
-                else:
-                    self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+                    self.user.update_output('You aren\'t allowed to edit someone else\'s area.')
             else:
-                self.user.update_output('You can\'t edit that.\n')
+                self.user.update_output('That area doesn\'t exist. You should create it first.')
+                
+        elif args[0] in ['room', 'npc', 'item']:
+            if self.user.mode.edit_area:
+                obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
+                if obj:
+                    self.user.mode.edit_object = obj
+                    self.user.update_output(str(self.user.mode.edit_object))
+                else:
+                    self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
+            else:
+                self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+        else:
+            self.user.update_output('You can\'t edit that.\n')
     
 
 build_list.register(Edit, ['edit'])
+command_help.register(Edit.help, ['edit'])
 
 class List(BaseCommand):
     """List allows a builder to "see" all of the areas and objects in the world.
@@ -173,6 +200,7 @@ class List(BaseCommand):
     
 
 build_list.register(List, ['list'])
+command_help.register(List.help, ['list'])
 
 class Set(BaseCommand):
     required_permissions = BUILDER
@@ -215,34 +243,99 @@ build_list.register(Set, ['set'])
 class Link(BaseCommand):
     """Link two room objects together through their exits."""
     required_permissions = BUILDER
+    help = (
+    """Link (BuildCommand)
+\nThe Link command links the exits of two rooms, allowing players to move
+between them.
+\nRequired Permissions: BUILDER
+\nUSAGE:
+To simultaneously create a new room and link to it:
+  link <direction>
+To link to a specific room (in the area you're editing):
+  link <direction> exit to room <room-id>
+To link to a specific room in a different area than the one you're editing:
+  link <direction> exit to room <room-id> from area <area-name>
+\nEXAMPLES:
+The easiest way to use link is just to pass it a direction, like so:
+  link north
+This creates a new room for you, then links the north exit of the room you're
+editing to the south exit of the new room.
+If you want to create a link between the room you're editing and a room that
+already exists, you could do the following:
+  link west exit to room 2
+This links the west exit of the room you're editing with the east exit of room
+2 from the same area.
+Finally, note that Link always links to cardinal opposites -- that is, the
+exit of any room you link to will lead back in the opposite direction.
+\nNOTE: You can't link to an exit that's already linked (you'll have to unlink
+it first). See "help unlink".
+    """
+    )
     def execute(self):
         this_room = self.user.mode.edit_object
         if this_room and (this_room.__class__.__name__ == 'Room'):
-            exp = r'(?P<direct>\w+)([ ]+(?P<area>\w+)([ ]+(?P<room>\d+)))?'
+            exp = r'(?P<direct>\w+)(([ ]+exit)?([ ]+to)?([ ]+room)?([ ]+(?P<room>\d+)))?(([ ]+from)?([ ]+area)?([ ]+(?P<area>\w+)))?'
             match = re.match(exp, self.args, re.I)
-            if match:
-                direction, area, room = match.group('direct', 'area', 'room')
-                if direction in this_room.exits:
-                    if area and room:
-                        link_area = self.world.get_area(area)
-                        link_room = link_area.get_room(room)
-                        if link_area and link_room:
-                            self.user.update_output(this_room.link_exits(direction, link_room))
-                        else:
-                            self.user.update_output('That area/room combo doesn\'t exist.\n')
-                    else:
-                        new_room = this_room.area.new_room()
-                        self.user.update_output('Room %s created.\n' % new_room.id)
-                        self.user.update_output(this_room.link_exits(direction, new_room))
+            if not match:
+                self.user.update_output('Type "help link" for help on this command.')
+                return
+            direction, area_name, room_id = match.group('direct', 'area', 'room')
+            if direction not in this_room.exits:
+                self.user.update_output('"%s" is not a valid exit direction.' % direction)
+                return
+            if room_id:
+                if area_name:
+                    area = self.world.get_area(area_name)
+                    if not area:
+                        self.user.update_output('Area "%s" doesn\'t exist.' % area_name)
+                        return
                 else:
-                    self.user.update_output('That direction doesn\'t exist.\n')
+                    area = self.user.mode.edit_area
+                room = area.get_room(room_id)
+                if not room:
+                    self.user.update_output('Room "%s" doesn\'t exist in area %s.' % (room_id, area.name))
+                    return
+                self.user.update_output(this_room.link_exits(direction, room))
             else:
-                self.user.update_output('Type "help link" for help on this command.\n')
+                new_room = this_room.area.new_room()
+                self.user.update_output('Room %s created.\n' % new_room.id)
+                self.user.update_output(this_room.link_exits(direction, new_room))
         else:
-            self.user.update_output('You have to be editing a room to link it to something.\n')
+            self.user.update_output('You have to be editing a room to link it to something.')
     
 
 build_list.register(Link, ['link'])
+command_help.register(Link.help, ['link'])
+
+class Unlink(BaseCommand):
+    """Destroys a linked exit between two linked rooms."""
+    required_permissions = BUILDER
+    help = (
+    """Unlink (BuildCommand)
+\nUnlink destroys a linked exit. See "help link" for help on linking exits.
+\nRequired Permissions: BUILDER
+\nUSAGE:
+To unlink an exit of the room you're editing:
+  unlink <exit-direction>
+    """
+    )
+    def execute(self):
+        if not self.args or self.args.isspace():
+            self.user.update_output('Type "help unlink" for help with this '
+                                    'command.')
+            return
+        this_room = self.user.mode.edit_object
+        if this_room and (this_room.__class__.__name__ == 'Room'):
+            direction = self.args.strip()
+            if direction not in this_room.exits:
+                self.user.update_output('%s is not a valid direction.' % direction)
+            self.user.update_output(this_room.unlink_exits(direction))
+        else:
+            self.user.update_output('You have to be editing a room to unlink its exits.')
+    
+
+build_list.register(Unlink, ['unlink'])
+command_help.register(Unlink.help, ['unlink'])
 
 class Add(BaseCommand):
     required_permissions = BUILDER
@@ -273,6 +366,7 @@ class Add(BaseCommand):
     
 
 build_list.register(Add, ['add'])
+command_help.register(Add.help, ['add'])
 
 class Remove(BaseCommand):
     required_permissions = BUILDER
@@ -303,6 +397,7 @@ class Remove(BaseCommand):
     
 
 build_list.register(Remove, ['remove'])
+command_help.register(Remove.help, ['remove'])
 
 class Destroy(BaseCommand):
     """Destroy an area, room, npc, or item, permanently removing it from the system.
@@ -350,6 +445,7 @@ class Destroy(BaseCommand):
     
 
 build_list.register(Destroy, ['destroy'])
+command_help.register(Destroy.help, ['destroy'])
 
 class Export(BaseCommand):
     required_permissions = BUILDER
@@ -367,6 +463,7 @@ class Export(BaseCommand):
     
 
 build_list.register(Export, ['export'])
+command_help.register(Export.help, ['export'])
 
 class Import(BaseCommand):
     required_permissions = BUILDER
@@ -384,6 +481,7 @@ class Import(BaseCommand):
     
 
 build_list.register(Import, ['import'])
+command_help.register(Import.help, ['import'])
 
 # Defining Extra Build-related help pages:
 command_help.register(("Build Commands (BuildMode)\n"

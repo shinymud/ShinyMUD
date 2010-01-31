@@ -216,7 +216,7 @@ To go to a room in a different area:
             self.user.update_output('Where did you want to go to?')
             return
         exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
-        match = re.match(exp, self.args)
+        match = re.match(exp, self.args.strip())
         message = 'Type "help goto" for help with this command.'
         if not match:
             self.user.update_output(message)
@@ -1000,7 +1000,7 @@ command_help.register(Set.help, ['set'])
 
 class ToggleOpen(BaseCommand):
     """Open/Close doors and containers."""
-    open_help = (
+    help = (
     """Open, Close (Command)
 The open and close commands can be used to open/close doors or containers.
 \nUSAGE:

@@ -7,14 +7,13 @@ from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
 
 # Test all of the general commands!
-# The build commands are farther down!
 
 class TestGeneralCommands(TestCase):
     def setUp(self):
         self.world = World()
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
-        
+    
     def tearDown(self):
         World._instance = None
     
@@ -178,12 +177,10 @@ class TestGeneralCommands(TestCase):
         blarg_r2 = blarg_area.new_room()
         Goto(bob, '%s' % (blarg_r2.id), 'goto').run()
         self.assertEqual(bob.location, blarg_r2)
-    
-
-class TestBuildCommands(TestCase):
-    def setUp(self):
-        self.world = World()
-    
-    def tearDown(self):
-        World._instance = None
+        
+        # We should get a help message if there is only white space given
+        bob.outq = []
+        Goto(bob, '   ', 'goto').run()
+        fail = 'Type "help goto" for help with this command.\r\n'
+        self.assertTrue(fail in bob.outq)
     

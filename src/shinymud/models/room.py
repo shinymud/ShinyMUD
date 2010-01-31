@@ -318,18 +318,27 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         this_exit = self.exits.get(direction)
         that_dir = dir_opposites.get(direction)
         that_exit = link_room.exits.get(that_dir)
+        if this_exit and this_exit.linked_exit:
+            return ("This room's (id: " + this_exit.room.id + ") " +
+                    this_exit.direction + " exit is already linked to " +
+                    "room " + this_exit.to_room.id + ", area " + 
+                    this_exit.to_room.area.name + ".\nYou must " +
+                    "unlink it before linking it to a new room.")
+        if that_exit and that_exit.linked_exit:
+            return ("Room " + that_exit.room.id + "'s " +
+                    that_exit.direction + " exit is already linked to " +
+                    "room " + that_exit.to_room.id + ", area " + 
+                    that_exit.to_room.area.name + ".\nYou must " +
+                    "unlink it before linking it to a new room.")
+        
+        
         if this_exit:
-            # If this exit already exists, make sure to unlink it with any other
-            # rooms it may have been previously unlinked to, then change its to_room
-            this_exit.unlink()
             this_exit.to_room = link_room
         else:
             self.new_exit(direction, link_room)
             this_exit = self.exits[direction]
         if that_exit:
-            # If that exit was already linked, unlink it
-            that_exit.unlink()
-            that_exit.to_room = self
+                that_exit.to_room = self
         else:
             link_room.new_exit(that_dir, self)
             that_exit = link_room.exits[that_dir]
@@ -340,6 +349,18 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         that_exit.save()
         return 'Linked room %s\'s %s exit to room %s\'s %s exit.\n' % (this_exit.room.id, this_exit.direction,
                                                                       that_exit.room.id, that_exit.direction)
+    
+    def unlink_exits(self, direction):
+        exit = self.exits.get(direction)
+        if not exit:
+            return 'The %s exit doesn\'t exist.' % direction
+        if not exit.linked_exit:
+            return 'The %s exit is not linked to anything.' % direction
+        exit.to_room.exits[exit.linked_exit].destruct()
+        exit.to_room.exits[exit.linked_exit] = None
+        exit.destruct()
+        self.exits[direction] = None
+        return 'The %s exit has been unlinked.' % direction
     
     def tell_room(self, message, exclude_list=[]):
         """Echo something to everyone in the room, except the people on the exclude list."""
