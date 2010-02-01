@@ -365,7 +365,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     def tell_room(self, message, exclude_list=[]):
         """Echo something to everyone in the room, except the people on the exclude list."""
         for person in self.users.values():
-            if person.name not in exclude_list:
+            if (person.name not in exclude_list) and (person.position[0] != 'sleeping'):
                 person.update_output(message)
     
     def get_npc_by_kw(self, keyword):
@@ -382,7 +382,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                 return item
         return None
     
-    def get_user_by_kw(self, keyword):
+    def get_user(self, keyword):
         """Get a user from this room if their name is equal to the keyword given."""
         for user in self.users.values():
             if keyword == user.name:
@@ -401,7 +401,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         if npc: return npc
         
         # then check the PCs in the room
-        user = self.get_user_by_kw(keyword)
+        user = self.get_user(keyword)
         if user: return user
         
         # If we didn't match any of the above, return None

@@ -270,22 +270,24 @@ class User(object):
     
     def go(self, room, tell_new=None, tell_old=None):
         """Go to a specific room."""
-        if room:
-            if self.location:
-                if tell_old:
-                    self.location.tell_room(tell_old, [self.name])
-                self.location.user_remove(self)
-            if self.location and self.location == room:
-                self.update_output('You\'re already there.\n')
+        if self.position[0] == 'standing':
+            if room:
+                if self.location:
+                    if tell_old:
+                        self.location.tell_room(tell_old, [self.name])
+                    self.location.user_remove(self)
+                if self.location and self.location == room:
+                    self.update_output('You\'re already there.\n')
+                else:
+                    self.location = room
+                    self.location.user_add(self)
+                    if tell_new:
+                        self.location.tell_room(tell_new, [self.name])
+                    self.update_output(self.look_at_room())
             else:
-                self.location = room
-                self.location.user_add(self)
-                if tell_new:
-                    self.location.tell_room(tell_new, [self.name])
-                self.update_output(self.look_at_room())
+                self.log.debug('We gave %s a nonexistant room.' % self.name)
         else:
-            self.log.debug('We gave %s a nonexistant room.' % self.name)
-            # self.user.update_output('An anomaly has flung you into the void.')
+            self.update_output('You better stand up first.')
     
     def check_inv_for_keyword(self, keyword):
         """Check all of the items in a user's inventory for a specific keyword.
@@ -311,7 +313,18 @@ class User(object):
         users = ''
         for user in self.location.users.values():
             if user.name != self.name:
-                users += user_color + user.fancy_name() + ' is here.' +\
+                position = ' is here.'
+                if user.position[0] == 'sleeping':
+                    if user.position[1]:
+                        position = ' is here, sleeping on %s.' % user.position[1].name
+                    else:
+                        position = ' is here, sleeping on the floor.'
+                elif user.position[0] == 'sitting':
+                    if user.position[1]:
+                        position = ' is here, sitting on %s.' % user.position[1].name
+                    else:
+                        position = ' is here, sitting on the floor.'
+                users += user_color + user.fancy_name() + position +\
                          clear_fcolor + '\n'
         npcs = ''
         for npc in self.location.npcs:
@@ -320,6 +333,14 @@ class User(object):
         for item in self.location.items:
             items += item_color + item.title + clear_fcolor + '\n'
         desc = room_body_color + '  ' + self.location.description + clear_fcolor
-        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, users, npcs, items)
+        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, items, npcs, users)
         return look
+    
+    def change_position(self, pos, furniture=None):
+        """Change the user's position."""
+        if self.position[1]:
+            self.position[1].item_types['furniture'].user_remove(self)
+        if furniture:
+            furniture.item_types['furniture'].user_add(self)
+        self.position = (pos, furniture)
     

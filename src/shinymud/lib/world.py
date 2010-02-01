@@ -124,6 +124,8 @@ class World(object):
         area = self.get_area(area_name)
         if not area:
             return 'Area %s doesn\'t exist.\n' % area_name
+        if self.world.default_location.area == area:
+            self.world.default_location = None
         for user in self.user_list.values():
             if user.location and (user.location.area.name == area.name):
                 user.update_output('You are wisked to safety as the world collapses around you.\n')

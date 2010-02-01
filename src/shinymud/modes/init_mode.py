@@ -1,4 +1,5 @@
 from shinymud.commands.commands import *
+from shinymud.data.config import GAME_NAME
 from shinymud.lib.world import World
 import hashlib
 import re
@@ -89,8 +90,9 @@ class InitMode(object):
     
     def join_world(self):
         self.active = False
-        self.user.update_output('\nYou have entered the world of ShinyMUD.')
+        self.user.update_output('\nYou have entered the world of %s.' % GAME_NAME)
         self.world.tell_users("%s has entered the world." % self.user.fancy_name())
+        self.user.look_at_room()
     
     def character_cleanup(self):
         # If the user doesn't have a location, send them to the default 
@@ -226,7 +228,7 @@ class InitMode(object):
                 self.user.inventory = []
                 self.user.location = None
                 self.user.permissions = 1
-                self.user.title = 'a ShinyMUD player.'
+                self.user.title = 'a %s player.' % GAME_NAME
                 self.user.description = 'You see nothing special about this person.'
                 self.user.goto_appear = '%s appears in the room.' % self.user.fancy_name()
                 self.user.goto_disappear = '%s disappears in a cloud of smoke.' % self.user.fancy_name()

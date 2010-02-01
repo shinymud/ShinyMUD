@@ -4,6 +4,7 @@ import time
 from subprocess import Popen
 import signal
 
+from shinymud.data.config import GAME_NAME
 
 # H'Okay, so, first we need to set the python path...
 # using __file__ and os.environ
@@ -44,9 +45,9 @@ def start():
         f = open(path + 'shinymud/data/.shinypid', 'w')
         f.write(str(pid))
         f.close()
-        print "ShinyMUD is now running."
+        print "%s is now running." % GAME_NAME
     else:
-        print "ShinyMUD is already running!"
+        print "%s is already running!" % GAME_NAME
 
 def stop():
     # if 'stop':
@@ -61,9 +62,9 @@ def stop():
     if pid:
         os.kill(pid, signal.SIGKILL)
         os.remove(path + 'shinymud/data/.shinypid')
-        print 'ShinyMUD has been stopped.'
+        print '%s has been stopped.' % GAME_NAME
     else:
-        print "ShinyMUD is not running!"
+        print "%s is not running!" % GAME_NAME
 
 # Then we check input for 'start' 'restart' and 'stop' (maybe 'help' later?)
 if len(sys.argv) == 2:

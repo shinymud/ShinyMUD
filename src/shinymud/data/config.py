@@ -3,6 +3,7 @@ import os
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 VERSION = '1.0, Alpha'
+GAME_NAME = 'ShinyMUD' # Replace this with the name of your game!
 
 HOST = ''
 PORT = 4111

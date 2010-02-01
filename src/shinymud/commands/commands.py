@@ -416,7 +416,7 @@ give <item-keyword> to <npc/player-name>
             self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
             thing, person = match.group('thing', 'givee')
-            givee = self.user.location.get_user_by_kw(person) or self.user.location.get_npc_by_kw(person)
+            givee = self.user.location.get_user(person) or self.user.location.get_npc_by_kw(person)
             item = self.user.check_inv_for_keyword(thing)
             if not givee:
                 self.user.update_output('%s isn\'t here.' % person.capitalize())
@@ -1145,73 +1145,85 @@ class Stand(BaseCommand):
             self.user.update_output('You stand up.')
             if self.user.location:
                 self.user.location.tell_room('%s stands up.' % self.user.fancy_name(), [self.user.name])
-        if self.user.position[1]:
-            self.user.position[1].item_types['furniture'].user_remove(self.user)
-        self.user.position = ('standing', None)
-        
+        self.user.change_position('standing')
+    
 
 command_list.register(Stand, ['stand'])
 command_help.register(Stand.help, ['stand'])
 
-# class ChangePosition(BaseCommand):
-#     """Allow the character to sit down."""
-#     def execute(self):
-#         positions = {'sleep': ('sleeping', 'You go to sleep.', 
-#                               '%s goes to sleep.' % self.user.name),
-#                     'stand': ('standing', 'You stand up.',
-#                               '%s stands up.' % self.user.name),
-#                     'sit': ('sitting', 'You sit down.',
-#                             '%s sits down.' % self.user.name),
-#                     'wake': ('awake', 'You wake and stand up.',
-#                              '%s wakes and stands up.' % self.user.name),
-#                     'awake': ('awake', 'You wake and stand up.',
-#                               '%s wakes and stands up.' % self.user.name)
-#                     }
-#         # If the user was sitting/sleeping on a piece of furniture before,
-#         # tell the furniture to remove them
-#         if self.user.position[1]:
-#             self.user.position.item_types.get('furniture').user_remove(self.user)
-#             
-#         if not self.args:
-#             if self.user.position[0].find(self.alias) != -1:
-#                 self.user.update_output('You are already %s.' % self.user.position[0])
-#                 return
-#             self.user.position = (positions.get(self.alias)[0], None)
-#             self.user.update_output(positions.get(self.alias)[1])
-#             if self.user.location:
-#                 self.user.location.tell_room(positions.get(self.alias)[2],
-#                                              [self.user.name])
-#         else:
-#             if self.alias == 'sleep' or self.alias == 'sit':
-#                 if not self.user.location:
-#                     self.user.update_output('The void is bereft of furniture.')
-#                     return
-#                 exp = r'((on)|(in))?([ ]?)?(?P<furn>(\w|[ ])+)'
-#                 furn_kw = re.match(exp, self.args.lower().strip()).group('furn')
-#                 furn = self.user.location.get_item_by_kw(furn_kw)
-#                 if not furn:
-#                     self.user.update_output('You don\'t see that here.')
-#                     return
-#                 f_obj = furn.item_types.get('furniture')
-#                 if not f_obj:
-#                     self.user.update_output('That\'s not a type of furniture.')
-#                     return
-#                 if not f_obj.user_add():
-#                     self.user.update_output('It\'s full right now.')
-#                     return
-#                 if self.alias == 'sleep':
-#                     self.user.update_output('You go to sleep on %s' % furn.name)
-#                     self.user.location.tell_room('%s goes to sleep on %s' % (self.user.fancy_name(), furn.name), 
-#                                                  [self.user.name])
-#                 elif self.alias == 'sit':
-#                     self.user.update_output('You sit down on %s' % furn.name)
-#                     self.user.location.tell_room('%s sits down on %s' % (self.user.fancy_name(), furn.name), 
-#                                                  [self.user.name])
-#             else:
-#                 self.user.update_output('')
-#     def to_sleep(self, furn):
-#         pass
-#     
-#     def to_wake(self):
-# 
-#         
+class Sleep(BaseCommand):
+    """Change the player's position to sleeping."""
+    def execute(self):
+        if self.user.position[0].find(self.alias) != -1:
+            self.user.update_output('You are already sleeping.')
+            return
+        
+        if not self.args:
+            self.user.update_output('You go to sleep.')
+            if self.user.location:
+                self.user.location.tell_room('%s goes to sleep.' % self.user.fancy_name(), [self.user.name])
+            # If they were previously sitting on furniture before they went to
+            # sleep, we might as well maintain their position on that 
+            # furniture when they go to sleep
+            self.user.change_position('sleeping', self.user.position[1])
+        else:
+            if not self.user.location:
+                self.user.update_output('The void is bereft of anything to sleep on.')
+                return
+            exp = r'((on)|(in))?([ ]?)?(?P<furn>(\w|[ ])+)'
+            furn_kw = re.match(exp, self.args.lower().strip()).group('furn')
+            furn = self.user.location.get_item_by_kw(furn_kw)
+            if not furn:
+                self.user.update_output('You don\'t see that here.')
+                return
+            f_obj = furn.item_types.get('furniture')
+            if not f_obj:
+                self.user.update_output('That\'s not a type of furniture.')
+                return
+            if not f_obj.user_add(self.user):
+                self.user.update_output('It\'s full right now.')
+                return
+            else:
+                self.user.change_position('sleeping', furn)
+                self.user.update_output('You go to sleep on %s.' % furn.name)
+                self.user.location.tell_room('%s goes to sleep on %s.' % (self.user.fancy_name(), furn.name), 
+                                             [self.user.name])
+    
+
+command_list.register(Sleep, ['sleep'])
+command_help.register(Sleep.help, ['sleep'])
+
+class Wake(BaseCommand):
+    """Change """
+    def execute(self):
+        if not self.args:
+            # Wake up yourself
+            if self.user.position[0].find(self.alias) != -1:
+                self.user.update_output('You are already awake.')
+                return
+            self.user.update_output('You wake and stand up.')
+            if self.user.location:
+                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name])
+            self.user.change_position('standing')
+        else:
+            # Wake up someone else!
+            if not self.user.location:
+                self.user.update_output('You are alone in the void.')
+                return
+            sleeper = self.user.location.get_user(self.args.lower().strip())
+            if not sleeper:
+                self.user.update_output('That person isn\'t here.')
+                return
+            if sleeper.position[0] != 'sleeping':
+                self.user.update_output('%s isn\'t asleep.' % sleeper.fancy_name())
+                return
+            sleeper.change_position('standing')
+            self.user.update_output('You wake up %s.' % sleeper.fancy_name())
+            sleeper.update_output('%s wakes you up.' % self.user.fancy_name())
+            troom = '%s wakes up %s.' % (self.user.fancy_name(),
+                                         sleeper.fancy_name())
+            self.user.location.tell_room(troom, [self.user.name, sleeper.name])
+    
+
+command_list.register(Wake, ['wake', 'awake'])
+command_help.register(Wake.help, ['wake'])
