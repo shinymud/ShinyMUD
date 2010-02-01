@@ -40,7 +40,7 @@ class Item(object):
         self.area = area
         self.id = str(id)
         self.name = args.get('name', 'New Item')
-        self.title = args.get('title', 'A shiny new object sparkles happily.')
+        self.title = str(args.get('title', 'A shiny new object sparkles happily.'))
         self.description = args.get('description', 'This is a shiny new object.')
         self.keywords = []
         kw = str(args.get('keywords'))
@@ -134,9 +134,22 @@ class Item(object):
     
     def set_title(self, title, user=None):
         """Set the title of this item."""
+        if not title:
+            title = ''
+        else:
+            # If the builder prepends an '@' symbol on their title, it means
+            # they don't want us fiddling with it. Strip off the @ and then
+            # leave the title as-is.
+            if title.startswith('@'):
+                title = title.lstrip('@')
+            # Otherwise we'll correct for basic sentence format (capital at
+            # the beginning, period at the end)
+            else:
+                if not title.endswith(('.', '?', '!')):
+                    title = title + '.'
+                title = title.capitalize()
         self.title = title
         self.save({'title': self.title})
-        # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item title set.\n'
     
     def set_name(self, name, user=None):
@@ -563,6 +576,7 @@ class Container(object):
         if self.inv_item.dbid and (item.container != self.inv_item):
             item.container = self.inv_item
             item.save({'container': item.container.dbid})
+        return True
     
     def load_contents(self):
         rows = World.get_world().db.select("* FROM inventory WHERE container=?", [self.inv_item.dbid])

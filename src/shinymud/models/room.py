@@ -370,6 +370,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     
     def get_npc_by_kw(self, keyword):
         """Get an NPC from this room if its name is equal to the keyword given."""
+        keyword = keyword.strip().lower()
         for npc in self.npcs:
             if keyword in npc.keywords:
                 return npc
@@ -377,6 +378,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     
     def get_item_by_kw(self, keyword):
         """Get an item from this room they keyword given matches its keywords."""
+        keyword = keyword.strip().lower()
         for item in self.items:
             if keyword in item.keywords:
                 return item
@@ -384,6 +386,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     
     def get_user(self, keyword):
         """Get a user from this room if their name is equal to the keyword given."""
+        keyword = keyword.strip().lower()
         for user in self.users.values():
             if keyword == user.name:
                 return user

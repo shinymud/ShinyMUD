@@ -33,7 +33,7 @@ class DB(object):
         values = []
         for key,val in d.items():
             keys.append(key)
-            values.append(str(val))
+            values.append((str(val)).replace('\'', '\'\''))
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string
@@ -76,7 +76,7 @@ class DB(object):
     def update_from_dict(self, table, d):
         if 'dbid' in d:
             query = table + " SET "
-            attributes = [str(key) + "='" + str(val) + "'" for key, val in d.items() if key != 'dbid']
+            attributes = [str(key) + "='" + (str(val)).replace('\'', '\'\'') + "'" for key, val in d.items() if key != 'dbid']
             query = query + ','.join(attributes) + " WHERE dbid=?"
             self.log.debug('Updating %s: \n%s' % (table, query))
             return self.update(query, [d['dbid']])

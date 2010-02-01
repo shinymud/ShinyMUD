@@ -293,6 +293,7 @@ class User(object):
         """Check all of the items in a user's inventory for a specific keyword.
         
         Return the item that matches that keyword, else return None."""
+        keyword = keyword.strip().lower()
         for item in self.inventory:
             if keyword in item.keywords:
                 return item
@@ -331,7 +332,8 @@ class User(object):
             npcs += npc_color + npc.title + clear_fcolor + '\n'
         items = ''
         for item in self.location.items:
-            items += item_color + item.title + clear_fcolor + '\n'
+            if item.title:
+                items += item_color + item.title + clear_fcolor + '\n'
         desc = room_body_color + '  ' + self.location.description + clear_fcolor
         look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, items, npcs, users)
         return look

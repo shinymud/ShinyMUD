@@ -178,6 +178,8 @@ class Look(BaseCommand):
         if self.user.location:
             obj = self.user.location.check_for_keyword(keyword)
             if obj:
+                if self.alias == 'read':
+                    return obj.description
                 message = "You look at %s:\n%s" % (obj.name, obj.description)
                 if hasattr(obj, 'is_container') and obj.is_container():
                     message += '\n' + obj.item_types.get('container').display_inventory()
@@ -194,7 +196,7 @@ class Look(BaseCommand):
         return None
     
 
-command_list.register(Look, ['look'])
+command_list.register(Look, ['look', 'read'])
 
 class Goto(BaseCommand):
     """Go to a location."""
@@ -547,6 +549,65 @@ take anything out of them. For help with opening containers, see "help open".
 command_list.register(Get, ['get', 'take'])
 command_help.register(Get.help, ['get', 'take'])
 
+class Put(BaseCommand):
+    """Put an object inside a container."""
+    help = (
+    """Put (Command)
+\nThe put command allows you to put an item inside a container. If you are
+just looking to get rid of an inventory item or leave an item in a room, try
+the Drop command.
+\nUSAGE:
+To put an item inside a container:
+  put <item> in <container>
+\nThe preposition (the word "in") is required, but can also be replaced with
+"inside" or "on". To get an item out of a container, see "help get".
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Put what where?')
+            return
+        exp = r'(?P<target_kw>(\w|[ ])+)([ ]+(?P<prep>(in)|(inside)|(on)))(?P<container>(\w|[ ])+)'
+        match = re.match(exp, self.args.lower().strip())
+        if not match:
+            self.user.update_output('Type "help put" for help with this command.')
+            return
+        target_kw, preposition, cont_kw = match.group('target_kw', 
+                                                      'prep', 
+                                                      'container')
+        target = self.user.check_inv_for_keyword(target_kw)
+        if not target:
+            self.user.update_output('You don\'t have "%s".' % target_kw)
+            return
+        container = self.user.check_inv_for_keyword(cont_kw)
+        if not container:
+            if self.user.location:
+                container = self.user.location.get_item_by_kw(cont_kw)
+                if not container:
+                    self.user.update_output('%s isn\'t here.' % cont_kw)
+                    return
+        # We should have a container by now!
+        if not container.is_container():
+            self.user.update_output('%s is not a container.' % 
+                                    container.name.capitalize())
+            return
+        if container.item_types['container'].item_add(target):
+            self.user.update_output('You put %s %s %s.' % (target.name,
+                                                           preposition,
+                                                           container.name))
+            if self.user.location:
+                tr = '%s puts %s %s %s.' % (self.user.fancy_name(), 
+                                            target.name, preposition,
+                                            container.name)
+        else:
+            self.user.update_output('%s won\'t fit %s %s.' % (target.name.capitalize(),
+                                                              preposition,
+                                                              container.name))
+    
+
+command_list.register(Put, ['put'])
+command_help.register(Put.help, ['put'])
+
 class Equip(BaseCommand):
     """Equip an item from the user's inventory."""
     def execute(self):
@@ -742,9 +803,34 @@ command_help.register(Areas.help, ['areas'])
 
 class Emote(BaseCommand):
     """Emote to another player or ones self. (slap them, cry hysterically, etc.)"""
+    help = (
+    """Emote (Command)
+\nThe emote command allows your character express actions in the third person.
+There are also many pre-defined emotes. For a list of actions you can type to
+initiate a pre-defined emote, see "help emote list".
+\nUSAGE:
+To express a custom emote:
+  emote <emote-text>
+To use a predefined emote:
+  <emote-action> [<target-player-name>]
+\nEXAMPLES:
+If Bob wished to express his severe doubt at Steven's battle plans with
+actions instead of words, he could type:
+  emote facepalms at Steven's epic ineptitude.
+Anyone in the same room would then see the following:
+  Bob facepalms at Steven's epic ineptitude.
+    """
+    )
+    elist = "The following is the list of emote actions: \n" +\
+            '\n'.join(EMOTES.keys())
+    aliases = ['emote']
+    aliases.extend(EMOTES.keys())
     def execute(self):
         if not self.user.location:
             self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
+        elif self.alias == 'emote':
+            self.user.location.tell_room('%s %s' % (self.user.fancy_name(),
+                                                    self.args))
         else:
             emote_list = EMOTES[self.alias]
             if not self.args:                               #If victim is not specified
@@ -771,9 +857,11 @@ class Emote(BaseCommand):
                         victim.update_output(message + self.personalize(self.user, victim, emote_list[1]) + '\n')
                     else:                                   #If victim is in neither
                         self.user.update_output('You don\'t see %s.\n' % self.args)
-                
+    
 
-command_list.register(Emote, EMOTES.keys())
+command_list.register(Emote, Emote.aliases)
+command_help.register(Emote.help, ['emote', 'emotes'])
+command_help.register(Emote.elist, ['emote list'])
 
 class Bestow(BaseCommand):
     """Bestow a new class of permissions on a PC."""
@@ -1096,11 +1184,12 @@ class Sit(BaseCommand):
                 self.user.update_output('You wake and sit up.')
                 if self.user.location:
                     self.user.location.tell_room('%s wakes and sits up.' % self.user.fancy_name(), [self.user.name])
+                self.user.change_position('sitting', self.user.position[1])
             else:
                 self.user.update_output('You sit down.')
                 if self.user.location:
                     self.user.location.tell_room('%s sits down.' % self.user.fancy_name(), [self.user.name])
-            self.user.position = ('sitting', None)
+                self.user.change_position = ('sitting')
         else:
             if not self.user.location:
                 self.user.update_output('The void is bereft of anything to sit on.')
@@ -1194,11 +1283,11 @@ command_list.register(Sleep, ['sleep'])
 command_help.register(Sleep.help, ['sleep'])
 
 class Wake(BaseCommand):
-    """Change """
+    """Change a player's status from sleeping to awake (and standing)."""
     def execute(self):
         if not self.args:
             # Wake up yourself
-            if self.user.position[0].find(self.alias) != -1:
+            if self.user.position[0] != 'sleeping':
                 self.user.update_output('You are already awake.')
                 return
             self.user.update_output('You wake and stand up.')
