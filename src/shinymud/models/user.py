@@ -24,6 +24,7 @@ class User(object):
         self.dbid = None
         self.world = World.get_world()
         self.channels = {'chat': False}
+        self.position = ('standing', None)
     
     def userize(self, **args):
         self.name = str(args.get('name'))

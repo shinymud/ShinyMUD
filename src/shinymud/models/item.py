@@ -652,24 +652,43 @@ class Furniture(object):
         d = {}
         d['sit_effects'] = ','.join(self.sit_effects)
         d['sleep_effects'] = ','.join(self.sleep_effects)
-        d['capacity'] = ','.join(self.capacity)
+        if self.capacity:
+            d['capacity'] = self.capacity
         if self.item:
-            d['item'] = self.item
+            d['item'] = self.item.dbid
         if self.inv_item:
-            d['inv_item'] = self.inv_item
+            d['inv_item'] = self.inv_item.dbid
         if self.dbid:
             d['dbid'] = self.dbid
         return d
     
     def save(self, save_dict=None):
+        world = World.get_world()
         if self.dbid:
             if save_dict:
                 save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('furniture', save_dict)
+                world.db.update_from_dict('furniture', save_dict)
             else:    
-                self.world.db.update_from_dict('furniture', self.to_dict())
+                world.db.update_from_dict('furniture', self.to_dict())
         else:
-            self.dbid = self.world.db.insert_from_dict('furniture', self.to_dict())
+            self.dbid = world.db.insert_from_dict('furniture', self.to_dict())
+    
+    def load(self):
+        newf = Furniture(**self.to_dict())
+        newf.dbid = None
+        newf.item = None
+        return newf
+    
+    def user_add(self, user):
+        if self.capacity:
+            pass
+        else:
+            self.users.append(user)
+            return True
+    
+    def user_remove(self, user):
+        if user in self.users:
+            self.users.remove(user)
     
 
 class Portal(object):
@@ -696,7 +715,7 @@ class Portal(object):
         if self.item:
             d['item'] = self.item
         if self.inv_item:
-            d['inv_item'] = self.inv_item
+            d['inv_item'] = self.inv_item.dbid
         d['to_room'] = self.to_room
         d['to_area'] = self.to_area
         if self.dbid:

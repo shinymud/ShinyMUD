@@ -142,7 +142,10 @@ def initialize_database(connection=None):
 '''CREATE TABLE IF NOT EXISTS furniture (
     dbid INTEGER PRIMARY KEY,
     item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid)
+    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    capacity INTEGER,
+    sit_effects TEXT,
+    sleep_effects TEXT
 )''']
     
     conn = connection or sqlite3.connect(DB_NAME)
