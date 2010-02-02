@@ -3,14 +3,14 @@ import logging
 
 class TextEditMode(object):
     
-    def __init__(self, user, obj, obj_attr, edit_text, formatted=True):
+    def __init__(self, user, obj, obj_attr, edit_text, format='paragraph'):
         self.user = user
         self.active = True
         self.state = self.edit_intro
         self.name = 'TextEditMode'
         self.edit_object = obj
         self.edit_attribute = obj_attr
-        self.formatted = formatted
+        self.format = format
         self.command_form = re.compile(r'(@(?P<cmd>\w+))([ ]+(?P<line>\d+))?([ ]+(?P<args>.*))?')
         self.log = logging.getLogger('TextEditMode')
         self.edit_commands = {'show': self.show_progress,
@@ -23,13 +23,7 @@ class TextEditMode(object):
                               'replace': self.replace_line,
                               'insert': self.insert_line
                              }
-        self.unfinished_line = ''
-        edit_text = edit_text.replace('\n', ' ').replace(
-                                      '.', '.\n').replace(
-                                      '?', '?\n').replace(
-                                      '!', '!\n')
-        self.edit_lines = [line.strip() for line in edit_text.split('\n') if line]
-        
+        self.edit_lines = self._format_for_editor(edit_text)
     
     def edit_intro(self):
         self.show_progress()
@@ -37,7 +31,7 @@ class TextEditMode(object):
     
     def process_input(self):
         if self.user.inq:
-            line = self.user.inq[0].replace('\n', '')
+            line = self.user.inq[0].replace('\n', '').replace('\r', '')
             if line.startswith('@'):
                 # user is submitting a command, parse it!
                 cmd, line_num, args = self.command_form.match(line).group('cmd', 'line', 'args')
@@ -45,41 +39,42 @@ class TextEditMode(object):
                 if cmd and cmd in self.edit_commands:
                     self.edit_commands[cmd](**args)
                 else:
-                    self.user.update_output('Type @help for a list of editor commands.\n')
-            
+                    self.user.update_output('Type @help for a list of editor commands.')
             else:
-                if line.endswith(('.', '?', '!')):
-                    if self.unfinished_line:
-                        self.edit_lines.append(self.unfinished_line + line)
-                        self.unfinished_line = ''
-                    else:
+                if self.format == 'paragraph':
+                    if len(self.edit_lines) < 1:
+                        # OMG, the list is empty! Start the first line!
                         self.edit_lines.append(line)
+                    elif self.edit_lines[-1].endswith(('.', '?', '!')):
+                        # The last line was finished, put this text on a new
+                        # line
+                        self.edit_lines.append(line)
+                    else:
+                        # The last line wasn't finished, let's append this
+                        # input to the last line
+                        self.edit_lines[-1] = self.edit_lines[-1] + ' ' + line
                 else:
-                    self.unfinished_line += line
+                    # For a script, we want each command to start on a new line
+                    self.edit_lines.append(line)
                 self.user.update_output('')
             del self.user.inq[0]
     
     def show_progress(self, **args):
-        show_text = '%s for %s so far:\n' % (self.edit_attribute.capitalize(), self.edit_object.name)
+        show_text = '%s for %s so far:\n' % (self.edit_attribute.capitalize(), 
+                                             self.edit_object.name)
         lines = ''
-        i = 1
+        i = 1 # Lists start at 1 for mere-mortals ;)
         for line in self.edit_lines:
                 lines += '%s) %s\n' % (str(i), line)
                 i += 1
-        if self.unfinished_line:
-            lines += '%s) %s\n' % (str(i), self.unfinished_line)
         if not lines:
             lines = '1)\n'
         self.user.update_output(show_text + lines)
     
     def preview_text(self, **args):
         preview = 'Preview %s of %s:\n' % (self.edit_attribute, self.edit_object.name)
-        if self.formatted:
-            if self.unfinished_line:
-                preview += self._format(' '.join(self.edit_lines.append(self.unfinished_line)))
-            else:
-                preview += self._format(' '.join(self.edit_lines))
-        self.user.update_output(preview + '\n')
+        preview += self._format()
+        self.user.update_output(preview)
     
     def help(self, **args):
         desc = "Enter your " + self.edit_attribute + ", one sentence per line, until you are\n" +\
@@ -102,9 +97,7 @@ class TextEditMode(object):
         self.user.update_output('%s for %s has been saved.\n' % (self.edit_attribute.capitalize(),
                                                                  self.edit_object.name))
         self.active = False
-        if self.unfinished_line:
-            self.edit_lines.append(self.unfinished_line)
-        save_text = self._format(' '.join(self.edit_lines))
+        save_text = self._format()
         setattr(self.edit_object, self.edit_attribute, save_text)
         self.edit_object.save({self.edit_attribute: save_text})
     
@@ -156,19 +149,33 @@ class TextEditMode(object):
             else:
                 self.user.update_output('%s is not a valid line number.\n' % str(line_number))
     
-    def _format(self, text):
-        """Formats the text into an english-style paragraph."""
-        # add an indent to the beginning of the paragraph
-        text = text.strip()
-        text = text.replace('\n', ' ')
-        index = 0
-        while len(text[index:]) > 72:
-            new_index = text.rfind(' ', index, index+72)
-            if new_index == -1:
-                text = text[0:index+72] + '\n' + text[index+72:]
-                index = index + 72
-            else:
-                text = text[0:new_index] + '\n' + text[new_index+1:]
-                index = new_index
+    def _format_for_editor(self, edit_text):
+        """Format the text to be edited so that it looks nice in the editor."""
+        if self.format == 'paragraph':
+            edit_text = edit_text.replace('\n', ' ').replace(
+                                          '.', '.\n').replace(
+                                          '?', '?\n').replace(
+                                          '!', '!\n')
+            lines = [line.strip() for line in edit_text.split('\n') if line]
+        else:
+            lines = edit_text.split('\n')
+        return lines
+    
+    def _format(self):
+        """Formats the text according to the style specified by self.format."""
+        if self.format == 'paragraph':
+            text = ' '.join(self.edit_lines).strip()
+            text = text.replace('\n', ' ')
+            index = 0
+            while len(text[index:]) > 72:
+                new_index = text.rfind(' ', index, index+72)
+                if new_index == -1:
+                    text = text[0:index+72] + '\n' + text[index+72:]
+                    index = index + 72
+                else:
+                    text = text[0:new_index] + '\n' + text[new_index+1:]
+                    index = new_index
+        elif self.format == 'script':
+            text = '\n'.join(self.edit_lines)
         return text
     

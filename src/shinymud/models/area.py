@@ -2,6 +2,7 @@ from shinymud.lib.world import World
 from shinymud.models.room import Room
 from shinymud.models.item import Item
 from shinymud.models.npc import Npc
+from shinymud.models.script import Script
 from shinymud.modes.text_edit_mode import TextEditMode
 import time
 
@@ -13,6 +14,7 @@ class Area(object):
         self.rooms = {}
         self.items = {}
         self.npcs = {}
+        self.scripts = {}
         builders = args.get('builders')
         if builders:
             self.builders = builders.split(',')
@@ -42,7 +44,10 @@ class Area(object):
             for item in items:
                 item['area'] = self
                 self.items[str(item['id'])] = Item(**item)
-            
+            scripts = self.world.db.select("* from script where area=?", [self.dbid])
+            for script in scripts:
+                script['area'] = self
+                self.scripts[str(script['id'])] = Script(**script)
             npcs = self.world.db.select("* from npc where area=?", [self.dbid])
             for npc in npcs:
                 npc['area'] = self
@@ -98,6 +103,7 @@ Builders: %s
 Number of rooms: %s
 Number of items: %s
 Number of npc's: %s
+Number of scripts: %s
 Description: \n    %s""" % (self.name, 
                             self.title,
                             self.level_range, 
@@ -105,6 +111,7 @@ Description: \n    %s""" % (self.name,
                             str(len(self.rooms.keys())),
                             str(len(self.items.keys())),
                             str(len(self.npcs.keys())),
+                            str(len(self.scripts.keys())),
                             self.description)
         area_list += '\n' + '-'.center(50, '-')
         return area_list
@@ -133,6 +140,15 @@ Description: \n    %s""" % (self.name,
         npc_list += '-'.center(50, '-')
         return npc_list
     
+    def list_scripts(self):
+        names = self.npcs.keys()
+        script_list = (' Scripts in area "%s" ' % self.name
+                      ).center(50, '-') + '\n'
+        for key, value in self.scripts.items():
+            script_list += '%s - %s\n' % (key, value.name)
+        script_list += '-'.center(50, '-')
+        return script_list
+    
     @classmethod
     def create(cls, name, **area_dict):
         """Create a new area instance and add it to the world's area list."""
@@ -149,7 +165,7 @@ Description: \n    %s""" % (self.name,
     
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
-        if id_type in ['room', 'item', 'npc']:
+        if id_type in ['room', 'item', 'npc', 'script']:
             world = World.get_world()
             rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
             max_id = rows[0]['id']
@@ -214,7 +230,6 @@ Description: \n    %s""" % (self.name,
         else:
             # Create a new 'blank' room
             new_room = Room.create(self, self.get_id('room'))
-        world = World.get_world()
         new_room.save()
         self.rooms[str(new_room.id)] = new_room
         return new_room
@@ -225,7 +240,6 @@ Description: \n    %s""" % (self.name,
             new_item = Item(**item_dict)
         else:
             new_item = Item.create(self, self.get_id('item'))
-        world = World.get_world()
         new_item.save()
         self.items[str(new_item.id)] = new_item
         return new_item
@@ -236,10 +250,19 @@ Description: \n    %s""" % (self.name,
             new_npc = Npc(**npc_dict)
         else:
             new_npc = Npc.create(self, self.get_id('npc'))
-        world = World.get_world()
         new_npc.save()
         self.npcs[str(new_npc.id)] = new_npc
         return new_npc
+    
+    def new_script(self, script_dict=None):
+        """Add a new script to this area's script list."""
+        if script_dict:
+            new_script = Script(**script_dict)
+        else:
+            new_script = Script(self, self.get_id('script'))
+        new_script.save()
+        self.scripts[str(new_script.id)] = new_script
+        return new_script
     
     def get_item(self, item_id):
         """Get an item from this area by its id, if it exists.

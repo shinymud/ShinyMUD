@@ -11,7 +11,7 @@ dir_opposites = {'north': 'south', 'south': 'north',
 
 class Room(object):
          
-    def __init__(self, area=None, id=0, **args):
+    def __init__(self, area=None, id='0', **args):
         self.id = str(id)
         self.area = area
         self.name = args.get('name', 'New Room')
@@ -120,7 +120,7 @@ class Room(object):
                      ).center(50, '-') + '\n'
         room_list += """name: %s
 description: 
-%s
+    %s
 exits: 
 %s
 resets: %s""" % (self.name, self.description, nice_exits, resets)

@@ -14,7 +14,7 @@ class Create(BaseCommand):
     """Create a new item, npc, or area."""
     required_permissions = BUILDER
     def execute(self):
-        object_types = ['item', 'npc', 'room']
+        object_types = ['item', 'npc', 'room', 'script']
         if not self.args:
             self.user.update_output('What do you want to create?\n')
         else:
@@ -96,7 +96,7 @@ Once you are editing an area, you may use the following to edit its contents:
             else:
                 self.user.update_output('That area doesn\'t exist. You should create it first.')
                 
-        elif args[0] in ['room', 'npc', 'item']:
+        elif args[0] in ['room', 'npc', 'item', 'script']:
             if self.user.mode.edit_area:
                 obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
                 if obj:
@@ -150,7 +150,7 @@ class List(BaseCommand):
                 message = 'You\'re not editing anything right now.\n'
         else:
             # The user wants to see the details of some other object than the one they're editing.
-            exp = r'(?P<func>(area)|(npc)|(item)|(room))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
+            exp = r'(?P<func>(area)|(npc)|(item)|(room)|(script))s?([ ]+(?P<id>\d+))?([ ]+in)?([ ]*area)?([ ]+(?P<area_name>\w+))?'
             match = re.match(exp, self.args, re.I)
             if not match:
                 message = 'You can\'t list that.\n'

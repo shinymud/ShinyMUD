@@ -96,7 +96,7 @@ class Item(object):
             item_types = ', '.join(self.item_types.keys())
         else:
             item_types = 'No special item types.'
-        string = (' Item %s from Area %s ' % (self.id, self.area.name)
+        string = (' Item %s in Area %s ' % (self.id, self.area.name)
                   ).center(50, '-') + '\n'
         string += 'name: ' + self.name + '\n' + \
                   'title: ' + self.title + '\n' + \

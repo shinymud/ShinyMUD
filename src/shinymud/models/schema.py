@@ -146,7 +146,16 @@ def initialize_database(connection=None):
     capacity INTEGER,
     sit_effects TEXT,
     sleep_effects TEXT
-)''']
+)''',\
+'''CREATE TABLE IF NOT EXISTS script (
+    dbid INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL,
+    area INTEGER NOT NULL REFERENCES area(dbid),
+    name TEXT,
+    body TEXT,
+    UNIQUE (area, id)
+)'''
+]
     
     conn = connection or sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
