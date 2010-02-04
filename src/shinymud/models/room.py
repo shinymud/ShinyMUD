@@ -174,6 +174,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     def user_add(self, user):
         self.users[user.name] = user
         self.area.times_visited_since_reset += 1
+        self.fire_event('pc_enter', {'user': user})
     
     def user_remove(self, user):
         if self.users.get(user.name):
@@ -362,11 +363,12 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         self.exits[direction] = None
         return 'The %s exit has been unlinked.' % direction
     
-    def tell_room(self, message, exclude_list=[]):
+    def tell_room(self, message, exclude_list=[], teller=None):
         """Echo something to everyone in the room, except the people on the exclude list."""
         for person in self.users.values():
             if (person.name not in exclude_list) and (person.position[0] != 'sleeping'):
                 person.update_output(message)
+        self.fire_event('hears', {'string': message, 'teller': teller})
     
     def get_npc_by_kw(self, keyword):
         """Get an NPC from this room if its name is equal to the keyword given."""
@@ -445,5 +447,10 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         # to make sure we delete the item from the db if it has an entry.
         for i in range(len(self.items)):
             self.item_purge(self.items[0])
+    
+    def fire_event(self, event_name, args):
+        """Tell all of the npcs in my list that I got an event!"""
+        for npc in self.npcs:
+            npc.notify(event_name, args)
     
 

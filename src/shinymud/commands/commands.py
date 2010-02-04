@@ -1,7 +1,4 @@
-from shinymud.models.area import Area
-from shinymud.models.room import Room
-from shinymud.models.item import Item, SLOT_TYPES
-from shinymud.models.npc import Npc
+from shinymud.models.item import  SLOT_TYPES
 from shinymud.lib.world import World
 from shinymud.data.config import *
 from shinymud.commands.emotes import *
@@ -307,7 +304,7 @@ class Say(BaseCommand):
             if self.user.location:
                 message = '%s says, "%s"' % (self.user.fancy_name(), self.args)
                 message = say_color + message + clear_fcolor
-                self.user.location.tell_room(message)
+                self.user.location.tell_room(message, teller=self.user)
             else:
                 self.user.update_output('Your words are sucked into the void.\n')
         else:
@@ -364,6 +361,7 @@ To load an npc:
         prototype = npc_area.get_npc(npc_id)
         if prototype:
             npc = prototype.load()
+            npc.location = self.user.location
             self.user.location.npc_add(npc)
             self.user.update_output('You summon %s into the world.\n' % npc.name)
         else:
@@ -418,11 +416,14 @@ give <item-keyword> to <npc/player-name>
             self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
             thing, person = match.group('thing', 'givee')
-            givee = self.user.location.get_user(person) or self.user.location.get_npc_by_kw(person)
-            item = self.user.check_inv_for_keyword(thing)
+            givee = self.user.location.get_user(person)
             if not givee:
-                self.user.update_output('%s isn\'t here.' % person.capitalize())
-            elif not item:
+                givee = self.user.location.get_npc_by_kw(person)
+                if not givee:
+                    self.user.update_output('%s isn\'t here.' % person.capitalize())
+                    return
+            item = self.user.check_inv_for_keyword(thing)
+            if not item:
                 self.user.update_output('You don\'t have %s.' % thing)
             else:
                 self.user.item_remove(item)
@@ -433,6 +434,9 @@ give <item-keyword> to <npc/player-name>
                                                                       item.name,
                                                                       givee.fancy_name()),
                                             [self.user.name, givee.name])
+                if givee.is_npc():
+                    givee.notify('given_item', {'giver': self.user, 
+                                                'item': item})
     
 
 command_list.register(Give, ['give'])
@@ -830,7 +834,7 @@ Anyone in the same room would then see the following:
             self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
         elif self.alias == 'emote':
             self.user.location.tell_room('%s %s' % (self.user.fancy_name(),
-                                                    self.args))
+                                                    self.args), teller=self.user)
         else:
             emote_list = EMOTES[self.alias]
             if not self.args:                               #If victim is not specified

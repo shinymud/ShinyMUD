@@ -7,7 +7,7 @@ import logging
 class Script(object):
     """A model that represents an in-game script object."""
     def __init__(self, area=None, id='0', **args):
-        self.id = id
+        self.id = str(id)
         self.area = area
         self.dbid = args.get('dbid')
         self.name = args.get('name', 'New Script')

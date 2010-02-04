@@ -274,16 +274,15 @@ Description: \n    %s""" % (self.name,
     def get_room(self, room_id):
         """Get a room from this area by its id, if it exists.
         If it does not exist, return None."""
-        if room_id in self.rooms.keys():
-            return self.rooms.get(room_id)
-        return None
+        return self.rooms.get(room_id)
     
     def get_npc(self, npc_id):
         """Get an npc from this area by its id, if it exists.
         If it does not exist, return None."""
-        if npc_id in self.npcs.keys():
-            return self.npcs.get(npc_id)
-        return None
+        return self.npcs.get(npc_id)
+    
+    def get_script(self, script_id):
+        return self.scripts.get(script_id)
     
 # ************************ NPC Functions ************************
 # Here exist all the function that an area uses to manage the NPC's

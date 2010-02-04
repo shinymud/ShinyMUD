@@ -154,6 +154,14 @@ def initialize_database(connection=None):
     name TEXT,
     body TEXT,
     UNIQUE (area, id)
+)''',\
+'''CREATE TABLE IF NOT EXISTS npc_event (
+    dbid INTEGER PRIMARY KEY,
+    prototype INTEGER NOT NULL REFERENCES npc(dbid),
+    event_trigger TEXT,
+    condition TEXT,
+    script INTEGER REFERENCES script(dbid),
+    probability INTEGER
 )'''
 ]
     

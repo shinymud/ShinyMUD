@@ -280,10 +280,10 @@ class User(object):
                     self.update_output('You\'re already there.\n')
                 else:
                     self.location = room
+                    self.update_output(self.look_at_room())
                     self.location.user_add(self)
                     if tell_new:
                         self.location.tell_room(tell_new, [self.name])
-                    self.update_output(self.look_at_room())
             else:
                 self.log.debug('We gave %s a nonexistant room.' % self.name)
         else:
@@ -345,4 +345,12 @@ class User(object):
         if furniture:
             furniture.item_types['furniture'].user_add(self)
         self.position = (pos, furniture)
+    
+    def is_npc(self):
+        """This will make more sense later when NPC and user both decend from
+        a character class. This function will be abstracted out into that
+        parent class, and it will make it easier for us to tell when we are
+        dealing with a character that is a user, vs a character that's an npc.
+         """
+        return False
     
