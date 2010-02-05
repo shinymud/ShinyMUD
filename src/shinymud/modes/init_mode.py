@@ -37,6 +37,7 @@ class InitMode(object):
         self.world = World.get_world()
         self.log = logging.getLogger('InitMode')
         self.echoing = False
+        self.save = {}
     
     def verify_username(self):
         if len(self.user.inq) > 0:
@@ -155,7 +156,8 @@ class InitMode(object):
                 del self.user.inq[0]
             else:
                 #TODO: CHECK FOR VALIDITY!
-                self.user.name = username
+                # self.user.name = username
+                self.save['name'] = username
                 self.user.update_output('Please choose a password: ', False)
                 self.password = None
                 del self.user.inq[0]
@@ -170,7 +172,7 @@ class InitMode(object):
                 del self.user.inq[0]
             else:
                 if self.password == passwd:
-                    self.user.password = hashlib.sha1(self.user.inq[0]).hexdigest()
+                    self.save['password'] = hashlib.sha1(self.user.inq[0]).hexdigest()
                     del self.user.inq[0]
                     self.negotiate_unhide(self.choose_gender)
                     self.user.update_output("\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
@@ -185,7 +187,7 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             gender = self.user.inq[0]
             if gender in ['male', 'female', 'neutral']:
-                self.user.gender = gender
+                self.save['gender'] = gender
                 self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
                                         'your password if you forget it (otherwise, you\'re out of luck ' +\
                                         'if you forget!).\n' +\
@@ -205,13 +207,12 @@ class InitMode(object):
                                         'Please enter your e-mail address:')
             elif self.user.inq[0][0].lower() == 'n':
                 self.state = self.assign_defaults
-                self.user.email = None
                 self.user.update_output(choose_class_string)
             
             # We should only get to this state if the user said they want to enter their e-mail
             # address to be saved
             elif self.inner_state == 'yes_email':
-                self.user.email = self.user.inq[0]
+                self.save['email'] = self.user.inq[0]
                 self.state = self.assign_defaults
                 self.user.update_output(choose_class_string)
             else:
@@ -221,16 +222,7 @@ class InitMode(object):
     def assign_defaults(self):
         if len(self.user.inq) > 0:
             if len(self.user.inq[0]) > 0 and self.user.inq[0][0].lower() in 'ctfw':
-                self.user.channels = {'chat': True}
-                self.user.inventory = []
-                self.user.location = None
-                self.user.permissions = 1
-                self.user.title = 'a %s player.' % GAME_NAME
-                self.user.description = 'You see nothing special about this person.'
-                self.user.goto_appear = '%s appears in the room.' % self.user.fancy_name()
-                self.user.goto_disappear = '%s disappears in a cloud of smoke.' % self.user.fancy_name()
-                self.user.isequipped = []
-                self.user.equipped = {}
+                self.user.userize(**self.save)
                 if self.user.inq[0][0].lower() == 'c':
                     # Custom stats creation
                     self.state = self.custom_create

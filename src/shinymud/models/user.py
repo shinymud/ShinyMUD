@@ -6,12 +6,13 @@ from shinymud.modes.build_mode import BuildMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 from shinymud.models.item import InventoryItem, SLOT_TYPES
+from shinymud.models.character import Character
 import re
 import logging
 
-class User(object):
-    """This is a basic user object."""
-        
+class User(Character):
+    """Represents a player character (user)."""
+    char_type = 'user'
     def __init__(self, conn_info):
         self.conn, self.addr = conn_info
         self.name = self.conn
@@ -30,7 +31,7 @@ class User(object):
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
         self.description = str(args.get('description','You see nothing special about this person.'))
-        self.title = str(args.get('title', ''))
+        self.title = str(args.get('title', 'a %s player.' % GAME_NAME))
         self.gender = str(args.get('gender', 'neutral'))
         self.strength = args.get('strength', 0)
         self.intelligence = args.get('intelligence', 0)
@@ -56,6 +57,16 @@ class User(object):
         for i in SLOT_TYPES.keys():
             self.equipped[i] = ''
         self.isequipped = [] #Is a list of the currently equipped weapons
+        
+        self.location = args.get('location')
+        if self.location:
+            loc = args.get('location').split(',')
+            self.log.debug(loc)
+            self.location = self.world.get_location(loc[0], loc[1])
+        if self.dbid:
+            self.load_inventory()
+    
+    def load_inventory(self):
         rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
         if rows:
             for row in rows:
@@ -63,11 +74,6 @@ class User(object):
                 if item.is_container():
                     item.item_types.get('container').load_contents()
                 self.inventory.append(item)
-        self.location = args.get('location')
-        if self.location:
-            loc = args.get('location').split(',')
-            self.log.debug(loc)
-            self.location = self.world.get_location(loc[0], loc[1])
     
     def to_dict(self):
         d = {}
@@ -96,16 +102,6 @@ class User(object):
             d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
         
         return d
-    
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('user', save_dict)
-            else:    
-                self.world.db.update_from_dict('user', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('user', self.to_dict())
     
     def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the user's output queue."""
@@ -203,9 +199,6 @@ class User(object):
         self.world.user_remove(self.name)
         self.world.tell_users("%s has left the world." % self.fancy_name())
     
-    def fancy_name(self):
-        return self.name.capitalize()
-    
     def set_mode(self, mode):
         if mode == 'build':
             self.mode = BuildMode(self)
@@ -255,49 +248,9 @@ class User(object):
         else:
             return 'You don\'t have the permissions to set that.'
     
-    def item_add(self, item):
-        """Add an item to the user's inventory."""
-        item.owner = self.dbid
-        item.save({'owner': item.owner})
-        self.inventory.append(item)
-    
-    def item_remove(self, item):
-        """Remove an item from the user's inventory."""
-        if item in self.inventory:
-            item.owner = None
-            item.save({'owner': item.owner})
-            self.inventory.remove(item)
-    
-    def go(self, room, tell_new=None, tell_old=None):
-        """Go to a specific room."""
-        if self.position[0] == 'standing':
-            if room:
-                if self.location:
-                    if tell_old:
-                        self.location.tell_room(tell_old, [self.name])
-                    self.location.user_remove(self)
-                if self.location and self.location == room:
-                    self.update_output('You\'re already there.\n')
-                else:
-                    self.location = room
-                    self.update_output(self.look_at_room())
-                    self.location.user_add(self)
-                    if tell_new:
-                        self.location.tell_room(tell_new, [self.name])
-            else:
-                self.log.debug('We gave %s a nonexistant room.' % self.name)
-        else:
-            self.update_output('You better stand up first.')
-    
-    def check_inv_for_keyword(self, keyword):
-        """Check all of the items in a user's inventory for a specific keyword.
-        
-        Return the item that matches that keyword, else return None."""
-        keyword = keyword.strip().lower()
-        for item in self.inventory:
-            if keyword in item.keywords:
-                return item
-        return None
+    def fancy_name(self):
+        """Return a capitalized version of the player's name."""
+        return self.name.capitalize()
     
     def look_at_room(self):
         """Return this user's view of the room they are in."""
@@ -345,12 +298,4 @@ class User(object):
         if furniture:
             furniture.item_types['furniture'].user_add(self)
         self.position = (pos, furniture)
-    
-    def is_npc(self):
-        """This will make more sense later when NPC and user both decend from
-        a character class. This function will be abstracted out into that
-        parent class, and it will make it easier for us to tell when we are
-        dealing with a character that is a user, vs a character that's an npc.
-         """
-        return False
     

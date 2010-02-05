@@ -1,6 +1,7 @@
 from shinymud.lib.world import *
 from shinymud.data.config import *
 from shinymud.models.user import *
+from shinymud.models.area import *
 from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
 from shinymud.commands.build_commands import *

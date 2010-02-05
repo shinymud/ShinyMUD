@@ -1,4 +1,5 @@
 from shinymud.lib.world import *
+from shinymud.models.area import *
 from shinymud.data.config import *
 from shinymud.models.user import *
 from shinymud.commands import *
@@ -75,7 +76,8 @@ class TestGeneralCommands(TestCase):
         room.user_add(alice)
         alice.location = room
         bob.location = room
-        npc = area.new_npc()
+        proto_npc = area.new_npc()
+        npc = proto_npc.load()
         room.npc_add(npc)
         
         item = area.new_item()
@@ -96,6 +98,7 @@ class TestGeneralCommands(TestCase):
         self.assertEqual(len(alice.inventory), 0)
         self.assertEqual(len(npc.inventory), 1)
         to_alice = 'You give a bauble to %s.\r\n' % npc.name
+        alice.log.debug(alice.outq)
         self.assertTrue(to_alice in alice.outq)
         to_shiny = 'Alice gives you a bauble.'
         self.assertTrue(to_shiny in npc.actionq)

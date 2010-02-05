@@ -1,3 +1,4 @@
+from shinymud.models.character import Character
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 from shinymud.lib.event_handler import EVENTS
@@ -6,7 +7,9 @@ from shinymud.models.npc_event import NPCEvent
 import logging
 import re
 
-class Npc(object):
+class Npc(Character):
+    """Represents a non-player character."""
+    char_type = 'npc'
     def __init__(self, area=None, id=0, **args):
         self.area = area
         self.id = str(id)
@@ -65,20 +68,6 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         string += '\n' + ('-' * 50)
         return string
     
-    def destruct(self):
-        if self.dbid:
-            self.world.db.delete('FROM npc WHERE dbid=?', [self.dbid])
-    
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('npc', save_dict)
-            else:    
-                self.world.db.update_from_dict('npc', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('npc', self.to_dict())
-    
     def load(self, spawn_id=None):
         args = self.to_dict()
         args['dbid'] = None
@@ -91,6 +80,10 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         new_npc.inventory = []
         new_npc.actionq = []
         return new_npc
+    
+    def fancy_name(self):
+        """Return a capitalized version of the character's name."""
+        return self.name
     
     def load_events(self):
         events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
@@ -111,18 +104,6 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
     
     def update_output(self, message):
         self.actionq.append(message)
-    
-    def check_inv_for_keyword(self, keyword):
-        """Check all of the items in an npc's inventory for a specific keyword.
-        Return the item that matches that keyword, else return None."""
-        keyword = keyword.strip().lower()
-        for item in self.inventory:
-            if keyword in item.keywords:
-                return item
-        return None
-    
-    def fancy_name(self):
-        return self.name
     
     def set_description(self, description, user=None):
         """Set the description of this npc."""
@@ -162,13 +143,6 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         self.gender = gender.lower()
         self.save({'gender': self.gender})
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
-    
-    def item_add(self, item):
-        self.inventory.append(item)
-    
-    def item_remove(self, item):
-        if item in self.inventory:
-            self.inventory.remove(item)
     
     def add_event(self, args):
         """Add an event to an npc."""
@@ -225,12 +199,4 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             args['obj'] = self
             args.update(self.events[event_name].get_args())
             EVENTS[event_name](**args).run()
-    
-    def is_npc(self):
-        """This will make more sense later when NPC and user both decend from
-        a character class. This function will be abstracted out into that
-        parent class, and it will make it easier for us to tell when we are
-        dealing with a character that is a user, vs a character that's an npc.
-         """
-        return True
     

@@ -1,6 +1,7 @@
 from shinymud.lib.world import *
 from shinymud.models.user import *
 from shinymud.models.room import *
+from shinymud.models.area import *
 from shinymud.commands import *
 from unittest import TestCase
 from shinymud.lib.db import DB
