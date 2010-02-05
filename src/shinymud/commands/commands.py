@@ -884,7 +884,7 @@ Anyone in the same room would then see the following:
             self.user.update_output('From far away, ' + actor)
             victim.update_output('From far away, ' + victimm)
         if victim.is_npc():
-            victim.notify('emoted', {'emote': self.alias})
+            victim.notify('emoted', {'emote': self.alias, 'emoter': self.user})
     
 
 command_list.register(Emote, Emote.aliases)
@@ -1395,7 +1395,7 @@ To consume an edible item:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output("Eat what? The air isn't very nutritious.")
+            self.user.update_output("%s what?" % self.alias.capitalize())
             return
         food = self.user.check_inv_for_keyword(self.args.lower().strip())
         if not food:

@@ -100,3 +100,18 @@ class Hears(EventHandler):
     
 
 EVENTS.register(Hears, ['hears'])
+
+class Emoted(EventHandler):
+    def execute(self):
+        emoter = self.args.get('emoter')
+        condition = self.args.get('condition')
+        emote = self.args.get('emote')
+        rep = {'#target_name': emoter.fancy_name()}
+        self.personalize(rep)
+        if not condition:
+            self.execute_script()
+        elif condition == emote:
+            self.execute_script()
+    
+
+EVENTS.register(Emoted, ['emoted'])

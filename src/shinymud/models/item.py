@@ -444,7 +444,7 @@ class Weapon(object):
     
 
 class Food(object):
-    food_verbs = {'food': 'eat', 'drink': 'drink'}
+    food_verbs = {'food': 'eat', 'drink': 'drink from'}
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
         self.dbid = args.get('dbid')
