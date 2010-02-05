@@ -284,17 +284,26 @@ Description: \n    %s""" % (self.name,
     def get_script(self, script_id):
         return self.scripts.get(script_id)
     
+    def destroy_script(self, script_id):
+        s = self.get_script(script_id)
+        if not s:
+            return 'That script doesn\'t exist.'
+        s.destruct()
+        s.id = None
+        del self.scripts[script_id]
+        return 'Script "%s" has been successfully destroyed.' % script_id
+    
 # ************************ NPC Functions ************************
 # Here exist all the function that an area uses to manage the NPC's
 # it contains.
     def destroy_npc(self, npc_id):
         npc = self.get_npc(npc_id)
         if not npc:
-            return 'That npc doesn\'t exist.\n'
+            return 'That npc doesn\'t exist.'
         npc.destruct()
         npc.id = None
         del self.npcs[npc_id]
-        return '"%s" has been successfully destroyed.\n' % npc.name
+        return '"%s" has been successfully destroyed.' % npc.name
     
 # ************************ Item Functions ************************
 # Here exist all the function that an area uses to manage the items

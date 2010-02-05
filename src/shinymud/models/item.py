@@ -446,39 +446,125 @@ class Weapon(object):
 class Food(object):
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
-        self.dbid = args.get(dbid)
+        self.dbid = args.get('dbid')
         self.item = args.get('item')
         self.inv_item = args.get('inv_item')
+        self.food_type = args.get('food_type', 'food')
+        self.replace_obj = None
+        self.ro_id = args.get('ro_id')
+        self.ro_area = args.get('ro_area')
+        self.actor_use_message = args.get('actor_use_message')
+        self.room_use_message = args.get('room_use_message')
+        
+    
+    def _resolve_ro(self):
+        world = World.get_world()
+        if self._ro:
+            return self._ro
+        try: 
+            self.replace_obj = world.get_area(self.ro_area).get_item(self.ro_id)
+            return self._ro
+        except:
+            return None
+    
+    def _set_ro(self, ro):
+        self._ro = ro
+    
+    replace_obj = property(_resolve_ro, _set_ro)
     
     def __str__(self):
-        if self.on_eat:
-            eat_effects = ','.join(self.eat_effects)
+        if self.replace_obj:
+            rep = '%s (id:%s, area:%s)' % (self.replace_obj.name,
+                                           self.replace_obj.id,
+                                           self.replace_obj.area.name)
         else:
-            eat_effects = 'None'
-        string = 'FOOD ATTRIBUTES:\n' +\
-                 '  effects: ' + eat_effects + '\n'
+            rep = 'Nothing.'
+        string = 'FOOD ATTRIBUTES:' + '\n' +\
+                 '  Food_type: ' + self.food_type + '\n' +\
+                 '  Replace with: ' + rep + '\n' +\
+                 '  use message (actor): ' + str(self.actor_use_message) + '\n' +\
+                 '  use message (room): ' + str(self.room_use_message) + '\n'
         return string
     
     def to_dict(self):
         d = {}
-        d['on_eat'] = ','.join(self.eat_effects)
+        # d['on_eat'] = ','.join(self.eat_effects)
+        d['ro_area'] = self.ro_area
+        d['ro_id'] = self.ro_id
+        d['food_type'] = self.food_type
+        if self.actor_use_message:
+            d['actor_use_message'] = self.actor_use_message
+        if self.room_use_message:
+            d['room_use_message'] = self.room_use_message
+        if self.replace_obj:
+            d['replace_obj'] = self.replace_obj.dbid
         if self.item:
-            d['item'] = self.item
+            d['item'] = self.item.dbid
         if self.inv_item:
-            d['inv_item'] = self.inv_item
+            d['inv_item'] = self.inv_item.dbid
         if self.dbid:
             d['dbid'] = self.dbid
         return d
     
     def save(self, save_dict=None):
+        world = World.get_world()
         if self.dbid:
             if save_dict:
                 save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('food', save_dict)
+                world.db.update_from_dict('food', save_dict)
             else:    
-                self.world.db.update_from_dict('food', self.to_dict())
+                world.db.update_from_dict('food', self.to_dict())
         else:
-            self.dbid = self.world.db.insert_from_dict('food', self.to_dict())
+            self.dbid = world.db.insert_from_dict('food', self.to_dict())
+    
+    def load(self):
+        new_f = Container(**self.to_dict())
+        new_f.dbid = None
+        new_f.item = None
+        return new_f
+    
+    def set_food_type(self, use, user=None):
+        """Set the verb used to consume the object."""
+        if not use or (use.lower().strip() not in ['food', 'drink']):
+            return 'Valid values for food_type are "food" or "drink".'
+        self.food_type = use.lower().strip()
+        self.save({'food_type': self.food_type})
+        return 'Food_type is now set to %s.' % use
+    
+    def set_replace(self, replace, user=None):
+        world = World.get_world()
+        if not replace:
+            return 'Try "help food" for help on setting food attributes.'
+        exp = r'(to[ ]?)?(item[ ]+)?(?P<id>\d+)([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+))?'
+        match = re.match(exp, replace, re.I)
+        if not match:
+            return 'Try "help food" for help on setting food attributes.'
+        item_id, area_name = match.group('id', 'area_name')
+        if area_name:
+            area = world.get_area(area_name)
+            if not area:
+                return 'Area %s doesn\'t exist.' % area_name
+        elif user:
+            area = user.mode.edit_area
+        else:
+            return 'You need to specify the area that the item is from.'
+        item = area.get_item(item_id)
+        if not item:
+            'Item %s doesn\'t exist.' % item_id
+        self.replace_obj = item
+        self.save({'ro_id': item.id, 'ro_area': item.area.name})
+        return '%s will be replaced with %s when consumed.' %\
+                (self.item.name.capitalize(), item.name)
+    
+    def set_actor_message(self, message):
+        self.actor_use_message = message
+        self.save({'actor_use_message': self.actor_use_message})
+        return 'Use message (actor) has been set.'
+    
+    def set_room_message(self, message):
+        self.room_use_message = message
+        self.save({'room_use_message': self.room_use_message})
+        return 'Use message (room) has been set.'
     
 
 class Container(object):

@@ -119,7 +119,12 @@ def initialize_database(connection=None):
 '''CREATE TABLE IF NOT EXISTS food (
     dbid INTEGER PRIMARY KEY,
     item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid)
+    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    ro_area TEXT,
+    ro_id TEXT,
+    food_type TEXT,
+    actor_use_message TEXT,
+    room_use_message TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS container (
     dbid INTEGER PRIMARY KEY,

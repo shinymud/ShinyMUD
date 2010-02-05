@@ -431,7 +431,7 @@ class Destroy(BaseCommand):
             elif area and hasattr(area, 'destroy_' + func):
                 message = getattr(area, 'destroy_' + func)(obj_id)
             else:
-                message = 'You can\'t destroy something that does\'t exist.\n'
+                message = 'You can\'t destroy something that does\'t exist.'
             # The destroy function will set the id of whatever it deleted to None
             # so that any other objects with references will know they should terminate
             # their reference. If the user destroyed the object they're working on,
