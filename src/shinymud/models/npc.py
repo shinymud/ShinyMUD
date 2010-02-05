@@ -1,5 +1,4 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.lib.events import *
 from shinymud.lib.world import World
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM

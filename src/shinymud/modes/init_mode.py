@@ -229,6 +229,8 @@ class InitMode(object):
                 self.user.description = 'You see nothing special about this person.'
                 self.user.goto_appear = '%s appears in the room.' % self.user.fancy_name()
                 self.user.goto_disappear = '%s disappears in a cloud of smoke.' % self.user.fancy_name()
+                self.user.isequipped = []
+                self.user.equipped = {}
                 if self.user.inq[0][0].lower() == 'c':
                     # Custom stats creation
                     self.state = self.custom_create
