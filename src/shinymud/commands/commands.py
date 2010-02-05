@@ -1379,3 +1379,61 @@ class Award(BaseCommand):
 
 command_list.register(Award, ['award'])
 command_help.register(Award.help, ['award'])
+
+class Consume(BaseCommand):
+    """Consume a food or drink item."""
+    help = (
+    """Eat, Drink, Use (Command)
+\nThe commands Eat, Drink, and Use can all be used interchangeably to consume
+an edible food or drink item. Be careful what you eat or drink though;
+consuming some items may cause undesirable effects, such as poisoning or
+drunkeness.
+\nUSAGE:
+To consume an edible item:
+  eat <item-keyword>
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.user.update_output("Eat what? The air isn't very nutritious.")
+            return
+        food = self.user.check_inv_for_keyword(self.args.lower().strip())
+        if not food:
+            self.user.update_output('You don\'t have any %s.' % self.args)
+            return
+        food_obj = food.item_types.get('food')
+        if not food_obj:
+            # Gods have a more robust digestive system -- they can afford to
+            # eat objects that aren't edible to mere mortals
+            if self.user.permissions & GOD:
+                self.user.item_remove(food)
+                food.destruct()
+                self.user.update_output('You eat %s.' % food.name)
+                if self.user.location:
+                    self.user.location.tell_room('%s ate %s.' %\
+                                                 (self.user.fancy_name(),
+                                                  food.name),
+                                                [self.user.name], self.user)
+                return
+            else:
+                self.user.update_output('That\'s not food, don\'t eat it!')
+                return
+        # Remove the food object
+        self.log.debug(food_obj)
+        self.user.item_remove(food)
+        food.destruct()
+        # Replace it with another object, if applicable
+        if food_obj.replace_obj:
+            self.user.item_add(food_obj.replace_obj.load())
+        # Once we have eat-effects, we should add them to the user here
+        
+        # Tell the user and the room an "eat" message
+        u_tell = self.personalize(food_obj.get_actor_message(), self.user)
+        self.user.update_output(u_tell)
+        if self.user.location:
+            r_tell = self.personalize(food_obj.get_room_message(), self.user)
+            self.user.location.tell_room(r_tell, [self.user.name], self.user)
+    
+
+command_list.register(Consume, ['eat', 'drink', 'use'])
+command_help.register(Consume.help, ['eat', 'drink'])

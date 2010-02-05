@@ -444,6 +444,7 @@ class Weapon(object):
     
 
 class Food(object):
+    food_verbs = {'food': 'eat', 'drink': 'drink'}
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
         self.dbid = args.get('dbid')
@@ -453,8 +454,8 @@ class Food(object):
         self.replace_obj = None
         self.ro_id = args.get('ro_id')
         self.ro_area = args.get('ro_area')
-        self.actor_use_message = args.get('actor_use_message')
-        self.room_use_message = args.get('room_use_message')
+        self.actor_use_message = args.get('actor_use_message', '')
+        self.room_use_message = args.get('room_use_message', '')
         
     
     def _resolve_ro(self):
@@ -482,8 +483,8 @@ class Food(object):
         string = 'FOOD ATTRIBUTES:' + '\n' +\
                  '  Food_type: ' + self.food_type + '\n' +\
                  '  Replace with: ' + rep + '\n' +\
-                 '  use message (actor): ' + str(self.actor_use_message) + '\n' +\
-                 '  use message (room): ' + str(self.room_use_message) + '\n'
+                 '  use message (actor): ' + self.get_actor_message() + '\n' +\
+                 '  use message (room): ' + self.get_room_message() + '\n'
         return string
     
     def to_dict(self):
@@ -492,12 +493,8 @@ class Food(object):
         d['ro_area'] = self.ro_area
         d['ro_id'] = self.ro_id
         d['food_type'] = self.food_type
-        if self.actor_use_message:
-            d['actor_use_message'] = self.actor_use_message
-        if self.room_use_message:
-            d['room_use_message'] = self.room_use_message
-        if self.replace_obj:
-            d['replace_obj'] = self.replace_obj.dbid
+        d['actor_use_message'] = self.actor_use_message
+        d['room_use_message'] = self.room_use_message
         if self.item:
             d['item'] = self.item.dbid
         if self.inv_item:
@@ -518,10 +515,25 @@ class Food(object):
             self.dbid = world.db.insert_from_dict('food', self.to_dict())
     
     def load(self):
-        new_f = Container(**self.to_dict())
+        new_f = Food(**self.to_dict())
+        new_f.replace_obj = self.replace_obj
         new_f.dbid = None
         new_f.item = None
         return new_f
+    
+    def get_actor_message(self):
+        if self.actor_use_message:
+            return self.actor_use_message
+        item = self.item or self.inv_item
+        m = 'You %s %s.' % (self.food_verbs[self.food_type], item.name)
+        return m
+    
+    def get_room_message(self):
+        if self.room_use_message:
+            return self.room_use_message
+        item = self.item or self.inv_item
+        m = '#actor %ss %s.' % (self.food_verbs[self.food_type], item.name)
+        return m
     
     def set_food_type(self, use, user=None):
         """Set the verb used to consume the object."""
@@ -533,9 +545,11 @@ class Food(object):
     
     def set_replace(self, replace, user=None):
         world = World.get_world()
-        if not replace:
-            return 'Try "help food" for help on setting food attributes.'
-        exp = r'(to[ ]?)?(item[ ]+)?(?P<id>\d+)([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+))?'
+        if not replace or (replace.strip().lower() == 'none'):
+            self.replace_obj = None
+            self.save({'ro_id': '', 'ro_area': ''})
+            return 'Replace item reset to none.'
+        exp = r'((to)|(with)[ ]?)?(item[ ]+)?(?P<id>\d+)([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+))?'
         match = re.match(exp, replace, re.I)
         if not match:
             return 'Try "help food" for help on setting food attributes.'
@@ -557,13 +571,17 @@ class Food(object):
                 (self.item.name.capitalize(), item.name)
     
     def set_actor_message(self, message):
-        self.actor_use_message = message
+        self.actor_use_message = message or ''
         self.save({'actor_use_message': self.actor_use_message})
+        if not message:
+            return 'Use message (actor) has been reset to the default.'
         return 'Use message (actor) has been set.'
     
     def set_room_message(self, message):
-        self.room_use_message = message
+        self.room_use_message = message or ''
         self.save({'room_use_message': self.room_use_message})
+        if not message:
+            return 'Use message (room) has been reset to the default.'
         return 'Use message (room) has been set.'
     
 
