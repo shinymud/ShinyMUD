@@ -364,6 +364,9 @@ To load an npc:
             npc.location = self.user.location
             self.user.location.npc_add(npc)
             self.user.update_output('You summon %s into the world.\n' % npc.name)
+            if self.alias == 'spawn':
+                self.user.location.tell_room('%s summons %s.' % (self.user.fancy_name(), npc.name), 
+                                             [self.user.name], self.user)
         else:
             self.user.update_output('That npc doesn\'t exist.')
     
@@ -374,15 +377,15 @@ To load an npc:
             item = prototype.load()
             self.user.item_add(item)
             self.user.update_output('You summon %s into the world.\n' % item.name)
-            if self.user.location:
-                self.user.location.tell_room('%s summons %s into the world.\n' % (self.user.fancy_name(), item.name), 
-                                                                                self.user.name)
+            if self.user.location and (self.alias == 'spawn'):
+                self.user.location.tell_room('%s summons %s into the world.' % (self.user.fancy_name(), item.name), 
+                                                                                [self.user.name], self.user)
         else:
             self.user.update_output('That item doesn\'t exist.\n')
     
 
-command_list.register(Load, ['load'])
-command_help.register(Load.help, ['load'])
+command_list.register(Load, ['load', 'spawn'])
+command_help.register(Load.help, ['load', 'spawn'])
 
 class Inventory(BaseCommand):
     """Show the user their inventory."""
@@ -734,11 +737,11 @@ class Enter(BaseCommand):
         """Go through a portal."""
         if portal.location:
             if self.user.location: 
-                self.user.location.tell_room(self.personalize(self.user, None, portal.leave_message) + '\n', 
+                self.user.location.tell_room(self.personalize(portal.leave_message, self.user), 
                                              [self.user.name])
-            self.user.update_output(self.personalize(self.user, None, portal.entrance_message) + '\n')
+            self.user.update_output(self.personalize(portal.entrance_message, self.user))
             self.user.go(portal.location)
-            self.user.location.tell_room(self.personalize(self.user, None, portal.emerge_message) + '\n', 
+            self.user.location.tell_room(self.personalize(portal.emerge_message, self.user), 
                                          [self.user.name])
         else:
             self.user.update_output('Nothing happened. It must be a dud.\n')
@@ -834,33 +837,54 @@ Anyone in the same room would then see the following:
             self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
         elif self.alias == 'emote':
             self.user.location.tell_room('%s %s' % (self.user.fancy_name(),
-                                                    self.args), teller=self.user)
+                                                    self.args), 
+                                         teller=self.user)
         else:
             emote_list = EMOTES[self.alias]
-            if not self.args:                               #If victim is not specified
-                victim = ''
-                self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
-                self.user.location.tell_room(self.personalize(self.user, victim, emote_list[1] + '\n'), [self.user.name])
+            # The person didn't specify a target -- they want to do the emote
+            # action by themself
+            if not self.args:
+                self.single_person_emote(emote_list)
+            # If this emote doesn't have an option for a double emote,
+            # just ignore the args and do a single-person emote
+            elif self.args and not emote_list[1]:
+                self.single_person_emote(emote_list)
             else:
-                victim = self.user.location.get_user(self.args) #If victim is in room
-                if (victim == self.user):
-                    victim = ''
-                    self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
-                    self.user.location.tell_room(self.personalize(self.user, victim, emote_list[1] + '\n'), [self.user.name])
-                elif victim:
-                    emote_list = TARGETEMOTES[self.alias]
-                    self.user.update_output(self.personalize(self.user, victim, emote_list[0]) + '\n')
-                    victim.update_output(self.personalize(self.user, victim, emote_list[1]) + '\n')
-                    self.user.location.tell_room(self.personalize(self.user, victim, emote_list[2] + '\n'),
-                                                    [self.user.name, victim.name])
+                victim = self.user.location.get_user(self.args.lower()) or\
+                         self.user.location.get_npc_by_kw(self.args.lower()) or\
+                         self.world.get_user(self.args.lower())
+                if not victim:
+                    # victim = self.world.get_user(self.args.lower())
+                    # if not victim:                        
+                    self.user.update_output('%s isn\'t here.' % 
+                                            self.args.capitalize())
+                elif victim == self.user:
+                    self.single_person_emote(emote_list)
                 else:
-                    victim = self.world.get_user(self.args) #If victim is in world
-                    if (victim):
-                        message = 'From far away, '
-                        self.user.update_output(message + self.personalize(self.user, victim, emote_list[0]) + '\n')
-                        victim.update_output(message + self.personalize(self.user, victim, emote_list[1]) + '\n')
-                    else:                                   #If victim is in neither
-                        self.user.update_output('You don\'t see %s.\n' % self.args)
+                    self.double_person_emote(emote_list, victim)
+    
+    def single_person_emote(self, emote_list):
+        """A player wishes to emote an action alone."""
+        actor_m = self.personalize(emote_list[0][0], self.user)
+        room_m = self.personalize(emote_list[0][1], self.user)
+        self.user.update_output(actor_m)
+        self.user.location.tell_room(room_m, [self.user.name])
+    
+    def double_person_emote(self, emote_list, victim):
+        """A player wishes to emote an action on a target."""
+        # We got this far, we know the victim exists in the world
+        actor = self.personalize(emote_list[1][0], self.user, victim)
+        victimm = self.personalize(emote_list[1][1], self.user, victim)
+        if victim.location == self.user.location:
+            room_m = self.personalize(emote_list[1][2], self.user, victim)
+            self.user.update_output(actor)
+            victim.update_output(victimm)
+            self.user.location.tell_room(room_m, [self.user.name, victim.name])
+        else:
+            self.user.update_output('From far away, ' + actor)
+            victim.update_output('From far away, ' + victimm)
+        if victim.is_npc():
+            victim.notify('emoted', {'emote': self.alias})
     
 
 command_list.register(Emote, Emote.aliases)
@@ -1187,12 +1211,12 @@ class Sit(BaseCommand):
             if self.user.position[0] == 'sleeping':
                 self.user.update_output('You wake and sit up.')
                 if self.user.location:
-                    self.user.location.tell_room('%s wakes and sits up.' % self.user.fancy_name(), [self.user.name])
+                    self.user.location.tell_room('%s wakes and sits up.' % self.user.fancy_name(), [self.user.name], self.user)
                 self.user.change_position('sitting', self.user.position[1])
             else:
                 self.user.update_output('You sit down.')
                 if self.user.location:
-                    self.user.location.tell_room('%s sits down.' % self.user.fancy_name(), [self.user.name])
+                    self.user.location.tell_room('%s sits down.' % self.user.fancy_name(), [self.user.name], self.user)
                 self.user.change_position = ('sitting')
         else:
             if not self.user.location:
@@ -1218,7 +1242,7 @@ class Sit(BaseCommand):
                 self.user.position = ('sitting', furn)
                 self.user.update_output('You sit down on %s.' % furn.name)
                 self.user.location.tell_room('%s sits down on %s.' % (self.user.fancy_name(), furn.name), 
-                                             [self.user.name])
+                                             [self.user.name], self.user)
     
 
 command_list.register(Sit, ['sit'])
@@ -1233,11 +1257,11 @@ class Stand(BaseCommand):
         if self.user.position[0] == 'sleeping':
             self.user.update_output('You wake and stand up.')
             if self.user.location:
-                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name])
+                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name], self.user)
         else:
             self.user.update_output('You stand up.')
             if self.user.location:
-                self.user.location.tell_room('%s stands up.' % self.user.fancy_name(), [self.user.name])
+                self.user.location.tell_room('%s stands up.' % self.user.fancy_name(), [self.user.name], self.user)
         self.user.change_position('standing')
     
 
@@ -1254,7 +1278,7 @@ class Sleep(BaseCommand):
         if not self.args:
             self.user.update_output('You go to sleep.')
             if self.user.location:
-                self.user.location.tell_room('%s goes to sleep.' % self.user.fancy_name(), [self.user.name])
+                self.user.location.tell_room('%s goes to sleep.' % self.user.fancy_name(), [self.user.name], self.user)
             # If they were previously sitting on furniture before they went to
             # sleep, we might as well maintain their position on that 
             # furniture when they go to sleep
@@ -1280,7 +1304,7 @@ class Sleep(BaseCommand):
                 self.user.change_position('sleeping', furn)
                 self.user.update_output('You go to sleep on %s.' % furn.name)
                 self.user.location.tell_room('%s goes to sleep on %s.' % (self.user.fancy_name(), furn.name), 
-                                             [self.user.name])
+                                             [self.user.name], self.user)
     
 
 command_list.register(Sleep, ['sleep'])
@@ -1296,7 +1320,7 @@ class Wake(BaseCommand):
                 return
             self.user.update_output('You wake and stand up.')
             if self.user.location:
-                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name])
+                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name], self.user)
             self.user.change_position('standing')
         else:
             # Wake up someone else!
@@ -1315,8 +1339,43 @@ class Wake(BaseCommand):
             sleeper.update_output('%s wakes you up.' % self.user.fancy_name())
             troom = '%s wakes up %s.' % (self.user.fancy_name(),
                                          sleeper.fancy_name())
-            self.user.location.tell_room(troom, [self.user.name, sleeper.name])
+            self.user.location.tell_room(troom, [self.user.name, sleeper.name],
+                                         self.user)
     
 
 command_list.register(Wake, ['wake', 'awake'])
 command_help.register(Wake.help, ['wake'])
+
+class Award(BaseCommand):
+    """Award an item to a user."""
+    required_permissions = required_permissions = DM | ADMIN
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Award what to whom?')
+            return
+        exp = r'(?P<item>(\w+|[ ])+)([ ]+to)([ ]+(?P<user>\w+))([ ]+(?P<actor>\'(.*?)\')(:(?P<room>\'(.*?)\'))?)?'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output('Type "help award" for help with this command.')
+            return
+        item_kw, user_kw, actor, room = match.group('item', 'user', 'actor', 'room')
+        user = self.user.location.get_user(user_kw.lower())
+        if not user:
+            self.user.update_output('Whom do you want to award %s to?' % item_kw)
+            return
+        item = self.user.check_inv_for_keyword(item_kw)
+        if not item:
+            self.user.update_output('You don\'t have any %s.' % item_kw)
+            return
+        self.user.item_remove(item)
+        user.item_add(item)
+        if actor:
+            message = self.personalize(actor.strip("\'"), self.user)
+            user.update_output(message)
+        if room:
+            message = self.personalize(room.strip("\'"), self.user, user)
+            self.user.location.tell_room(message, [user.name], self.user)
+    
+
+command_list.register(Award, ['award'])
+command_help.register(Award.help, ['award'])

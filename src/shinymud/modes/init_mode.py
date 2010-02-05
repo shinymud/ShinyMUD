@@ -92,18 +92,15 @@ class InitMode(object):
         self.active = False
         self.user.update_output('\nYou have entered the world of %s.' % GAME_NAME)
         self.world.tell_users("%s has entered the world." % self.user.fancy_name())
-        self.user.look_at_room()
+        if self.user.location:
+            self.user.update_output(self.user.look_at_room())
+            self.user.location.user_add(self.user)
     
     def character_cleanup(self):
         # If the user doesn't have a location, send them to the default 
         # location that the World tried to get out of the config file
         if not self.user.location:
             self.user.location = self.world.default_location
-        # The default location for the world can still end up as
-        # none, so we have to check if the user's intended location exists
-        # again before we add them to the room
-        if self.user.location:
-            self.user.location.user_add(self.user)
         self.user.inq = []
         self.world.user_add(self.user)
         self.world.user_remove(self.user.conn)

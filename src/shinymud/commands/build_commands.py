@@ -547,3 +547,26 @@ items or npcs). Also, an item can only be spawned into another item if the
 second item is of type container.
 """
 ), ['nested resets', 'nested reset'])
+
+command_help.register(("NPC Events (NPC Attribute)\n"
+"""NPC events are what trigger an npc to perform a scripted action. 
+\nUSAGE:
+To add an event to an npc:
+  add event <event-trigger> '<condition>' call <script_id> [<probability>]
+To remove an event from an npc:
+  remove event <event-trigger>
+\nFor a list of event triggers, see "help triggers".
+"""
+), ['npc event', 'event', 'events'])
+
+command_help.register(("Event Triggers (NPC Events)\n"
+"""The following are a list of event triggers that can be used to trigger
+an npc into executing a script. See "help npc event" for more information
+on events.
+pc_enter - call script when a player character enters the room.
+given_item - call script when the npc is given an item.
+hears 'condition' - call script when the npc hears 'condition' text in the 
+    room.
+"""
+), ['event list', 'triggers', 'event triggers'])
+

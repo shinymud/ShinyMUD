@@ -92,6 +92,7 @@ def initialize_database(connection=None):
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
     name TEXT,
+    gender TEXT,
     title TEXT,
     keywords TEXT,
     description TEXT,

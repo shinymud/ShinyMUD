@@ -14,6 +14,7 @@ class Npc(object):
         self.name = str(args.get('name', 'Shiny McShinerson'))
         self.dbid = args.get('dbid')
         self.title = args.get('title', '%s is here.' % self.name)
+        self.gender = args.get('gender', 'neutral')
         self.keywords = [name.lower() for name in self.name.split()]
         self.keywords.append(self.name.lower())
         kw = str(args.get('keywords', ''))
@@ -33,6 +34,7 @@ class Npc(object):
         d['area'] = self.area.dbid
         d['id'] = self.id
         d['name'] = self.name
+        d['gender'] = self.gender
         d['title'] = self.title
         d['description'] = self.description
         if self.dbid:
@@ -55,11 +57,12 @@ class Npc(object):
             scripts = 'None.'
         string += """name: %s
 title: %s
+gender: %s
 keywords: %s
 description:
     %s
-events: %s""" % (self.name, self.title, str(self.keywords), self.description,
-                  scripts)
+events: %s""" % (self.name, self.title, self.gender, str(self.keywords), 
+                 self.description, scripts)
         string += '\n' + ('-' * 50)
         return string
     
@@ -92,19 +95,32 @@ events: %s""" % (self.name, self.title, str(self.keywords), self.description,
     
     def load_events(self):
         events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
+        self.log.debug(events)
         for event in events:
-            s = self.area.get_script(str(event['script']))
-            self.log.error('The script this event points to is gone! ' +
-                           'NPC (id:%s, area:%s)' % (self.id, self.area.name))
+            s_id = self.world.db.select('id FROM script WHERE dbid=?', 
+                                        [event['script']])
+            s = self.area.get_script(str(s_id[0].get('id')))
             if s:
                 # Only load this event if its script exists
                 event['script'] = s
                 event['prototype'] = self
                 e = NPCEvent(**event)
                 self.events[event['event_trigger']] = e
+            else:
+                self.log.error('The script this event points to is gone! '
+                               'NPC (id:%s, area:%s)' % (self.id, self.area.name))
     
     def update_output(self, message):
         self.actionq.append(message)
+    
+    def check_inv_for_keyword(self, keyword):
+        """Check all of the items in an npc's inventory for a specific keyword.
+        Return the item that matches that keyword, else return None."""
+        keyword = keyword.strip().lower()
+        for item in self.inventory:
+            if keyword in item.keywords:
+                return item
+        return None
     
     def fancy_name(self):
         return self.name
@@ -141,6 +157,13 @@ events: %s""" % (self.name, self.title, str(self.keywords), self.description,
             self.save({'keywords': ','.join(self.keywords)})
             return 'Npc keywords have been reset.\n'
     
+    def set_gender(self, gender, user=None):
+        if gender.lower() not in ['female', 'male', 'neutral']:
+            return 'Valid genders are: female, male, neutral.'
+        self.gender = gender.lower()
+        self.save({'gender': self.gender})
+        return '%s\'s gender has been set to %s.' % (self.name, self.gender)
+    
     def item_add(self, item):
         self.inventory.append(item)
     
@@ -149,11 +172,12 @@ events: %s""" % (self.name, self.title, str(self.keywords), self.description,
             self.inventory.remove(item)
     
     def add_event(self, args):
+        """Add an event to an npc."""
         # add event on_enter call script 1
         # add event listen_for 'stuff' call script 1
         # add event given_item call script 3
         help_message = 'Type "help events" for help with this command.'
-        exp = r'(?P<trigger>\w+)([ ]+(?P<condition>\'(\w+|[ ])+\'))?([ ]+call)([ ]+script)?([ ]+(?P<id>\d+))([ ]+(?P<prob>\d+))?'
+        exp = r'(?P<trigger>\w+)([ ]+(?P<condition>\'(.*?)\'))?([ ]+call)([ ]+script)?([ ]+(?P<id>\d+))([ ]+(?P<prob>\d+))?'
         if not args:
             return help_message
         match = re.match(exp, args, re.I)
@@ -188,6 +212,14 @@ events: %s""" % (self.name, self.title, str(self.keywords), self.description,
         new_event.save()
         self.events[trigger] = new_event
         return 'Event added.'
+    
+    def remove_event(self, event):
+        """Remove an event from an npc."""
+        if event in self.events:
+            self.events[event].destruct()
+            del self.events[event]
+            return 'Event "%s" removed.' % event
+        return 'Npc %s doesn\'t have an event "%s".' % (self.id, event)
     
     def notify(self, event_name, args):
         if event_name in self.events.keys():

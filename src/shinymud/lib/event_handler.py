@@ -1,5 +1,6 @@
 from shinymud.commands import *
 from shinymud.commands.commands import *
+from shinymud.commands.emotes import *
 
 import re
 import logging
@@ -31,8 +32,8 @@ class EventHandler(object):
     def execute_script(self):
         # Execute each line in 
         self.log.debug('About to execute script %s.' % self.script.id)
-        lines = self.script_text.split('\n')
-        for line in lines:
+        for line in self.parse_script():
+            self.log.debug(line)
             match = re.search(r'\s*(\w+)([ ](.+))?$', line)
             if match:
                 cmd_name, _, args = match.groups()
@@ -44,6 +45,16 @@ class EventHandler(object):
     def personalize(self, replace_dict):
         for key, val in replace_dict.items():
             self.script_text = self.script_text.replace(key, val)
+    
+    def parse_script(self):
+        lines = self.script_text.split('\n')
+        nl = [lines[0]]
+        for i in range(1, len(lines)):
+            if nl[len(nl)-1].endswith('+'):
+                nl[len(nl)-1] = nl[len(nl)-1].rstrip('+') + lines[i]
+            else:
+                nl.append(lines[i])
+        return nl
     
 
 EVENTS = CommandRegister()

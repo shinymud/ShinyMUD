@@ -54,7 +54,7 @@ class BaseCommand(object):
         else:
             self.user.update_output("You don't have the authority to do that!\n")
     
-    def personalize(self, actor, target, message):
+    def personalize(self, message, actor, target=None):
         """Personalize an action message for a user.
         
         This function replaces certain keywords in generic messages with 
@@ -86,7 +86,6 @@ class BaseCommand(object):
         message = message.replace('#a_her/his', her_possesive.get(actor.gender)) 
         
         # We should always have an actor, but we don't always have a target.
-        # Expect them to be able to pass None for the target
         if target:
             message = message.replace('#target', target.fancy_name())
             message = message.replace('#t_she/he', she_pronouns.get(target.gender))

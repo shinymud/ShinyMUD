@@ -143,7 +143,9 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
             if reset.spawn_id not in present_obj and \
                (reset.get_spawn_point() == 'in room'):
                 if reset.reset_type == 'npc':
-                    self.npcs.append(reset.spawn())
+                    npc = reset.spawn()
+                    npc.location = self
+                    self.npcs.append(npc)
                 else:
                     self.items.append(reset.spawn())
     
@@ -389,10 +391,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     def get_user(self, keyword):
         """Get a user from this room if their name is equal to the keyword given."""
         keyword = keyword.strip().lower()
-        for user in self.users.values():
-            if keyword == user.name:
-                return user
-        return None
+        return self.users.get(keyword)
     
     def check_for_keyword(self, keyword):
         """Return the first instance of an item, npc, or player that matches the keyword.
