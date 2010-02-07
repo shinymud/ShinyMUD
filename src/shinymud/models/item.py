@@ -456,6 +456,7 @@ class Food(object):
         self.ro_area = args.get('ro_area')
         self.actor_use_message = args.get('actor_use_message', '')
         self.room_use_message = args.get('room_use_message', '')
+        self.effects = {}
         
     
     def _resolve_ro(self):
@@ -520,6 +521,11 @@ class Food(object):
         new_f.dbid = None
         new_f.item = None
         return new_f
+    
+    def load_effects(self):
+        """Return a list of copies of this food item's effects."""
+        e = [effect.copy() for effect in self.effects.values()]
+        return e
     
     def get_actor_message(self):
         if self.actor_use_message:
