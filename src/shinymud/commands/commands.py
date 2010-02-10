@@ -1416,7 +1416,7 @@ To consume an edible item:
                                                 [self.user.name], self.user)
                 return
             else:
-                self.user.update_output('That\'s not food, don\'t eat it!')
+                self.user.update_output('That\'s not edible!')
                 return
         # Remove the food object
         self.log.debug(food_obj)

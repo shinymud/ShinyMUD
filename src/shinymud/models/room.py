@@ -237,6 +237,8 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         return message
     
     def add_reset(self, args):
+        if not args:
+            return 'Type "help room resets" to get help using this command.'
         exp = r'((for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))' +\
               r'(([ ]+from)?([ ]+area)([ ]+(?P<area_name>\w+)))?' +\
               r'(([ ]+((in)|(into)|(inside)))?([ ]+reset)?([ ]+(?P<container>\d+)))?)'
@@ -248,13 +250,13 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                                                                  'container')
             area = World.get_world().get_area(area_name) or self.area
             if not area:
-                return 'That area doesn\'t exist.\n'
+                return 'That area doesn\'t exist.'
             obj = getattr(area, obj_type + "s").get(obj_id)
             if not obj:
-                return '%s number %s does not exist.\n' % (obj_type, obj_id)
+                return '%s number %s does not exist.' % (obj_type, obj_id)
             if container:
                 if int(container) not in self.resets:
-                    return 'Reset %s doesn\'t exist.\n' % container
+                    return 'Reset %s doesn\'t exist.' % container
                 container_reset = self.resets.get(int(container))
                 c_obj = container_reset.reset_object
                 if container_reset.reset_object.is_container():
@@ -262,14 +264,14 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                     reset.save()
                     container_reset.add_nested_reset(reset)
                     self.resets[reset.dbid] = reset
-                    return 'A room reset has been added for %s number %s.\n' % (obj_type, obj_id)
+                    return 'A room reset has been added for %s number %s.' % (obj_type, obj_id)
                 else:
-                    return 'Room reset %s is not a container.\n' % container
+                    return 'Room reset %s is not a container.' % container
             reset = Reset(self, obj, obj_type)
             reset.save()
             self.resets[reset.dbid] = reset
-            return 'A room reset has been added for %s number %s.\n' % (obj_type, obj_id)
-        return 'Type "help resets" to get help using this command.\n'
+            return 'A room reset has been added for %s number %s.' % (obj_type, obj_id)
+        return 'Type "help room resets" to get help using this command.'
     
     def remove_reset(self, args):
         exp = r'(?P<reset_num>\d+)'
