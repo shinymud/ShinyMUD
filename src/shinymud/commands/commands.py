@@ -933,7 +933,10 @@ permissions and permission groups, see "help permissions".
             return
         user.permissions = user.permissions | permission
         self.user.update_output('%s now has the privilige of being %s.\n' % (user.fancy_name(), perm.upper()))
-        user.update_output('%s has bestowed the authority of %s upon you!\n' % (self.user.fancy_name(), perm.upper()))
+        user.update_output('%s has bestowed the authority of %s upon you!' % (self.user.fancy_name(), perm.upper()))
+        self.world.tell_users('%s has bestowed the authority of %s upon %s!' %
+                              (self.user.fancy_name(), perm.upper(), user.fancy_name()),
+                              [self.user.name, user.name])
     
 
 command_list.register(Bestow, ['bestow'])
@@ -1349,6 +1352,34 @@ command_help.register(Wake.help, ['wake'])
 class Award(BaseCommand):
     """Award an item to a user."""
     required_permissions = required_permissions = DM | ADMIN
+    help = (
+    """Award (Command)
+\nThe Award command allows a DM or an Admin to award an item to a player. Note
+that you must have the item you wish to award in your inventory for the Award
+command to work, and you must also be in the same room as the person you wish
+to award the item to.
+\nRequired Permissions: ADMIN, DM
+\nUSAGE:
+To award an item to a player:
+  award <item-keyword> to <player-name> ['<actor-message>':'<room-message>']
+\nThe actor-message is the message you want the player to see upon receipt of
+your item. The room-message is the message you want everyone else in the same
+room to hear upon the player's receipt of the item. Neither message is
+required, and if they are not given then the item will be awarded to the
+player silently.
+\nEXAMPLES:
+Say for example that you would like to award the player Jameson a medal to
+celebrate the quest he just completed. First you would make sure the medal was
+in your inventory (easily done by using the Load command). Then you would type
+the following (which would normally be on one line -- in this case it is 
+linewrapped for readibility):
+  award medal to jameson 'You receive a medal for your fine work.':
+  '#actor receives a medal for his fine work.'
+\nJameson would have the medal added to his inventory and receive the message
+"You receive a medal for your fine work." Anyone else in the room would see
+the message "Jameson receives a medal for his fine work."
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Award what to whom?')

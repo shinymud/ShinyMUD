@@ -179,7 +179,8 @@ class User(Character):
         if self.quit_flag:
             self.user_logout()
         else:
-            self.cycle_effects()
+            if self.dbid:
+                self.cycle_effects()
             self.get_input()
             if not self.mode:
                 self.parse_command()
@@ -311,6 +312,7 @@ class User(Character):
     
     def effects_add(self, effect_list):
         for effect in effect_list:
+            effect.char = self
             if effect.name in self.effects:
                 self.effects[effect.name].combine(effect)
             else:

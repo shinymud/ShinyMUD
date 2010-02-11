@@ -60,7 +60,7 @@ class Drunk(CharacterEffect):
         if self.drunk_level < 5:
             return text
         # slurred
-        return = self.slurred_filter(text)
+        return self.slurred_filter(text)
         
     
     def slurred_filter(self, text):
