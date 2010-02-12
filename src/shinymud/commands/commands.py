@@ -1057,10 +1057,16 @@ class Help(BaseCommand):
         # else, send "I can't help you with that" string to user
         # return
         if not self.args:
-            self.user.update_output(self.help + '\n')
+            self.user.update_output(self.help)
             return
         help = command_help[self.args]
         if help:
+            # This should probably be replaced with a better color parsing
+            # function when we decide to have better use of colors
+            help = help.replace('<b>', BOLD)
+            help = help.replace('<title>', help_title).replace('</title>',
+                                                               CLEAR + '\n')
+            help = re.sub(r'</\w+>', CLEAR, help)
             self.user.update_output(help)
         else:
             self.user.update_output("Sorry, I can't help you with that.\n")
@@ -1400,6 +1406,8 @@ the message "Jameson receives a medal for his fine work."
             return
         self.user.item_remove(item)
         user.item_add(item)
+        self.user.update_output('%s has been awarded %s.' % (user.fancy_name(),
+                                                             item.name))
         if actor:
             message = self.personalize(actor.strip("\'"), self.user)
             user.update_output(message)
@@ -1468,3 +1476,12 @@ To consume an edible item:
 
 command_list.register(Consume, ['eat', 'drink', 'use'])
 command_help.register(Consume.help, ['eat', 'drink'])
+
+command_help.register(("<title>TextEditMode (Mode)</title>"
+"""TextEditMode is a special mode for editing large amounts of text, such as
+room or character descriptions. TextEditMode lets you enter text
+(line-by-line), until you are finished, letting you replace, delete, and
+insert lines as you go. Help for TextEditMode can be accessed by typing @help
+at anytime.
+"""
+), ['TextEditMode', 'text edit mode', 'textedit', 'text edit'])

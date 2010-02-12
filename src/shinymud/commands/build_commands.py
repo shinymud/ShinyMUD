@@ -483,15 +483,55 @@ class Import(BaseCommand):
 build_list.register(Import, ['import'])
 command_help.register(Import.help, ['import'])
 
+class Log(BaseCommand):
+    help = (
+    """Log (BuildCommand)
+Npc's receive the same feedback for preforming actions (commands) as a player
+character, but since they can't read, their feedback gets accumulated in an
+action log rather than being output to a screen. The Log command allows you to
+read the action log (and memory) of an npc to help you debug scripting errors.
+\nUSAGE:
+  log <npc-name>
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.user.update_output('Type "help log" for help with this command.')
+            return
+        if not self.user.location:
+            self.user.update_output('There aren\'t any npcs in the void to log.')
+            return
+        npc = self.user.location.get_npc_by_kw(self.args.lower().strip())
+        if not npc:
+            self.user.update_output('That npc doesn\'t exist.')
+            return
+        string = (' Log for %s ' % npc.name).center(50, '-') + '\n'
+        if npc.remember:
+            string += 'REMEMBERS: '
+            string += ', '.join(npc.remember) + '\n'
+        else:
+            string += 'REMEMBERS: This npc doesn\'t remember any users.\n'
+        string += 'ACTION LOG:\n'
+        if npc.actionq:
+            string += '\n'.join([a.strip('\n').strip('\r') for a in npc.actionq])
+        else:
+            string += 'Action log is empty.'
+        string += '\n' + ('-' * 50)
+        self.user.update_output(string)
+    
+
+build_list.register(Log, ['log'])
+command_help.register(Log.help, 'log')
+
 # Defining Extra Build-related help pages:
-command_help.register(("Build Commands (BuildMode)\n"
+command_help.register(("<title>Build Commands (BuildMode)</title>"
 """The following are the commands available during BuildMode:
 %s
 See 'help <command-name> for help on any one of these commands.
 """ % ('\n'.join([cmd.__name__.lower() for cmd in build_list.commands.values()]))
 ), ['build commands', 'build command'])
 
-command_help.register(("Room Resets (Room Attribute)\n"
+command_help.register(("<title>Room Resets (Room Attribute)</title>"
 """Every room has a list of "room resets". A room reset is an object that
 keeps track of an item or npc and a spawn point. When a room is told to Reset
 itself (see "help reset"), it goes through its list of room resets and spawns
@@ -523,7 +563,7 @@ example, tell a dagger to spawn inside of a chest), see "help nested resets".
 """
 ), ['room resets', 'room reset'])
 
-command_help.register(("Nested Resets (Room Attribute)\n"
+command_help.register(("<title>Nested Resets (Room Attribute)</title>"
 """A nested reset is when we have a room reset that tells an item to spawn
 inside a container item, or inside an npc's inventory.
 USAGE:
@@ -548,7 +588,7 @@ second item is of type container.
 """
 ), ['nested resets', 'nested reset'])
 
-command_help.register(("NPC Events (NPC Attribute)\n"
+command_help.register(("<title>NPC Events (NPC Attribute)</title>"
 """NPC events are what trigger an npc to perform a scripted action. 
 \nUSAGE:
 To add an event to an npc:
@@ -559,7 +599,7 @@ To remove an event from an npc:
 """
 ), ['npc event', 'event', 'events'])
 
-command_help.register(("Event Triggers (NPC Events)\n"
+command_help.register(("<title>Event Triggers (NPC Events)</title>"
 """The following are a list of event triggers that can be used to trigger
 an npc into executing a script. See "help npc event" for more information
 on events.
@@ -570,3 +610,107 @@ hears 'condition' - call script when the npc hears 'condition' text in the
 """
 ), ['event list', 'triggers', 'event triggers'])
 
+command_help.register(("<title>Scripts (BuildMode object)</title>"
+"""Scripts are a BuildMode object like items, npcs and rooms. They are
+essentially documents containing a set of actions that an npc should preform
+when a certain event happens (see "help npc event").
+\nSCRIPT ATTRIBUTES:
+<b>name - (set name <script-name>)</b> A name to help distinguish this script
+from other scripts in this area.
+<b>body - (set body, starts TextEditMode)</b> The set of instructions that an
+npc should do once the event has been triggered. See "help shiny script" for
+help with writing the body of a script.
+For more information on writing scripts, see the following help pages:
+  "help script example"
+  "help shiny script"
+  "help script conditionals"
+  "help script commands"
+"""
+), ['scripts', 'script'])
+
+command_help.register(("<title>Example Script (Script Language)</title>"
+"""The following is an example of what a typical script could look like:\n
+  if remember #target_name
+    say Hello #target_name, it's nice to see you again!
+  else
+    record #target_name
+    load item 3 from area new_castle
+    give new castle map to #target_name
+    say Welcome to New Castle, #target_name. 
+  endif
+  say Enjoy your day!
+\nThe above script, when triggered by an event, will cause an npc to do the
+following: If the npc remembers a player (the player has triggered this script
+before), then the npc will just give a simple greeting. If the npc doesn't
+remember a player, it will record that player in its memory, load a map item
+from its current area, then give that map to the player with a welcome
+greeting.
+"""
+), ['examlpe script'])
+
+command_help.register(("<title>ShinyScript (Script Language)</title>"
+"""The body of a script is written in a very simple language called
+ShinyScript.
+ShinyScript conventions:
+* Each line of the script body consists of one command, followed by its
+  arguments (options), with the exceptions of if-statements, explained below.
+* If a command is lengthy and needs to span multiple lines, a '+' symbol can
+  be used at the end of a line to denote that the next line is a continuation
+  of the first.
+* ShinyScript has some extra commands which can only be used in scripts: see
+  "help script commands" for a list of script-only commands to make your npc's
+  more life-like.
+* If-statements can be used to execute different branches of commands
+  depending on a conditional (see "help script conditionals" for a list of
+  conditionals that can be used in if-statments). The form of the if-statment
+  is as follows:\n
+  if conditional
+    command 1
+    command 2
+    ...
+  else
+    command 20
+    ...
+  endif\n
+  If the conditional is true, all of the commands after the if and before the
+  else will be executed. If it is false, all the conditions after the else and
+  before the endif will be executed. The else is optional, but the endif is
+  not. Nested if-statements (if-statements within if-statments) are allowed.
+* Whitespace is ignored before and after commands. If you wish to indent, be
+  our guest ;)
+For an example of a ShinyScript, see "help script".
+"""
+), ['shinyscript', 'shiny script'])
+
+command_help.register(("<title>ShinyScript Commands (Script Language)</title>"
+"""The following commands are only available in ShinyScript (writing the body
+of scripts). Each command is followed by an example of how it should be used,
+in parenthesis, and then a short description of what it does.
+* record (record #target_name) - Record allows an npc to record a player's
+  name in its memory so that it can act differently toward players that it has
+  already interacted with. Names that are recorded can be remembered using the
+  remember conditional (see "help script conditionals").
+"""
+), ['script commands'])
+
+command_help.register(("<title>ShinyScript Conditionals (Script Language)</title>"
+"""Conditionals are how if-statements get evaluated in ShinyScript. The
+following are all of the conditionals you can test in a script:
+* remember (if remember #target_name) - Will be true if the npc has the name
+  of the target player in its memory. Npcs can store names in their memory by
+  using the script command Record (see help "script commands").
+* equal (if equal keyword1 keyword2) - Will be true if keyword1 is the same as
+  keyword2, false if keyword1 is not the same as keyword2.
+
+"""
+), ['script commands'])
+
+command_help.register(("<title>Attributes (BuildMode Object)</title>"
+"""Attributes are the individual characteristics of an object. For example,
+name and description are both attributes of item and npc objects. During
+BuildMode, you can change the attributes of an object that you're editing by
+using one, some, or all of the Set, Add, and Remove commands. The command
+needed to edit an attribute will always be listed next to that attribute in
+paranthesis on the help page for that object.
+"""
+), ['attributes', 'attribute'])

@@ -23,7 +23,7 @@ class TestRoom(TestCase):
         item = self.area.new_item()
         message = self.room.add_reset('for item %s' % item.id)
         exp_message = ('A room reset has been added for '
-                       '%s number %s.\n' % ('item', item.id)
+                       '%s number %s.' % ('item', item.id)
                       )
         # Make sure we get the expected result message
         self.assertEqual(message, exp_message)
@@ -43,13 +43,13 @@ class TestRoom(TestCase):
         
         message1 = self.room.add_reset('for item %s' % container.id)
         exp_message1 = ('A room reset has been added for '
-                        '%s number %s.\n' % ('item', container.id)
+                        '%s number %s.' % ('item', container.id)
                        )
         self.assertEqual(message1, exp_message1)
         message2 = self.room.add_reset('for item %s in reset %s' % (item.id, 
                                                                     '1'))
         exp_message2 = ('A room reset has been added for '
-                        '%s number %s.\n' % ('item', item.id)
+                        '%s number %s.' % ('item', item.id)
                        )
         self.assertEqual(message2, exp_message2)
         # Make sure the room has 2 resets in its list
