@@ -1,4 +1,5 @@
 #ANSI color codes
+CLEAR = chr(27) + '[0m'
 
 #Foreground colors:
 COLOR_FG_BLACK = chr(27) + '[30m'
@@ -22,6 +23,6 @@ COLOR_BG_CYAN = chr(27) + '[46m'
 COLOR_BG_WHITE = chr(27) + '[47m'
 COLOR_BG_RESET = chr(27) + '[49m'
 
-# Bold
+# MISC
 BOLD = chr(27) + '[1m'
-CLEAR = chr(27) + '[0m'
+CONCEAL = chr(27) + '[8m'

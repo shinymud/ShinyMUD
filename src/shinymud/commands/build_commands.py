@@ -703,7 +703,7 @@ following are all of the conditionals you can test in a script:
   keyword2, false if keyword1 is not the same as keyword2.
 
 """
-), ['script commands'])
+), ['script conditional', 'script conditionals'])
 
 command_help.register(("<title>Attributes (BuildMode Object)</title>"
 """Attributes are the individual characteristics of an object. For example,
