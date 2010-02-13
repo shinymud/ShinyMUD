@@ -2,6 +2,7 @@ from shinymud.commands.commands import *
 from shinymud.data.config import GAME_NAME
 from shinymud.lib.ansi_codes import CONCEAL, CLEAR
 from shinymud.lib.world import World
+
 import hashlib
 import re
 import logging
@@ -15,15 +16,6 @@ SPD:  1    SPD:  3    SPD:  0    SPD: ?
  HP: 35     HP: 20     HP: 20     HP: ?
  MP:  0     MP:  0     MP:  6     MP: ?
 """
-# Some useful telnet protocal constants that will probably be moved to their
-# own file if we need them elsewhere.
-IAC = chr(255)
-HIDE = chr(133)
-NOECHO = chr(131)
-ECHO = chr(1)
-DO = chr(253)
-WILL = chr(251)
-WONT = chr(252)
 
 class InitMode(object):
     
@@ -83,9 +75,9 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             if self.user.inq[0][0].lower() == 'y':
                 self.save['name'] = self.username
-                self.user.update_output('Please choose a password: ', False)
+                self.user.update_output('Please choose a password: ' + CONCEAL, False)
                 self.password = None
-                self.negotiate_hide(self.create_password)
+                self.state = self.create_password
             else:
                 self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.')
                 self.state = self.verify_username
