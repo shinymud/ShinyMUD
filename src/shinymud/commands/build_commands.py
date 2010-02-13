@@ -521,7 +521,7 @@ read the action log (and memory) of an npc to help you debug scripting errors.
     
 
 build_list.register(Log, ['log'])
-command_help.register(Log.help, 'log')
+command_help.register(Log.help, ['log'])
 
 # Defining Extra Build-related help pages:
 command_help.register(("<title>Build Commands (BuildMode)</title>"
@@ -646,7 +646,7 @@ remember a player, it will record that player in its memory, load a map item
 from its current area, then give that map to the player with a welcome
 greeting.
 """
-), ['examlpe script'])
+), ['script example'])
 
 command_help.register(("<title>ShinyScript (Script Language)</title>"
 """The body of a script is written in a very simple language called
@@ -678,7 +678,7 @@ ShinyScript conventions:
   not. Nested if-statements (if-statements within if-statments) are allowed.
 * Whitespace is ignored before and after commands. If you wish to indent, be
   our guest ;)
-For an example of a ShinyScript, see "help script".
+For an example of a ShinyScript, see "help script example".
 """
 ), ['shinyscript', 'shiny script'])
 

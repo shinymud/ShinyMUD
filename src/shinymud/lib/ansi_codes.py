@@ -1,4 +1,6 @@
 #ANSI color codes
+
+# This is the reset for ALL attributes, COLOR and MISC attributes included
 CLEAR = chr(27) + '[0m'
 
 #Foreground colors:
@@ -25,4 +27,9 @@ COLOR_BG_RESET = chr(27) + '[49m'
 
 # MISC
 BOLD = chr(27) + '[1m'
+BRIGHT = chr(27) + '[2m'
+DIM = chr(27) + '[3m'
+UNDERSCORE = chr(27) + '[4m'
+BLINK = chr(27) + '[5m'
+REVERSE = chr(27) + '[7m'
 CONCEAL = chr(27) + '[8m'

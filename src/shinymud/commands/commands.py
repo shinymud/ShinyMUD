@@ -1467,7 +1467,7 @@ To consume an edible item:
         if food_obj.replace_obj:
             self.user.item_add(food_obj.replace_obj.load())
         # Add this food's effects to the user
-        self.user.effects_add(foob_obj.load_effects())
+        # self.user.effects_add(food_obj.load_effects())
         # Tell the user and the room an "eat" message
         u_tell = self.personalize(food_obj.get_actor_message(), self.user)
         self.user.update_output(u_tell)
