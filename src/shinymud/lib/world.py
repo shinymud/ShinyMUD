@@ -16,6 +16,8 @@ class World(object):
     def __init__(self):
         self.user_list = {}
         self.user_delete = []
+        self.battles = {}
+        self.battles_delete = []
         self.user_list_lock = threading.Lock()
         self.shutdown_flag = False
         self.listening = True
@@ -39,6 +41,9 @@ class World(object):
         for user in self.user_delete:
             del self.user_list[user]
         self.user_delete = []
+        for battle in self.battles_delete:
+            del self.battles[battle]
+        self.battles_delete = []
     
     def start_turning(self):
         while not self.shutdown_flag:
@@ -53,6 +58,10 @@ class World(object):
             for key in list_keys:
                 self.user_list[key].send_output()
             self.user_list_lock.release()
+            
+            # Perform round actions for active battles
+            for key in self.battles.keys():
+                self.battles[key].perform_round()
             
             # Reset areas that have had activity
             for area in self.areas.values():
@@ -198,3 +207,17 @@ class World(object):
             username = username.lower()
         self.user_delete.append(username)
     
+# ********************** Battle Functions **********************
+# Here exist all the function that the world uses to manage battles
+# it contains.
+    def battle_add(self, battle):
+        if not self.battles:
+            battle.id = 1
+        else:
+            battle.id = max(self.battles.keys()) + 1
+        self.battles[battle.id] = battle
+        self.log.debug("Battles: %s" % str(self.battles))
+    
+    def battle_remove(self, battle_id):
+        if battle_id in self.battles:
+            self.battles_delete.append(battle_id)

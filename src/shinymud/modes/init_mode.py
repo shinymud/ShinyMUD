@@ -82,7 +82,7 @@ class InitMode(object):
     def verify_new_character(self):
         if len(self.user.inq) > 0:
             if self.user.inq[0][0].lower() == 'y':
-                self.user.name = self.username
+                self.save['name'] = self.username
                 self.user.update_output('Please choose a password: ', False)
                 self.password = None
                 self.negotiate_hide(self.create_password)
