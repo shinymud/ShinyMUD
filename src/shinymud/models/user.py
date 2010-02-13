@@ -54,6 +54,7 @@ class User(Character):
             self.location = self.world.get_location(loc[0], loc[1])
         if self.dbid:
             self.load_inventory()
+        self.effects = {}
     
     def load_inventory(self):
         rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
@@ -161,6 +162,8 @@ class User(Character):
         if self.quit_flag:
             self.user_logout()
         else:
+            if self.dbid:
+                self.cycle_effects()
             self.get_input()
             if not self.mode:
                 self.parse_command()
@@ -283,4 +286,24 @@ class User(Character):
         if furniture:
             furniture.item_types['furniture'].user_add(self)
         self.position = (pos, furniture)
+    
+    def cycle_effects(self):
+        for name in self.effects.keys():
+            if self.effects[name].duration > 0:
+                self.effects[name].execute()
+            else:
+                self.effects[name].end()
+                del self.effects[name]
+    
+    def effects_add(self, effect_list):
+        for effect in effect_list:
+            effect.char = self
+            if effect.name in self.effects:
+                self.effects[effect.name].combine(effect)
+            else:
+                self.effects[effect.name] = effect
+    
+    def effect_remove(self, effect):
+        if effect.name in self.effects:
+            del self.effects[effect.name]
     

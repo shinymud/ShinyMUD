@@ -80,6 +80,7 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         new_npc.location = None
         new_npc.inventory = []
         new_npc.actionq = []
+        new_npc.remember = []
         return new_npc
     
     def fancy_name(self):

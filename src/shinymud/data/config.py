@@ -16,6 +16,8 @@ RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an ar
 DEFAULT_LOCATION = ('cubicle', '1')
 
 # Color constants:
+CLEAR = CLEAR
+BOLD = BOLD
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!
 clear_bcolor = COLOR_BG_RESET # DON'T CHANGE THIS ONE EITHER!
 
@@ -32,4 +34,7 @@ room_body_color = COLOR_FG_GREEN
 room_exit_color = COLOR_FG_CYAN
 room_id_color = COLOR_FG_RED
 item_color = COLOR_FG_RED
+
+# Help colors
+help_title = BOLD
 

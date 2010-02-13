@@ -6,3 +6,4 @@
 *.ps
 *.DS_Store
 *.db
+.shinypid

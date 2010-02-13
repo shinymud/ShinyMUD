@@ -886,7 +886,7 @@ Anyone in the same room would then see the following:
             self.user.update_output('From far away, ' + actor)
             victim.update_output('From far away, ' + victimm)
         if victim.is_npc():
-            victim.notify('emoted', {'emote': self.alias})
+            victim.notify('emoted', {'emote': self.alias, 'emoter': self.user})
     
 
 command_list.register(Emote, Emote.aliases)
@@ -935,7 +935,10 @@ permissions and permission groups, see "help permissions".
             return
         user.permissions = user.permissions | permission
         self.user.update_output('%s now has the privilige of being %s.\n' % (user.fancy_name(), perm.upper()))
-        user.update_output('%s has bestowed the authority of %s upon you!\n' % (self.user.fancy_name(), perm.upper()))
+        user.update_output('%s has bestowed the authority of %s upon you!' % (self.user.fancy_name(), perm.upper()))
+        self.world.tell_users('%s has bestowed the authority of %s upon %s!' %
+                              (self.user.fancy_name(), perm.upper(), user.fancy_name()),
+                              [self.user.name, user.name])
     
 
 command_list.register(Bestow, ['bestow'])
@@ -1056,10 +1059,16 @@ class Help(BaseCommand):
         # else, send "I can't help you with that" string to user
         # return
         if not self.args:
-            self.user.update_output(self.help + '\n')
+            self.user.update_output(self.help)
             return
         help = command_help[self.args]
         if help:
+            # This should probably be replaced with a better color parsing
+            # function when we decide to have better use of colors
+            help = help.replace('<b>', BOLD)
+            help = help.replace('<title>', help_title).replace('</title>',
+                                                               CLEAR + '\n')
+            help = re.sub(r'</\w+>', CLEAR, help)
             self.user.update_output(help)
         else:
             self.user.update_output("Sorry, I can't help you with that.\n")
@@ -1351,6 +1360,34 @@ command_help.register(Wake.help, ['wake'])
 class Award(BaseCommand):
     """Award an item to a user."""
     required_permissions = required_permissions = DM | ADMIN
+    help = (
+    """Award (Command)
+\nThe Award command allows a DM or an Admin to award an item to a player. Note
+that you must have the item you wish to award in your inventory for the Award
+command to work, and you must also be in the same room as the person you wish
+to award the item to.
+\nRequired Permissions: ADMIN, DM
+\nUSAGE:
+To award an item to a player:
+  award <item-keyword> to <player-name> ['<actor-message>':'<room-message>']
+\nThe actor-message is the message you want the player to see upon receipt of
+your item. The room-message is the message you want everyone else in the same
+room to hear upon the player's receipt of the item. Neither message is
+required, and if they are not given then the item will be awarded to the
+player silently.
+\nEXAMPLES:
+Say for example that you would like to award the player Jameson a medal to
+celebrate the quest he just completed. First you would make sure the medal was
+in your inventory (easily done by using the Load command). Then you would type
+the following (which would normally be on one line -- in this case it is 
+linewrapped for readibility):
+  award medal to jameson 'You receive a medal for your fine work.':
+  '#actor receives a medal for his fine work.'
+\nJameson would have the medal added to his inventory and receive the message
+"You receive a medal for your fine work." Anyone else in the room would see
+the message "Jameson receives a medal for his fine work."
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Award what to whom?')
@@ -1371,6 +1408,8 @@ class Award(BaseCommand):
             return
         self.user.item_remove(item)
         user.item_add(item)
+        self.user.update_output('%s has been awarded %s.' % (user.fancy_name(),
+                                                             item.name))
         if actor:
             message = self.personalize(actor.strip("\'"), self.user)
             user.update_output(message)
@@ -1397,7 +1436,7 @@ To consume an edible item:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output("Eat what? The air isn't very nutritious.")
+            self.user.update_output("%s what?" % self.alias.capitalize())
             return
         food = self.user.check_inv_for_keyword(self.args.lower().strip())
         if not food:
@@ -1418,7 +1457,7 @@ To consume an edible item:
                                                 [self.user.name], self.user)
                 return
             else:
-                self.user.update_output('That\'s not food, don\'t eat it!')
+                self.user.update_output('That\'s not edible!')
                 return
         # Remove the food object
         self.log.debug(food_obj)
@@ -1427,8 +1466,8 @@ To consume an edible item:
         # Replace it with another object, if applicable
         if food_obj.replace_obj:
             self.user.item_add(food_obj.replace_obj.load())
-        # Once we have eat-effects, we should add them to the user here
-        
+        # Add this food's effects to the user
+        self.user.effects_add(foob_obj.load_effects())
         # Tell the user and the room an "eat" message
         u_tell = self.personalize(food_obj.get_actor_message(), self.user)
         self.user.update_output(u_tell)
@@ -1439,7 +1478,6 @@ To consume an edible item:
 
 command_list.register(Consume, ['eat', 'drink', 'use'])
 command_help.register(Consume.help, ['eat', 'drink'])
-
 
 class Attack(BaseCommand):
     help = (
@@ -1505,3 +1543,13 @@ Use Run like the Go command to escape from a battle.
 
 battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
 command_help.register(Run.help, ['run', 'flee', 'escape'])
+
+
+command_help.register(("<title>TextEditMode (Mode)</title>"
+"""TextEditMode is a special mode for editing large amounts of text, such as
+room or character descriptions. TextEditMode lets you enter text
+(line-by-line), until you are finished, letting you replace, delete, and
+insert lines as you go. Help for TextEditMode can be accessed by typing @help
+at anytime.
+"""
+), ['TextEditMode', 'text edit mode', 'textedit', 'text edit'])

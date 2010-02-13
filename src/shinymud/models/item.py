@@ -1,6 +1,7 @@
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import to_bool
 from shinymud.lib.world import World
+from shinymud.lib.char_effect import *
 import types
 import logging
 import re
@@ -444,7 +445,7 @@ class Weapon(object):
     
 
 class Food(object):
-    food_verbs = {'food': 'eat', 'drink': 'drink'}
+    food_verbs = {'food': 'eat', 'drink': 'drink from'}
     def __init__(self, **args):
         self.on_eat = args.get('on_eat', [])
         self.dbid = args.get('dbid')
@@ -456,6 +457,7 @@ class Food(object):
         self.ro_area = args.get('ro_area')
         self.actor_use_message = args.get('actor_use_message', '')
         self.room_use_message = args.get('room_use_message', '')
+        self.effects = {}
         
     
     def _resolve_ro(self):
@@ -520,6 +522,28 @@ class Food(object):
         new_f.dbid = None
         new_f.item = None
         return new_f
+    
+    def load_effects(self):
+        """Return a list of copies of this food item's effects."""
+        e = [effect.copy() for effect in self.effects.values()]
+        return e
+    
+    def add_effect(self, args):
+        """Add an effect to this food item that will be transferred to the
+        user when the item is eaten.
+        """
+        return 'Sorry, this functionality is not finished, yet.'
+        # FINISH THIS FUNCTION LOL
+        # if not args:
+        #     return 'Type "help effects" for help on this command.'
+        # exp = r'(?P<effect>\w+)([ ]+(?P<duration>\d+))'
+        # match = re.match(exp, args.lower().strip())
+        # if not match:
+        #     return 'Type "help effects" for help on this command.'
+        # e, dur = match.group('effect', 'duration')
+        # effect = EFFECTS[e]
+        # if not effect:
+        #     return '%s is not a valid effect.' % e
     
     def get_actor_message(self):
         if self.actor_use_message:

@@ -21,3 +21,7 @@ COLOR_BG_MAGENTA = chr(27) + '[45m'
 COLOR_BG_CYAN = chr(27) + '[46m'
 COLOR_BG_WHITE = chr(27) + '[47m'
 COLOR_BG_RESET = chr(27) + '[49m'
+
+# Bold
+BOLD = chr(27) + '[1m'
+CLEAR = chr(27) + '[0m'
