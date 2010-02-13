@@ -6,7 +6,7 @@ from shinymud.data.config import *
 
 import logging
 initialize_database()
-format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d %(message)s"
+format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d| %(message)s"
 logging.basicConfig(filename=LOG_FILE, level=LOG_LEVEL, format=format)
 logger = logging.getLogger('shiny_server')
 world = World()

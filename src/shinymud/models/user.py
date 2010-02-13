@@ -3,6 +3,7 @@ from shinymud.commands import *
 from shinymud.commands.commands import *
 from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
+from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 from shinymud.models.item import InventoryItem, SLOT_TYPES
@@ -28,19 +29,11 @@ class User(Character):
         self.position = ('standing', None)
     
     def userize(self, **args):
+        self.characterize(**args)
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
         self.description = str(args.get('description','You see nothing special about this person.'))
         self.title = str(args.get('title', 'a %s player.' % GAME_NAME))
-        self.gender = str(args.get('gender', 'neutral'))
-        self.strength = args.get('strength', 0)
-        self.intelligence = args.get('intelligence', 0)
-        self.dexterity = args.get('dexterity', 0)
-        self.hp = args.get('hp', 0)
-        self.mp = args.get('mp', 0)
-        self.max_mp = args.get('max_mp', 0)
-        self.max_hp = args.get('max_hp', 20)
-        self.speed = args.get('speed', 0)
         self.email = str(args.get('email'))
         self.permissions = int(args.get('permissions', 1))
         self.dbid = args.get('dbid')
@@ -52,10 +45,6 @@ class User(Character):
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
             self.channels = {'chat': True}
-        self.inventory = []
-        self.equipped = {} #Stores current weapon in each slot from SLOT_TYPES
-        for i in SLOT_TYPES.keys():
-            self.equipped[i] = ''
         self.isequipped = [] #Is a list of the currently equipped weapons
         
         self.location = args.get('location')
@@ -76,20 +65,11 @@ class User(Character):
                 self.inventory.append(item)
     
     def to_dict(self):
-        d = {}
+        d = Character.to_dict(self)
         d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
         d['name'] = self.name
         d['password'] = self.password
-        d['strength'] = self.strength
-        d['intelligence'] = self.intelligence
-        d['dexterity'] = self.dexterity
-        d['hp'] = self.hp
-        d['mp'] = self.mp
-        d['max_hp'] = self.max_hp
-        d['max_mp'] = self.max_mp
-        d['speed'] = self.speed
         d['description'] = self.description
-        d['gender'] = self.gender
         d['permissions'] = self.permissions
         d['goto_appear'] = self.goto_appear
         d['goto_disappear'] = self.goto_disappear
@@ -154,6 +134,9 @@ class User(Character):
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
             prompt += '>'
             return prompt
+        elif self.mode.name == 'BattleMode':
+            prompt = '<HP:%s/%s MP:%s/%s>' % (str(self.hp), str(self.max_hp), str(self.mp), str(self.max_mp))
+            return prompt
         else:
             return default
     
@@ -204,6 +187,8 @@ class User(Character):
             self.mode = BuildMode(self)
         elif mode == 'normal':
             self.mode.active = False
+        elif mode == 'battle':
+            self.mode = BattleMode(self)
     
     def set_email(self, email):
         if not email:

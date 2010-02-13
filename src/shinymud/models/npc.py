@@ -11,6 +11,7 @@ class Npc(Character):
     """Represents a non-player character."""
     char_type = 'npc'
     def __init__(self, area=None, id=0, **args):
+        self.characterize(**args)
         self.area = area
         self.id = str(id)
         self.name = str(args.get('name', 'Shiny McShinerson'))
@@ -31,7 +32,7 @@ class Npc(Character):
             self.load_events()
     
     def to_dict(self):
-        d = {}
+        d = Character.to_dict(self)
         d['keywords'] = ','.join(self.keywords)
         d['area'] = self.area.dbid
         d['id'] = self.id

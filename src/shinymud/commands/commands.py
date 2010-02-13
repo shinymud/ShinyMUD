@@ -2,13 +2,15 @@ from shinymud.models.item import  SLOT_TYPES
 from shinymud.lib.world import World
 from shinymud.data.config import *
 from shinymud.commands.emotes import *
+from shinymud.commands.attacks import *
 from shinymud.commands import *
+from shinymud.lib.battle import Battle
 import re
 import logging
    
 # ************************ GENERIC COMMANDS ************************
 command_list = CommandRegister()
-
+battle_commands = CommandRegister()
 class Quit(BaseCommand):
     help = (
     """Quit (Command)
@@ -1437,3 +1439,69 @@ To consume an edible item:
 
 command_list.register(Consume, ['eat', 'drink', 'use'])
 command_help.register(Consume.help, ['eat', 'drink'])
+
+
+class Attack(BaseCommand):
+    help = (
+    """Attack, Kill (Command)
+
+The Attack command causes you to attack another character. 
+If you are already in a battle, this will change your target to
+the character you specify. If you are not yet in a battle, this 
+will start a fight between you and the character you specify. You
+must be in the same room as your target to fight them, and can
+only attack other players if they have PVP enabled.
+
+USAGE:
+To start a fight with a character (or if you are fighting multiple
+monsters/characters and want to focus your attacks on a different
+character)
+  attack <character_name>
+
+    """
+    )
+    def execute(self):
+        #find the target:
+        target = self.user.location.get_user(self.args)
+        if not target:
+            target = self.user.location.get_npc_by_kw(self.args)
+            if not target:
+                self.user.update_output("Attack whom?")
+                return
+        # set the users default target.
+        self.user.battle_target = target
+        if not self.user.battle:
+            self.log.debug("Beginning battle between %s and %s" %(self.user, target))
+            # Start the battle if it doesn't exist yet.
+            self.user.enter_battle()
+            b = Battle()
+            b.teamA.append(self.user)
+            self.user.battle = b
+            b.teamB.append(target)
+            target.battle = b
+            target.enter_battle()
+            self.world.battle_add(b)
+            target.battle_target = self.user
+            self.user.free_attack()
+        self.user.update_output("")
+
+command_list.register(Attack, ['attack', 'kill'])
+command_help.register(Attack.help, ['attack', 'kill'])
+
+class Run(BaseCommand):
+    help = (
+    """Run, Flee, Escape (Command)
+
+Use Run like the Go command to escape from a battle. 
+    """
+    )
+    def execute(self):
+        if self.user.battle:
+            def wrapper():
+                action = Go(self.user, self.args, 'go')
+                action.execute()
+            action = Attack_list['run'](self.user, wrapper, self.user.battle)
+            self.user.next_action = action
+
+battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
+command_help.register(Run.help, ['run', 'flee', 'escape'])
