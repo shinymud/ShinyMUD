@@ -62,16 +62,18 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_exit (
     dbid INTEGER PRIMARY KEY,
-    room INTEGER NOT NULL REFERENCES room(dbid),
-    to_room INTEGER NOT NULL REFERENCES room(dbid),
-    linked_exit INTEGER REFERENCES room_exit(dbid),
+    room_id INTEGER NOT NULL,
+    area TEXT NOT NULL,
+    to_room_id INTEGER NOT NULL,
+    to_area TEXT NOT NULL,
+    linked_exit TEXT,
     direction TEXT NOT NULL,
     openable TEXT,
     closed TEXT,
     hidden TEXT,
     locked TEXT,
     key INTEGER REFERENCES item(dbid),
-    UNIQUE (room, direction)
+    UNIQUE (room_id, area, direction)
 )''',\
 '''CREATE TABLE IF NOT EXISTS inventory (
     dbid INTEGER PRIMARY KEY,

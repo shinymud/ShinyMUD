@@ -147,10 +147,10 @@ class Character(object):
     
     def next_action_cost(self):
         if len(self._attack_queue):
-            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost / (1 + (self.speed/10))))
-            return self._attack_queue[0].cost/ (1 + (self.speed/10))
-        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost / (1 + (self.speed/10))))
-        return Attack_list[self._default_attack].cost / (1 + (self.speed/10))
+            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost / (1.0 + (self.speed/10.0))))
+            return self._attack_queue[0].cost/ (1.0 + (self.speed/10.0))
+        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))))
+        return Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))
     
     def attack(self):
         self.log.debug(self.fancy_name() + " is attacking:")
@@ -160,6 +160,7 @@ class Character(object):
     def free_attack(self):
         self.atk += self.next_action_cost()
         self.attack()
+    
     def takes_damage(self, damages):
         total = 0
         for damage_type, damage in damages.items():
@@ -169,8 +170,9 @@ class Character(object):
         self.log.debug("%s hit for %s damage" % (self.fancy_name(), str(total)))
         self.hp -= total
         if self.hp <= 0:
+            self.hp = 0
             self.battle.remove_character(self)
-            self.mode.active = False
+            self.set_mode('normal')
         # Call any events related to being hit or hp
         return total
     

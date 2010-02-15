@@ -111,6 +111,10 @@ class User(Character):
         """Sends all data from the user's output queue to the user."""
         try:
             sent_output = ''
+            if len(self.outq) > 0:
+                # Start output with a newline so we don't start half-way
+                # through the line their last prompt is on.
+                self.conn.send('\r\n')
             while len(self.outq) > 0:
                 self.conn.send(self.outq[0])
                 sent_output = self.outq[0]
@@ -120,11 +124,14 @@ class User(Character):
         except Exception, e:
             # If we die here, it's probably because we got a broken pipe.
             # In this case, we should disconnect the user
+            self.log.error(str(e))
             self.user_logout(True)
-            print str(e)
     
     def get_prompt(self):
-        default = '>'
+        if hasattr(self, 'hp'):
+            default = '<HP:%s/%s MP:%s/%s>' % (str(self.hp), str(self.max_hp), str(self.mp), str(self.max_mp))
+        else:
+            default = '>'
         if not self.mode:
             return default
         elif self.mode.name == 'BuildMode':
@@ -134,9 +141,6 @@ class User(Character):
             if self.mode.edit_object:
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
             prompt += '>'
-            return prompt
-        elif self.mode.name == 'BattleMode':
-            prompt = '<HP:%s/%s MP:%s/%s>' % (str(self.hp), str(self.max_hp), str(self.mp), str(self.max_mp))
             return prompt
         else:
             return default
@@ -174,13 +178,16 @@ class User(Character):
                         self.mode = self.last_mode
                     else:
                         self.mode = None
+            else:
+                self.mode = None
     
     def user_logout(self, broken_pipe=False):
-        self.world.db.update_from_dict('user', self.to_dict())
+        if self.dbid:
+            self.world.db.update_from_dict('user', self.to_dict())
         if not broken_pipe:
             self.conn.send('Bye!\n')
         self.conn.close()
-        if self.location:
+        if hasattr(self, 'location') and self.location:
             self.location.user_remove(self)
         self.world.user_remove(self.name)
         self.world.tell_users("%s has left the world." % self.fancy_name())

@@ -18,12 +18,12 @@ class Battle(object):
         ready_characters.extend(self.teamA)
         ready_characters.extend(self.teamB)
         for character in ready_characters:
-            character.atk += 1
+            character.atk += 1.0
             self.log.debug("%s has %s ATK points" % (character.fancy_name(), str(character.atk)))
         while len(ready_characters) and self.active():
             # while we have someone ready to attack AND both teams are still active
             #sort the list
-            ready_characters.sort(lambda x,y: x.atk - y.atk if x.atk != y.atk else x.speed - y.speed)
+            ready_characters.sort(lambda x,y: -1 if (x.atk < y.atk if x.atk != y.atk else x.speed < y.speed) else 1)
             attacker = ready_characters[0]
             if attacker.next_action_cost() > attacker.atk:
                 self.log.debug(attacker.fancy_name() + " has no more attacks this round")
@@ -38,13 +38,11 @@ class Battle(object):
 
     def end_battle(self):
         self.world.battle_remove(self.id)
-        for x in self.teamA:
+        for x in self.teamA if len(self.teamA) else self.teamB:
             x.battle = None
-            x.mode.active = False
-        for y in self.teamB:
-            y.battle = None
-            y.mode.active = False
-        
+            x.set_mode('normal')
+            x.update_output("You won the battle!")
+    
     def remove_character(self, character):
         self.remove_list.append(character)
     

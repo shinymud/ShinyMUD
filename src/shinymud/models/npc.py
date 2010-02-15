@@ -202,3 +202,5 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             args.update(self.events[event_name].get_args())
             EVENTS[event_name](**args).run()
     
+    def set_mode(self, mode):
+        pass

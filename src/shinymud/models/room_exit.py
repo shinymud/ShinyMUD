@@ -16,15 +16,17 @@ class RoomExit(object):
         self.key = None
         self.key_area = str(args.get('key_area', ''))
         self.key_id = str(args.get('key_id', ''))
-        self.to_id = str(args.get('to_id', ''))
+        self.to_room_id = str(args.get('to_room_id', ''))
         self.to_area = str(args.get('to_area', ''))
         self.dbid = args.get('dbid')
         self.world = World.get_world()
     
     def to_dict(self):
         d = {}
-        d['to_room'] = self.to_room.dbid
-        d['room'] = self.room.dbid
+        d['to_room_id'] = self.to_room.id
+        d['to_area'] = self.to_room.area.name
+        d['room_id'] = self.room.id
+        d['area'] = self.room.area.name
         if self.linked_exit:
             d['linked_exit'] = self.linked_exit
         d['direction'] = self.direction
@@ -64,7 +66,7 @@ class RoomExit(object):
         if self._to_room:
             return self._to_room
         try:
-            self.to_room = self.world.get_area(str(self.to_area)).get_room(str(self.to_id))
+            self.to_room = self.world.get_area(str(self.to_area)).get_room(str(self.to_room_id))
             return self._to_room
         except:
             return None
@@ -186,7 +188,7 @@ class RoomExit(object):
             return 'That room doesn\'t exist.\n'
         if not room.linked_exit:
             self.to_room = room
-            self.save({'to_room': self.to_room.dbid})
+            self.save({'to_room_id': self.to_room.id, 'to_area':self.to_room.area.name})
             return ' The %s exit now goes to room %s in area %s.\n' % (self.direction,
                                                                        self.to_room.id,
                                                                        self.to_room.area.name)

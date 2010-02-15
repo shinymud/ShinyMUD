@@ -17,7 +17,7 @@ class BattleAction(object):
     
     def roll_to_hit(self):
         # Remove the attack points for this action
-        self.attacker.atk -= (self.cost /(1 + (self.attacker.speed/10)))
+        self.attacker.atk -= (self.cost /(1.0 + (self.attacker.speed/10.0)))
         roll = randint(1,20) + self.attacker.hit + self.bonuses
         if not (self.target in self.battle.teamA or self.target in self.battle.teamB):
             # If our attack target is no longer part of this battle (died, ran, etc)
@@ -34,6 +34,15 @@ class BattleAction(object):
         else:
             self.log.debug("Miss!")
             self.miss()
+        if self.target.hp <= 0:
+            # If the target is killed, let everyone know
+            self.attacker.update_output("You kill %s!" % self.target.fancy_name())
+            self.target.update_output("You are dead.")
+            others = self.battle.teamA[:]
+            others.extend(self.battle.teamB[:])
+            for a in [_ for _ in others if _ not in [self.attacker, self.target]]:
+                others.update_output("%s killed %s!" % (self.attacker.fancy_name(), 
+                                                        self.target.fancy_name()))
     
 Attack_list = CommandRegister()
 class Punch(BattleAction):

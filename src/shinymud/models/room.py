@@ -34,22 +34,7 @@ class Room(object):
             self.load_resets()
     
     def load_exits(self):
-        rows = self.world.db.select(""" re.dbid AS dbid, 
-                                        re.linked_exit AS linked_exit,
-                                        re.direction AS direction,
-                                        re.openable AS openable,
-                                        re.closed AS closed,
-                                        re.hidden AS hidden,
-                                        re.locked AS locked,
-                                        a.name AS to_area,
-                                        r.id AS to_id,
-                                        i.area AS key_area,
-                                        i.id AS key_id
-                                        FROM room_exit re
-                                        INNER JOIN room r ON r.dbid = re.to_room
-                                        INNER JOIN area a on a.dbid = r.area
-                                        LEFT JOIN item i ON i.dbid = re.key
-                                        WHERE re.room=?""", [self.dbid])
+        rows = self.world.db.select("* from room_exit where room_id=? and area=?", [self.id, self.area.name])
         for row in rows:
             row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)

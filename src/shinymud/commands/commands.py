@@ -1509,7 +1509,7 @@ character)
         # set the users default target.
         self.user.battle_target = target
         if not self.user.battle:
-            self.log.debug("Beginning battle between %s and %s" %(self.user, target))
+            self.log.debug("Beginning battle between %s and %s" %(self.user.fancy_name(), target.fancy_name()))
             # Start the battle if it doesn't exist yet.
             self.user.enter_battle()
             b = Battle()
