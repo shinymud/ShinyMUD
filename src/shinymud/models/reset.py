@@ -2,7 +2,8 @@ from shinymud.lib.world import World
 
 class Reset(object):
     
-    def __init__(self, room, obj, reset_type, container=None, **args):
+    def __init__(self, id, room, obj, reset_type, container=None, **args):
+        self.id = str(id)
         self.room = room
         self.reset_object = obj
         self.reset_type = reset_type
@@ -12,13 +13,14 @@ class Reset(object):
     
     def to_dict(self):
         d = {}
+        d['id'] = int(self.id)
         d['room'] = self.room.dbid
         d['reset_type'] = self.reset_type
         d['reset_object_id'] = self.reset_object.id
         d['reset_object_area'] = self.reset_object.area.name
         if self.container:
             # This probably shouldn't connect to a dbid
-            d['container'] = self.container.dbid
+            d['container'] = self.container.id
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -36,16 +38,16 @@ class Reset(object):
         if self.container:
             if self.container.reset_type == 'npc':
                 return 'into %s\'s inventory (R:%s)' % (self.container.reset_object.name, 
-                                                        str(self.container.dbid))
+                                                        str(self.container.id))
             else:
                 return 'into %s (R:%s)' % (self.container.reset_object.name, 
-                                           str(self.container.dbid))
+                                           str(self.container.id))
         return 'in room'
     def get_spawn_id(self):
         if self.dbid:
             spawn_id = "%s,%s_%s-%s" % (self.room.id, self.room.area.name, 
                                         self.reset_object.id, 
-                                        str(self.dbid))
+                                        str(self.id))
             return spawn_id
         return None
     

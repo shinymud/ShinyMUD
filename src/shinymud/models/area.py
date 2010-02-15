@@ -213,7 +213,7 @@ Description: \n    %s""" % (self.name,
             doors = room.exits.keys()
             for door in doors:
                 room.remove_exit(door)
-            for reset in room.resets:
+            for reset in room.resets.values():
                 reset.destruct()
             room.resets = {}
             room.id = None

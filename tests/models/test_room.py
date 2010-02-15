@@ -45,6 +45,7 @@ class TestRoom(TestCase):
         exp_message1 = ('A room reset has been added for '
                         '%s number %s.' % ('item', container.id)
                        )
+        self.room.log.debug(self.room.resets)
         self.assertEqual(message1, exp_message1)
         message2 = self.room.add_reset('for item %s in reset %s' % (item.id, 
                                                                     '1'))
@@ -54,8 +55,8 @@ class TestRoom(TestCase):
         self.assertEqual(message2, exp_message2)
         # Make sure the room has 2 resets in its list
         self.assertEqual(len(self.room.resets.items()), 2)
-        reset1 = self.room.resets.get(1)
-        reset2 = self.room.resets.get(2)
+        reset1 = self.room.resets.get('1')
+        reset2 = self.room.resets.get('2')
         self.assertTrue('container' in reset1.reset_object.item_types)
         # reset1 should have one nested reset
         self.assertEqual(len(reset1.nested_resets), 1)
@@ -88,9 +89,9 @@ class TestRoom(TestCase):
         self.room.add_reset('for item %s inside %s' % (item1.id, '1'))
         self.room.add_reset('for item %s inside %s' % (item2.id, '1'))
         self.assertEqual(len(self.room.resets.items()), 3)
-        c_reset = self.room.resets.get(1)
-        reset1 = self.room.resets.get(2)
-        reset2 = self.room.resets.get(3)
+        c_reset = self.room.resets.get('1')
+        reset1 = self.room.resets.get('2')
+        reset2 = self.room.resets.get('3')
         self.assertEqual(c_reset, reset1.container)
         self.assertEqual(c_reset, reset2.container)
         self.assertEqual(len(c_reset.nested_resets), 2)

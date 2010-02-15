@@ -55,7 +55,9 @@ class SPort(object):
         npc_elist = []
         
         for npc in area.npcs.values():
-            npc_list.append(npc.to_dict())
+            d = npc.to_dict()
+            del d['dbid']
+            npc_list.append(d)
             for event in npc.events.values():
                 d = event.to_dict()
                 del d['dbid']
@@ -70,16 +72,17 @@ class SPort(object):
         r_resets = {} # r_resets is a dictionary of lists of dictionaries!
         for room in area.rooms.values():
             d = room.to_dict()
-            d['room'] = room.id
+            # d['room'] = room.id
             del d['dbid']
             r_list.append(d)
             r_resets[room.id] = []
             for exit in room.exits.values():
                 if exit:
                     d = exit.to_dict()
+                    d['room'] = room.id
                     d['to_id'] = exit.to_room.id
                     d['to_area'] = exit.to_room.area.name
-                    del d['to_room']
+                    d['to_room'] = None
                     del d['dbid']
                     r_exits.append(d)
             for reset in room.resets.values():
