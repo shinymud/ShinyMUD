@@ -17,6 +17,7 @@ class Reset(object):
         d['reset_object_id'] = self.reset_object.id
         d['reset_object_area'] = self.reset_object.area.name
         if self.container:
+            # This probably shouldn't connect to a dbid
             d['container'] = self.container.dbid
         if self.dbid:
             d['dbid'] = self.dbid

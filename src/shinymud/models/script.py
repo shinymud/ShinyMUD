@@ -59,3 +59,9 @@ class Script(object):
         user.last_mode = user.mode
         user.mode = TextEditMode(user, self, 'body', self.body, 'script')
         return 'ENTERING TextEditMode: type "@help" for help.\n'
+    
+    def destruct(self):
+        world = World.get_world()
+        if self.dbid:
+            world.db.delete('FROM script WHERE dbid=?', [self.dbid])
+    

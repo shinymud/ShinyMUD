@@ -226,6 +226,7 @@ Description: \n    %s""" % (self.name,
         """Add a new room to this area's room list."""
         if room_dict:
             # Create a new room with pre-initialized data
+            room_dict['area'] = self
             new_room = Room(**room_dict)
         else:
             # Create a new 'blank' room
@@ -237,6 +238,7 @@ Description: \n    %s""" % (self.name,
     def new_item(self, item_dict=None):
         """Add a new item to this area's item list."""
         if item_dict:
+            item_dict['area'] = self
             new_item = Item(**item_dict)
         else:
             new_item = Item.create(self, self.get_id('item'))
@@ -247,6 +249,7 @@ Description: \n    %s""" % (self.name,
     def new_npc(self, npc_dict=None):
         """Add a new npc to this area's npc list."""
         if npc_dict:
+            npc_dict['area'] = self
             new_npc = Npc(**npc_dict)
         else:
             new_npc = Npc.create(self, self.get_id('npc'))
@@ -257,6 +260,7 @@ Description: \n    %s""" % (self.name,
     def new_script(self, script_dict=None):
         """Add a new script to this area's script list."""
         if script_dict:
+            script_dict['area'] = self
             new_script = Script(**script_dict)
         else:
             new_script = Script(self, self.get_id('script'))
@@ -301,6 +305,9 @@ Description: \n    %s""" % (self.name,
         if not npc:
             return 'That npc doesn\'t exist.'
         npc.destruct()
+        for event in npc.events.values():
+            event.destruct()
+        npc.events = {}
         npc.id = None
         del self.npcs[npc_id]
         return '"%s" has been successfully destroyed.' % npc.name

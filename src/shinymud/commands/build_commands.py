@@ -3,7 +3,7 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
-from shinymud.lib.xport import XPort
+from shinymud.lib.sport import *
 from shinymud.commands import *
 import re
 import logging
@@ -451,15 +451,19 @@ class Export(BaseCommand):
     required_permissions = BUILDER
     def execute(self):
         if not self.args:
-            self.user.update_output('Export what?\n')
+            self.user.update_output('Try: "export <area-name>"')
         else:
             area = self.world.get_area(self.args)
             if area:
-                self.user.update_output('Exporting area %s. This may take a moment.\n' % area.name)
-                result = XPort().export_to_xml(area)
-                self.user.update_output(result)
+                self.user.update_output('Exporting area %s. This may take a moment.' % area.name)
+                try:
+                    result = SPort().export_to_shiny(area)
+                except SPortExportError, e:
+                    self.user.update_output(e)
+                else:
+                    self.user.update_output(result)
             else:
-                self.user.update_output('That area doesn\'t exist.\n')
+                self.user.update_output('That area doesn\'t exist.')
     
 
 build_list.register(Export, ['export'])
@@ -469,15 +473,19 @@ class Import(BaseCommand):
     required_permissions = BUILDER
     def execute(self):
         if not self.args:
-            self.user.update_output(XPort.list_importable_areas())
+            self.user.update_output(SPort.list_importable_areas())
         else:
             area = self.world.get_area(self.args)
             if area:
                 self.user.update_output('That area already exists in your world.\n' +\
                                         'You\'ll need to destroy it in-game before you try importing it.\n')
             else:
-                result = XPort().import_from_xml(self.args)
-                self.user.update_output(result)
+                try:
+                    result = SPort().import_from_shiny(self.args)
+                except SPortImportError, e:
+                    self.user.update_output(str(e))
+                else:
+                    self.user.update_output(result)
     
 
 build_list.register(Import, ['import'])

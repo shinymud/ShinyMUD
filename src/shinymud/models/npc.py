@@ -97,9 +97,10 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             if s:
                 # Only load this event if its script exists
                 event['script'] = s
-                event['prototype'] = self
-                e = NPCEvent(**event)
-                self.events[event['event_trigger']] = e
+                self.new_event(event)
+                # event['prototype'] = self
+                # e = NPCEvent(**event)
+                # self.events[event['event_trigger']] = e
             else:
                 self.log.error('The script this event points to is gone! '
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
@@ -179,14 +180,19 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         e = self.events.get(trigger)
         if e:
             e.destruct()
-        new_event = NPCEvent(**{'condition': condition, 
-                              'script': script,
-                              'prototype': self,
-                              'probability': int(prob),
-                              'event_trigger': trigger})
-        new_event.save()
-        self.events[trigger] = new_event
+        self.new_event({'condition': condition, 
+                        'script': script,
+                        'probability': int(prob),
+                        'event_trigger': trigger})
         return 'Event added.'
+    
+    def new_event(self, event_dict):
+        """Add a new event to this npc."""
+        event_dict['prototype'] = self
+        new_event = NPCEvent(**event_dict)
+        if not new_event.dbid:
+            new_event.save()
+        self.events[new_event.event_trigger] = new_event
     
     def remove_event(self, event):
         """Remove an event from an npc."""

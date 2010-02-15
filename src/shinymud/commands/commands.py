@@ -1481,21 +1481,18 @@ command_help.register(Consume.help, ['eat', 'drink'])
 
 class Attack(BaseCommand):
     help = (
-    """Attack, Kill (Command)
-
+    """<title>Attack, Kill (Command)</title>
 The Attack command causes you to attack another character. 
 If you are already in a battle, this will change your target to
 the character you specify. If you are not yet in a battle, this 
 will start a fight between you and the character you specify. You
 must be in the same room as your target to fight them, and can
 only attack other players if they have PVP enabled.
-
-USAGE:
+\nUSAGE:
 To start a fight with a character (or if you are fighting multiple
 monsters/characters and want to focus your attacks on a different
 character)
   attack <character_name>
-
     """
     )
     def execute(self):
@@ -1522,14 +1519,14 @@ character)
             target.battle_target = self.user
             self.user.free_attack()
         self.user.update_output("")
+    
 
 command_list.register(Attack, ['attack', 'kill'])
 command_help.register(Attack.help, ['attack', 'kill'])
 
 class Run(BaseCommand):
     help = (
-    """Run, Flee, Escape (Command)
-
+    """<title>Run, Flee, Escape (Command)</title>
 Use Run like the Go command to escape from a battle. 
     """
     )
@@ -1540,10 +1537,10 @@ Use Run like the Go command to escape from a battle.
                 action.execute()
             action = Attack_list['run'](self.user, wrapper, self.user.battle)
             self.user.next_action = action
+    
 
 battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
 command_help.register(Run.help, ['run', 'flee', 'escape'])
-
 
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as
