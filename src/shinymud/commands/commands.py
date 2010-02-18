@@ -965,22 +965,22 @@ permissions and permission groups, see "help permissions".
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help bestow" for help on this command.\n')
+            self.user.update_output('Type "help bestow" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
         user = self.world.get_user(player)
         permission = globals().get(perm.upper())
         if not user:
-            self.user.update_output('That player isn\'t on right now.\n')
+            self.user.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
         if user.permissions & permission:
-            self.user.update_output('%s already has that authority.\n' % user.fancy_name())
+            self.user.update_output('%s already has that authority.' % user.fancy_name())
             return
         user.permissions = user.permissions | permission
-        self.user.update_output('%s now has the privilige of being %s.\n' % (user.fancy_name(), perm.upper()))
+        self.user.update_output('%s now has the privilige of being %s.' % (user.fancy_name(), perm.upper()))
         user.update_output('%s has bestowed the authority of %s upon you!' % (self.user.fancy_name(), perm.upper()))
         self.world.tell_users('%s has bestowed the authority of %s upon %s!' %
                               (self.user.fancy_name(), perm.upper(), user.fancy_name()),
@@ -1000,23 +1000,26 @@ class Revoke(BaseCommand):
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(on)?(for)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help revoke" for help on this command.\n')
+            self.user.update_output('Type "help revoke" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
         user = self.world.get_user(player)
         permission = globals().get(perm.upper())
         if not user:
-            self.user.update_output('That player isn\'t on right now.\n')
+            self.user.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
         if not (user.permissions & permission):
-            self.user.update_output('%s doesn\'t have that authority anyway.\n' % user.fancy_name())
+            self.user.update_output('%s doesn\'t have that authority anyway.' % user.fancy_name())
             return
         user.permissions = user.permissions ^ permission
-        self.user.update_output('%s has had the privilige of %s revoked.\n' % (user.fancy_name(), perm))
-        user.update_output('%s has revoked your %s priviliges.\n' % (self.user.fancy_name(), perm))
+        self.user.update_output('%s has had the privilige of %s revoked.' % (user.fancy_name(), perm))
+        user.update_output('%s has revoked your %s priviliges.' % (self.user.fancy_name(), perm))
+        if user.get_mode() == 'BuildMode':
+            user.set_mode('normal')
+            user.update_output('You have been kicked from BuildMode.')
     
 
 command_list.register(Revoke, ['revoke'])

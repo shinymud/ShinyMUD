@@ -174,6 +174,11 @@ class User(Character):
                         self.mode = self.last_mode
                     else:
                         self.mode = None
+            else:
+                # If we get here somehow (where the state of this mode is not
+                # active, but the mode has not been cleared), just clear the
+                # mode.
+                self.mode = None
     
     def user_logout(self, broken_pipe=False):
         self.world.db.update_from_dict('user', self.to_dict())
