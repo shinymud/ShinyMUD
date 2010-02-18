@@ -1,7 +1,8 @@
+from shinymud.data.config import DB_NAME
+
 import logging
 import sqlite3
-from shinymud.data.config import DB_NAME    
-
+import re
 
 class DB(object):
     def __init__(self, db_name=None):
@@ -31,13 +32,14 @@ class DB(object):
         query = "INTO " + table + " "
         keys = []
         values = []
+        self.log.debug("INSERTING: " + str(d))
         for key,val in d.items():
             keys.append(key)
-            values.append((str(val)).replace('\'', '\'\''))
+            values.append(re.sub(r"'+", "''", str(val)))
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string
-        return self.insert(query, values) 
+        return self.insert(query, values)
         
     def select(self, query, params=None):
         """Fetch data from the database.
@@ -76,7 +78,7 @@ class DB(object):
     def update_from_dict(self, table, d):
         if 'dbid' in d:
             query = table + " SET "
-            attributes = [str(key) + "='" + (str(val)).replace('\'', '\'\'') + "'" for key, val in d.items() if key != 'dbid']
+            attributes = [str(key) + "='" + (re.sub(r"'+", "''", str(val))) + "'" for key, val in d.items() if key != 'dbid']
             query = query + ','.join(attributes) + " WHERE dbid=?"
             self.log.debug('Updating %s: \n%s' % (table, query))
             return self.update(query, [d['dbid']])

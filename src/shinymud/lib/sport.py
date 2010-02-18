@@ -108,41 +108,41 @@ class SPort(object):
         room_exits = json.loads(self.match_shiny_tag('Room Exits', txt))
         room_resets = json.loads(self.match_shiny_tag('Room Resets', txt))
         # Build the area from the assembled dictionary data
-        # try:
-        new_area = Area.create(**area)
-        for script in scripts:
-            new_area.new_script(script)
-        for item in items:
-            new_area.new_item(item)
-        for itype in itypes:
-            # Get this itype's item by that item's id
-            my_item = new_area.get_item(itype['item'])
-            my_item.add_type(itype['item_type'], itype)
-        for npc in npcs:
-            new_area.new_npc(npc)
-        for event in npc_events:
-            my_script = new_area.get_script(str(event['script']))
-            event['script'] = my_script
-            my_npc = new_area.get_npc(event['prototype'])
-            my_npc.new_event(event)
-        for room in rooms:
-            new_room = new_area.new_room(room)
-            my_resets = room_resets.get(new_room.id)
-            if my_resets:
-                new_room.load_resets(my_resets)
-        for exit in room_exits:
-            self.log.debug(exit['room'])
-            my_room = new_area.get_room(str(exit['room']))
-            my_room.new_exit(**exit)
-        # except Exception, e:
-        #     # if anything went wrong, make sure we destroy whatever parts of
-        #     # the area that got created.  This way, we won't run into problems
-        #     # if they try to import it again, and we won't leave orphaned or
-        #     # erroneous data in the db.
-        #     self.log.error(str(e))
-        #     self.world.destroy_area(areaname, 'SPort Error')
-        #     raise SPortImportError('There was a horrible error on import! '
-        #                            'Aborting! Check logfile for details.')
+        try:
+            new_area = Area.create(**area)
+            for script in scripts:
+                new_area.new_script(script)
+            for item in items:
+                new_area.new_item(item)
+            for itype in itypes:
+                # Get this itype's item by that item's id
+                my_item = new_area.get_item(itype['item'])
+                my_item.add_type(itype['item_type'], itype)
+            for npc in npcs:
+                new_area.new_npc(npc)
+            for event in npc_events:
+                my_script = new_area.get_script(str(event['script']))
+                event['script'] = my_script
+                my_npc = new_area.get_npc(event['prototype'])
+                my_npc.new_event(event)
+            for room in rooms:
+                new_room = new_area.new_room(room)
+                my_resets = room_resets.get(new_room.id)
+                if my_resets:
+                    new_room.load_resets(my_resets)
+            for exit in room_exits:
+                self.log.debug(exit['room'])
+                my_room = new_area.get_room(str(exit['room']))
+                my_room.new_exit(**exit)
+        except Exception, e:
+            # if anything went wrong, make sure we destroy whatever parts of
+            # the area that got created.  This way, we won't run into problems
+            # if they try to import it again, and we won't leave orphaned or
+            # erroneous data in the db.
+            self.log.error(str(e))
+            self.world.destroy_area(areaname, 'SPort Error')
+            raise SPortImportError('There was a horrible error on import! '
+                                   'Aborting! Check logfile for details.')
         
         return 'Area %s has been successfully imported.' % new_area.name
     
@@ -160,185 +160,6 @@ class SPort(object):
             raise SPortImportError('Corrupted file: missing or malformed %s tag.' % tag)
         return match.group('tag_body')
     
-    def export_to_xml(self, area):
-        """Export an area to an xml file."""
-        #************* Build the area attributes *************
-        area_xml = '<area '
-        area_dict = area.to_dict()
-        if area_dict['dbid']:
-            del area_dict['dbid']
-        for key,value in area_dict.items():
-            area_xml += '%s="%s" ' % (key, value)
-        area_xml += '>'
-        #************* Build the items *************
-        area_xml += '<items>'
-        for item in area.items.values():
-            area_xml += '<item '
-            item_dict = item.to_dict()
-            del item_dict['dbid']
-            del item_dict['area']
-            for key,value in item_dict.items():
-                area_xml += '%s="%s" ' % (key, value)
-            # Save this item's item types
-            area_xml += '><item_types>'
-            for name,value in item.item_types.items():
-                td = value.to_dict()
-                td['name'] = name
-                del td['dbid']
-                itype = ' '.join(['%s="%s" ' % (key, value) for key,value in td.items()])
-                area_xml += '<item_type ' + itype + '></item_type>'
-            area_xml += '</item_types></item>'
-        area_xml += '</items>'
-        #************* Build the scripts *************
-        area_xml += '<scripts>'
-        for script in area.scripts.values():
-            area_xml += '<script'
-            s_dict = script.to_dict()
-            del s_dict['dbid']
-            del s_dict['area']
-            for key,value in s_dict.items():
-                area_xml += '%s="%s" ' % (key, value)
-            area_xml += '></script>'
-        area_xml += '</scripts>'
-        #************* Build the npcs *************
-        area_xml += '<npcs>'
-        for npc in area.npcs.values():
-            area_xml += '<npc '
-            npc_dict = npc.to_dict()
-            del npc_dict['dbid']
-            del npc_dict['area']
-            for key,value in npc_dict.items():
-                area_xml += '%s="%s" ' % (key, value)
-            area_xml += '></npc>'
-        area_xml += '</npcs>'
-        #************* Build the rooms *************
-        area_xml += '<rooms>'
-        for room in area.rooms.values():
-            area_xml += '<room '
-            room_dict = room.to_dict()
-            del room_dict['dbid']
-            del room_dict['area']
-            for key,value in room_dict.items():
-                area_xml += '%s="%s" ' % (key, value)
-            area_xml += '><resets>'
-            for reset in room.resets.values():
-                area_xml += '<reset '
-                reset_dict = reset.to_dict()
-                for key,value in reset_dict.items():
-                    area_xml += '%s="%s" ' % (key, value)
-                area_xml += '></reset>'
-            area_xml += '</resets><exits>'
-            for exit in room.exits.values():
-                if exit and (exit.to_area == area.name):
-                    area_xml += '<exit '
-                    exit_dict = exit.to_dict()
-                    del exit_dict['dbid']
-                    del exit_dict['room']
-                    exit_dict['to_room'] = exit.to_id
-                    if 'key' in exit_dict:
-                        if exit.key_area == area.name:
-                            exit_dict['key'] = exit.key_id
-                        else:
-                            del exit_dict['key']
-                    for key,value in exit_dict.items():
-                        area_xml += '%s="%s" ' % (key, value)
-                    area_xml += '></exit>'
-            area_xml += '</exits></room>'
-        area_xml += '</rooms></area>'
-        
-        return self.save_to_file(area_xml, area.name + '.xml')
-    
-    def import_from_xml(self, areaname):
-        """Import an area from an xml file."""
-        filepath = os.path.join(AREAS_IMPORT_DIR, areaname + '.xml')
-        if not os.path.exists(filepath):
-            return 'That area is not in your import directory.'
-        area_dom  = parse(filepath)
-        area_dom = area_dom.getElementsByTagName('area')[0]
-        area_dict = dict([(str(key),str(value)) for key,value in area_dom.attributes.items()])
-        
-        item_dom = area_dom.getElementsByTagName('items')[0]
-        items = []
-        for item in item_dom.childNodes:
-            item_dict = dict([(str(key),str(value)) for key,value in item.attributes.items()])
-            item_types_dom = item_dom.getElementsByTagName('item_type')
-            item_dict['item_types'] = {}
-            for itype in item_types_dom:
-                idict = dict([(str(key),str(value)) for key,value in itype.attributes.items()])
-                item_dict[idict['name']] = idict
-                # key = str(itype.attributes['name'].value)
-                # item_dict['item_types'][key] = {}
-                # for child in itype.childNodes:
-                #     if child.firstChild:
-                #         item_dict['item_types'][key][str(child.tagName)] = str(child.firstChild.data)
-            items.append(item_dict)
-        
-        npc_dom = area_dom.getElementsByTagName('npcs')[0]
-        npcs = []
-        for npc in npc_dom.childNodes:
-            npc_dict = dict([(str(key),str(value)) for key,value in npc.attributes.items()])
-            npcs.append(npc_dict)
-        
-        room_dom = area_dom.getElementsByTagName('rooms')[0]
-        rooms = []
-        for room in room_dom.childNodes:
-            room_dict = dict([(str(key),str(value)) for key,value in room.attributes.items()])
-            room_dict['resets'] = []
-            room_dict['exits'] = []
-            reset_dom = room.getElementsByTagName('reset')
-            for reset in reset_dom:
-                room_dict['resets'].append(dict([(str(key),str(value)) for key,value in reset.attributes.items()]))
-            exit_dom = room.getElementsByTagName('exit')
-            for exit in exit_dom:
-                exit_dict = dict([(str(key),str(value)) for key,value in exit.attributes.items()])
-                room_dict['exits'].append(exit_dict)
-            rooms.append(room_dict)
-            
-        
-        # Building the area
-        try:
-            new_area = Area.create(**area_dict)
-            for item_dict in items:
-                item_dict['area'] = new_area
-                new_item = new_area.new_item(item_dict)
-                for key, value in item_dict['item_types'].items():
-                    self.log.info(new_item.add_type(key, value))
-        
-            for npc_dict in npcs:
-                npc_dict['area'] = new_area
-                new_npc = new_area.new_npc(npc_dict)
-                
-            # rooms is a list of room dictionaries
-            for room_dict in rooms:
-                room_dict['area'] = new_area
-                new_room = new_area.new_room(room_dict)
-                new_room.load_resets(room_dict['resets'])
-                # for reset in room_dict['item_resets']:
-                #     item_reset = new_area.get_item(reset)
-                #     if item_reset:
-                #         new_room.item_resets.append(item_reset)
-                # for reset in room_dict['npc_resets']:
-                #     npc_reset = new_area.get_npc(reset)
-                #     if npc_reset:
-                #         new_room.npc_resets.append(npc_reset)
-                
-            for room_dict in rooms:
-                room = new_area.get_room(room_dict.get('id'))
-                for exit in room_dict['exits']:
-                    exit['to_id'] = exit['to_room']
-                    exit['to_area'] = new_area.name
-                    exit['to_room'] = None
-                    room.new_exit(**exit)
-        except Exception, e:
-        # If we fail in the above code for ANY reason, make sure we delete
-        # any bits of the area we have imported thus far, then log it.        
-            self.world.destroy_area(areaname, 'XPort: corrupt area file.')
-            self.log.error(str(e))
-            return 'Error importing area: %s.\n' % str(e)
-        finally:
-            area_dom.unlink()
-        return 'Area %s has been successfully imported!\n' % new_area.name
-    
     @classmethod
     def list_importable_areas(cls):
         if not os.path.exists(AREAS_IMPORT_DIR):
@@ -346,9 +167,11 @@ class SPort(object):
         # Give the user a list of names of all the area files in their import directory
         # and trim off the .xml extension for readibility. Ignore all files that aren't xml
         # files
-        alist = [area.replace('.xml', '') for area in os.listdir(AREAS_IMPORT_DIR) if area.endswith('.xml')]
+        alist = [area.replace('.txt', '') for area in os.listdir(AREAS_IMPORT_DIR) if area.endswith('.txt')]
         if alist:
-            return 'The following areas are available for import:\n' + '\n'.join(alist) + '\n'
+            string = ' Available For Import '.center(50, '-')
+            string += '\n' + '\n'.join(alist) + '\n' + ('-' * 50)
+            return string
         else:
             return 'There are no area files in your import directory.'
     
@@ -366,6 +189,11 @@ class SPort(object):
         return ''
     
     def get_import_data(self, filename):
+        """Retrieve the area data from the file specified by filename.
+        Raise an SPortImportError if the file doesn't exist or opening the file
+        fails.
+        filename -- the name of the file the area data should be read from
+        """
         filepath = os.path.join(AREAS_IMPORT_DIR, filename)
         if not os.path.exists(filepath):
             raise SPortImportError('Error: %s does not exist.' % filename)

@@ -193,6 +193,15 @@ class User(Character):
         elif mode == 'battle':
             self.mode = BattleMode(self)
     
+    def get_mode(self):
+        """Returns the name of the mode the user is in, or empty string if the
+        user isn't in a special mode.
+        """
+        if not self.mode:
+            return ''
+        else:
+            return self.mode.name
+    
     def set_email(self, email):
         if not email:
             return 'What do you want to set your email address to?'

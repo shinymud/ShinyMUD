@@ -86,28 +86,42 @@ Once you are editing an area, you may use the following to edit its contents:
         if args[0] == 'area':
             area = self.world.get_area(args[1])
             if area:
-                if (self.user.name in area.builders) or (self.user.permissions & GOD):
-                    self.user.mode.edit_area = self.world.areas[args[1]]
-                    # Make sure to clear any objects they were working on in the old area
-                    self.user.mode.edit_object = None
-                    self.user.update_output('Now editing area "%s".' % args[1])
-                else:
-                    self.user.update_output('You aren\'t allowed to edit someone else\'s area.')
+                self.edit_area(area)
             else:
-                self.user.update_output('That area doesn\'t exist. You should create it first.')
+                self.user.update_output('That area doesn\'t exist.' +\
+                                        'You should create it first.')
                 
         elif args[0] in ['room', 'npc', 'item', 'script']:
-            if self.user.mode.edit_area:
-                obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
-                if obj:
-                    self.user.mode.edit_object = obj
-                    self.user.update_output(str(self.user.mode.edit_object))
-                else:
-                    self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
-            else:
-                self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+            self.edit_object(args[0], args[1])
         else:
             self.user.update_output('You can\'t edit that.\n')
+    
+    def edit_area(self, area):
+        if (self.user.name in area.builders) or (self.user.permissions & GOD):
+            self.user.mode.edit_area = area
+            # Make sure to clear any objects they were working on in the 
+            # old area
+            self.user.mode.edit_object = None
+            self.user.update_output('Now editing area "%s".' % area.name)
+        else:
+            self.user.update_output('You aren\'t allowed to edit someone ' +\
+                                    'else\'s area.')
+    
+    def edit_object(self, obj_type, obj_id):
+        if self.user.mode.edit_area:
+            obj = getattr(self.user.mode.edit_area, obj_type + 's').get(obj_id)
+            if obj:
+                self.user.mode.edit_object = obj
+                self.user.update_output(str(self.user.mode.edit_object))
+            else:
+                noexist = ('That ' + obj_id + ' doesn\'t exist. ' +\
+                           'Type "list '+ obj_id +'s" to see all the '+\
+                           obj_id +'s in your area.'
+                          )
+                self.user.update_output(noexist) 
+        else:
+            self.user.update_output('You need to be editing an area before '+\
+                                    'you can edit its contents.')
     
 
 build_list.register(Edit, ['edit'])

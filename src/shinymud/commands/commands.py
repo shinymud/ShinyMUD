@@ -127,19 +127,65 @@ access BuildMode, which allows them to construct areas, rooms, items, etc.
 \nRequired Permissions: BUILDER
 \nUSAGE:
 To enter BuildMode:
-  build
+  build [<area_name>]
 To exit BuildMode:
   build exit
+To enter BuildMode and edit your current location:
+  build here
 \nFor a list of BuildCommands, see "help build commands".
 """
     )
     def execute(self):
-        if self.args == 'exit':
-            self.user.set_mode('normal')
-            self.user.update_output('Exiting BuildMode.\n')
+        if not self.args:
+            # User wants to enter BuildMode
+            self.enter_build_mode()
+        elif self.args == 'exit':
+            if self.user.get_mode() == 'BuildMode':
+                self.user.set_mode('normal')
+                self.user.update_output('Exiting BuildMode.')
+            else:
+                self.user.update_output('You\'re not in BuildMode right now.')
+        elif self.args == 'here':
+            # Builder wants to start building at her current location
+            if self.user.location:
+                if self.user.get_mode() != 'BuildMode':
+                    self.enter_build_mode()
+                self.edit(self.user.location.area, self.user.location)
+            else:
+                self.user.update_output('You\'re in the void; there\'s nothing to build.')
+        else:
+            area = self.world.get_area(self.args)
+            if not area:
+                self.user.update_output('Area "%s" doesn\'t exist.' % self.args)
+                self.user.update_output('See "help buildmode" for help with this command.')
+            self.edit(area)
+    
+    def enter_build_mode(self):
+        """The user should enter BuildMode."""
+        if self.user.get_mode() == 'BuildMode':
+            self.user.update_output('To exit BuildMode, type "build exit".')
         else:
             self.user.set_mode('build')
-            self.user.update_output('Entering BuildMode.\n')
+            self.user.update_output('Entering BuildMode.')
+    
+    def edit(self, area, room=None):
+        """Initialize the user's edit_area (and possible edit_object.). This
+        is super hackish, as I'm reproducing code from the BuildCommand Edit.
+        I just didn't want to create an import cycle for the sake of accessing
+        one command and was too lazy to change things around to work better.
+        Should probably clean this up in the future.
+        """
+        if (self.user.name in area.builders) or (self.user.permissions & GOD):
+            self.user.mode.edit_area = area
+            self.user.mode.edit_object = None
+            if room:
+                self.user.mode.edit_object = room
+                self.user.update_output('Now editing room %s in area "%s".' %
+                                        (room.id, area.name))
+            else:
+                self.user.update_output('Now editing area "%s".' % area.name)
+        else:
+            self.user.update_output('You can\'t edit someone else\'s area.')
 
 command_list.register(Build, ['build'])
 command_help.register(Build.help, ['build', 'build mode'])
