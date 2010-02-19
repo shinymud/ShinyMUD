@@ -13,7 +13,7 @@ import simplejson as json
 class SPort(object):
     """Export and import areas (and their objects) to a file."""
     def __init__(self):
-        self.log = logging.getLogger('XPort')
+        self.log = logging.getLogger('SPort')
         self.world = World.get_world()
         error = self.check_export_path()
         if error:
