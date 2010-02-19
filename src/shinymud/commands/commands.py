@@ -993,11 +993,26 @@ command_help.register(Bestow.help, ['bestow'])
 class Revoke(BaseCommand):
     """Revoke permission privilges for a PC."""
     required_permissions = GOD
+    help = (
+    """<title>Revoke (Command)</title>
+The revoke command allows you to revoke the priviliges of other users.
+\nRequired Permissions: GOD
+\nUSAGE:
+  revoke <permission-group> [from/for] <player-name>
+\nPermission Groups:
+  player
+  dm
+  admin
+  god
+\nTo bestow permissions, see "help bestow". For more information on
+permissions and permission groups, see "help permissions".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Revoke whose authority over what?\n')
             return
-        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(on)?(for)?([ ]+(?P<player>\w+))'
+        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(from)?(on)?(for)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
             self.user.update_output('Type "help revoke" for help on this command.')
@@ -1590,6 +1605,37 @@ Use Run like the Go command to escape from a battle.
 
 battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
 command_help.register(Run.help, ['run', 'flee', 'escape'])
+
+class Me(BaseCommand):
+    """Get a score card of your player details."""
+    help = (
+    """<title>Me (Command)</title>
+The Me command returns a score-card of your player details.
+    """
+    )
+    def execute(self):
+        # We aught to be using the user's terminal width, but for now I'm just
+        # doing a boring static screen width
+        width = 72
+        empty_line = '|' + (' ' * (width - 2)) + '|\n'
+        me = '|' + (' %s ' % self.user.fancy_name()).center(width -2 , '-') + '|\n'
+        me += ('| title: ' + self.user.title).ljust(width - 1) + '|\n'
+        me += ('| position: ' + self.user.position[0]).ljust(width - 1) + '|\n'
+        if self.user.permissions > PLAYER:
+            me += '|' + (' Permission Details ').center(width - 2, '-') + '|\n'
+            me += ('| permissions: ' +\
+                   ', '.join(get_permission_names(self.user.permissions))).ljust(width - 1) + '|\n'
+            me += ('| goto "appear": ' + self.user.goto_appear).ljust(width - 1) + '|\n'
+            me += ('| goto "disappear": ' + self.user.goto_disappear).ljust(width - 1) + '|\n'
+            me += empty_line
+        me += '|' + (' Personal Details ').center(width - 2, '-') + '|\n'
+        me += ('| email: ' + str(self.user.email)).ljust(width - 1) + '|\n'
+        me += '|' + ('-' * (width - 2)) + '|' 
+        self.user.update_output(me)
+    
+
+command_list.register(Me, ['me', 'status', 'stats'])
+command_help.register(Me.help, ['me', 'status'])
 
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as
