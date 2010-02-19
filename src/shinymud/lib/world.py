@@ -133,11 +133,12 @@ class World(object):
         area = self.get_area(area_name)
         if not area:
             return 'Area %s doesn\'t exist.\n' % area_name
-        if self.world.default_location.area == area:
-            self.world.default_location = None
+        if self.default_location and self.default_location.area == area:
+            self.default_location = None
         for user in self.user_list.values():
             if user.location and (user.location.area.name == area.name):
                 user.update_output('You are wisked to safety as the world collapses around you.\n')
+                user.location.user_remove(user)
                 user.location = self.default_location
             if user.mode and (user.mode.name == 'BuildMode'):
                 if user.mode.edit_area and (user.mode.edit_area.name == area_name):
@@ -156,6 +157,9 @@ class World(object):
         item_keys = area.items.keys()
         for item in item_keys:
             self.log.debug(area.destroy_item(item))
+        script_keys = area.scripts.keys()
+        for script in script_keys:
+            self.log.debug(area.destroy_script(script))
         npc_keys = area.npcs.keys()
         for npc in npc_keys:
             self.log.debug(area.destroy_npc(npc))

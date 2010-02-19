@@ -179,6 +179,9 @@ class User(Character):
                     else:
                         self.mode = None
             else:
+                # If we get here somehow (where the state of this mode is not
+                # active, but the mode has not been cleared), just clear the
+                # mode.
                 self.mode = None
     
     def user_logout(self, broken_pipe=False):
@@ -199,6 +202,15 @@ class User(Character):
             self.mode.active = False
         elif mode == 'battle':
             self.mode = BattleMode(self)
+    
+    def get_mode(self):
+        """Returns the name of the mode the user is in, or empty string if the
+        user isn't in a special mode.
+        """
+        if not self.mode:
+            return ''
+        else:
+            return self.mode.name
     
     def set_email(self, email):
         if not email:

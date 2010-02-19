@@ -127,19 +127,65 @@ access BuildMode, which allows them to construct areas, rooms, items, etc.
 \nRequired Permissions: BUILDER
 \nUSAGE:
 To enter BuildMode:
-  build
+  build [<area_name>]
 To exit BuildMode:
   build exit
+To enter BuildMode and edit your current location:
+  build here
 \nFor a list of BuildCommands, see "help build commands".
 """
     )
     def execute(self):
-        if self.args == 'exit':
-            self.user.set_mode('normal')
-            self.user.update_output('Exiting BuildMode.\n')
+        if not self.args:
+            # User wants to enter BuildMode
+            self.enter_build_mode()
+        elif self.args == 'exit':
+            if self.user.get_mode() == 'BuildMode':
+                self.user.set_mode('normal')
+                self.user.update_output('Exiting BuildMode.')
+            else:
+                self.user.update_output('You\'re not in BuildMode right now.')
+        elif self.args == 'here':
+            # Builder wants to start building at her current location
+            if self.user.location:
+                if self.user.get_mode() != 'BuildMode':
+                    self.enter_build_mode()
+                self.edit(self.user.location.area, self.user.location)
+            else:
+                self.user.update_output('You\'re in the void; there\'s nothing to build.')
+        else:
+            area = self.world.get_area(self.args)
+            if not area:
+                self.user.update_output('Area "%s" doesn\'t exist.' % self.args)
+                self.user.update_output('See "help buildmode" for help with this command.')
+            self.edit(area)
+    
+    def enter_build_mode(self):
+        """The user should enter BuildMode."""
+        if self.user.get_mode() == 'BuildMode':
+            self.user.update_output('To exit BuildMode, type "build exit".')
         else:
             self.user.set_mode('build')
-            self.user.update_output('Entering BuildMode.\n')
+            self.user.update_output('Entering BuildMode.')
+    
+    def edit(self, area, room=None):
+        """Initialize the user's edit_area (and possible edit_object.). This
+        is super hackish, as I'm reproducing code from the BuildCommand Edit.
+        I just didn't want to create an import cycle for the sake of accessing
+        one command and was too lazy to change things around to work better.
+        Should probably clean this up in the future.
+        """
+        if (self.user.name in area.builders) or (self.user.permissions & GOD):
+            self.user.mode.edit_area = area
+            self.user.mode.edit_object = None
+            if room:
+                self.user.mode.edit_object = room
+                self.user.update_output('Now editing room %s in area "%s".' %
+                                        (room.id, area.name))
+            else:
+                self.user.update_output('Now editing area "%s".' % area.name)
+        else:
+            self.user.update_output('You can\'t edit someone else\'s area.')
 
 command_list.register(Build, ['build'])
 command_help.register(Build.help, ['build', 'build mode'])
@@ -919,22 +965,22 @@ permissions and permission groups, see "help permissions".
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help bestow" for help on this command.\n')
+            self.user.update_output('Type "help bestow" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
         user = self.world.get_user(player)
         permission = globals().get(perm.upper())
         if not user:
-            self.user.update_output('That player isn\'t on right now.\n')
+            self.user.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
         if user.permissions & permission:
-            self.user.update_output('%s already has that authority.\n' % user.fancy_name())
+            self.user.update_output('%s already has that authority.' % user.fancy_name())
             return
         user.permissions = user.permissions | permission
-        self.user.update_output('%s now has the privilige of being %s.\n' % (user.fancy_name(), perm.upper()))
+        self.user.update_output('%s now has the privilige of being %s.' % (user.fancy_name(), perm.upper()))
         user.update_output('%s has bestowed the authority of %s upon you!' % (self.user.fancy_name(), perm.upper()))
         self.world.tell_users('%s has bestowed the authority of %s upon %s!' %
                               (self.user.fancy_name(), perm.upper(), user.fancy_name()),
@@ -947,30 +993,48 @@ command_help.register(Bestow.help, ['bestow'])
 class Revoke(BaseCommand):
     """Revoke permission privilges for a PC."""
     required_permissions = GOD
+    help = (
+    """<title>Revoke (Command)</title>
+The revoke command allows you to revoke the priviliges of other users.
+\nRequired Permissions: GOD
+\nUSAGE:
+  revoke <permission-group> [from/for] <player-name>
+\nPermission Groups:
+  player
+  dm
+  admin
+  god
+\nTo bestow permissions, see "help bestow". For more information on
+permissions and permission groups, see "help permissions".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Revoke whose authority over what?\n')
             return
-        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(on)?(for)?([ ]+(?P<player>\w+))'
+        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(from)?(on)?(for)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help revoke" for help on this command.\n')
+            self.user.update_output('Type "help revoke" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
         user = self.world.get_user(player)
         permission = globals().get(perm.upper())
         if not user:
-            self.user.update_output('That player isn\'t on right now.\n')
+            self.user.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.\n')
+            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
         if not (user.permissions & permission):
-            self.user.update_output('%s doesn\'t have that authority anyway.\n' % user.fancy_name())
+            self.user.update_output('%s doesn\'t have that authority anyway.' % user.fancy_name())
             return
         user.permissions = user.permissions ^ permission
-        self.user.update_output('%s has had the privilige of %s revoked.\n' % (user.fancy_name(), perm))
-        user.update_output('%s has revoked your %s priviliges.\n' % (self.user.fancy_name(), perm))
+        self.user.update_output('%s has had the privilige of %s revoked.' % (user.fancy_name(), perm))
+        user.update_output('%s has revoked your %s priviliges.' % (self.user.fancy_name(), perm))
+        if user.get_mode() == 'BuildMode':
+            user.set_mode('normal')
+            user.update_output('You have been kicked from BuildMode.')
     
 
 command_list.register(Revoke, ['revoke'])
@@ -1467,7 +1531,7 @@ To consume an edible item:
         if food_obj.replace_obj:
             self.user.item_add(food_obj.replace_obj.load())
         # Add this food's effects to the user
-        self.user.effects_add(foob_obj.load_effects())
+        # self.user.effects_add(food_obj.load_effects())
         # Tell the user and the room an "eat" message
         u_tell = self.personalize(food_obj.get_actor_message(), self.user)
         self.user.update_output(u_tell)
@@ -1481,21 +1545,18 @@ command_help.register(Consume.help, ['eat', 'drink'])
 
 class Attack(BaseCommand):
     help = (
-    """Attack, Kill (Command)
-
+    """<title>Attack, Kill (Command)</title>
 The Attack command causes you to attack another character. 
 If you are already in a battle, this will change your target to
 the character you specify. If you are not yet in a battle, this 
 will start a fight between you and the character you specify. You
 must be in the same room as your target to fight them, and can
 only attack other players if they have PVP enabled.
-
-USAGE:
+\nUSAGE:
 To start a fight with a character (or if you are fighting multiple
 monsters/characters and want to focus your attacks on a different
 character)
   attack <character_name>
-
     """
     )
     def execute(self):
@@ -1522,14 +1583,14 @@ character)
             target.battle_target = self.user
             self.user.free_attack()
         self.user.update_output("")
+    
 
 command_list.register(Attack, ['attack', 'kill'])
 command_help.register(Attack.help, ['attack', 'kill'])
 
 class Run(BaseCommand):
     help = (
-    """Run, Flee, Escape (Command)
-
+    """<title>Run, Flee, Escape (Command)</title>
 Use Run like the Go command to escape from a battle. 
     """
     )
@@ -1540,10 +1601,41 @@ Use Run like the Go command to escape from a battle.
                 action.execute()
             action = Attack_list['run'](self.user, wrapper, self.user.battle)
             self.user.next_action = action
+    
 
 battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
 command_help.register(Run.help, ['run', 'flee', 'escape'])
 
+class Me(BaseCommand):
+    """Get a score card of your player details."""
+    help = (
+    """<title>Me (Command)</title>
+The Me command returns a score-card of your player details.
+    """
+    )
+    def execute(self):
+        # We aught to be using the user's terminal width, but for now I'm just
+        # doing a boring static screen width
+        width = 72
+        empty_line = '|' + (' ' * (width - 2)) + '|\n'
+        me = '|' + (' %s ' % self.user.fancy_name()).center(width -2 , '-') + '|\n'
+        me += ('| title: ' + self.user.title).ljust(width - 1) + '|\n'
+        me += ('| position: ' + self.user.position[0]).ljust(width - 1) + '|\n'
+        if self.user.permissions > PLAYER:
+            me += '|' + (' Permission Details ').center(width - 2, '-') + '|\n'
+            me += ('| permissions: ' +\
+                   ', '.join(get_permission_names(self.user.permissions))).ljust(width - 1) + '|\n'
+            me += ('| goto "appear": ' + self.user.goto_appear).ljust(width - 1) + '|\n'
+            me += ('| goto "disappear": ' + self.user.goto_disappear).ljust(width - 1) + '|\n'
+            me += empty_line
+        me += '|' + (' Personal Details ').center(width - 2, '-') + '|\n'
+        me += ('| email: ' + str(self.user.email)).ljust(width - 1) + '|\n'
+        me += '|' + ('-' * (width - 2)) + '|' 
+        self.user.update_output(me)
+    
+
+command_list.register(Me, ['me', 'status', 'stats'])
+command_help.register(Me.help, ['me', 'status'])
 
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as

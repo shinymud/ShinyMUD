@@ -3,8 +3,9 @@ from shinymud.models.room import Room
 from shinymud.models.item import Item, SLOT_TYPES
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
-from shinymud.lib.xport import XPort
+from shinymud.lib.sport import *
 from shinymud.commands import *
+
 import re
 import logging
 
@@ -86,28 +87,42 @@ Once you are editing an area, you may use the following to edit its contents:
         if args[0] == 'area':
             area = self.world.get_area(args[1])
             if area:
-                if (self.user.name in area.builders) or (self.user.permissions & GOD):
-                    self.user.mode.edit_area = self.world.areas[args[1]]
-                    # Make sure to clear any objects they were working on in the old area
-                    self.user.mode.edit_object = None
-                    self.user.update_output('Now editing area "%s".' % args[1])
-                else:
-                    self.user.update_output('You aren\'t allowed to edit someone else\'s area.')
+                self.edit_area(area)
             else:
-                self.user.update_output('That area doesn\'t exist. You should create it first.')
+                self.user.update_output('That area doesn\'t exist.' +\
+                                        'You should create it first.')
                 
         elif args[0] in ['room', 'npc', 'item', 'script']:
-            if self.user.mode.edit_area:
-                obj = getattr(self.user.mode.edit_area, args[0] + 's').get(args[1])
-                if obj:
-                    self.user.mode.edit_object = obj
-                    self.user.update_output(str(self.user.mode.edit_object))
-                else:
-                    self.user.update_output('That %s doesn\'t exist. Type "list %ss" to see all the %ss in your area.\n' % (args[0], args[0], args[0])) 
-            else:
-                self.user.update_output('You need to be editing an area before you can edit its contents.\n')
+            self.edit_object(args[0], args[1])
         else:
             self.user.update_output('You can\'t edit that.\n')
+    
+    def edit_area(self, area):
+        if (self.user.name in area.builders) or (self.user.permissions & GOD):
+            self.user.mode.edit_area = area
+            # Make sure to clear any objects they were working on in the 
+            # old area
+            self.user.mode.edit_object = None
+            self.user.update_output('Now editing area "%s".' % area.name)
+        else:
+            self.user.update_output('You aren\'t allowed to edit someone ' +\
+                                    'else\'s area.')
+    
+    def edit_object(self, obj_type, obj_id):
+        if self.user.mode.edit_area:
+            obj = getattr(self.user.mode.edit_area, obj_type + 's').get(obj_id)
+            if obj:
+                self.user.mode.edit_object = obj
+                self.user.update_output(str(self.user.mode.edit_object))
+            else:
+                noexist = ('That ' + obj_id + ' doesn\'t exist. ' +\
+                           'Type "list '+ obj_id +'s" to see all the '+\
+                           obj_id +'s in your area.'
+                          )
+                self.user.update_output(noexist) 
+        else:
+            self.user.update_output('You need to be editing an area before '+\
+                                    'you can edit its contents.')
     
 
 build_list.register(Edit, ['edit'])
@@ -451,15 +466,19 @@ class Export(BaseCommand):
     required_permissions = BUILDER
     def execute(self):
         if not self.args:
-            self.user.update_output('Export what?\n')
+            self.user.update_output('Try: "export <area-name>"')
         else:
             area = self.world.get_area(self.args)
             if area:
-                self.user.update_output('Exporting area %s. This may take a moment.\n' % area.name)
-                result = XPort().export_to_xml(area)
-                self.user.update_output(result)
+                self.user.update_output('Exporting area %s. This may take a moment.' % area.name)
+                try:
+                    result = SPort().export_to_shiny(area)
+                except SPortExportError, e:
+                    self.user.update_output(e)
+                else:
+                    self.user.update_output(result)
             else:
-                self.user.update_output('That area doesn\'t exist.\n')
+                self.user.update_output('That area doesn\'t exist.')
     
 
 build_list.register(Export, ['export'])
@@ -469,15 +488,19 @@ class Import(BaseCommand):
     required_permissions = BUILDER
     def execute(self):
         if not self.args:
-            self.user.update_output(XPort.list_importable_areas())
+            self.user.update_output(SPort.list_importable_areas())
         else:
             area = self.world.get_area(self.args)
             if area:
                 self.user.update_output('That area already exists in your world.\n' +\
                                         'You\'ll need to destroy it in-game before you try importing it.\n')
             else:
-                result = XPort().import_from_xml(self.args)
-                self.user.update_output(result)
+                try:
+                    result = SPort().import_from_shiny(self.args)
+                except SPortImportError, e:
+                    self.user.update_output(str(e))
+                else:
+                    self.user.update_output(result)
     
 
 build_list.register(Import, ['import'])
@@ -521,7 +544,7 @@ read the action log (and memory) of an npc to help you debug scripting errors.
     
 
 build_list.register(Log, ['log'])
-command_help.register(Log.help, 'log')
+command_help.register(Log.help, ['log'])
 
 # Defining Extra Build-related help pages:
 command_help.register(("<title>Build Commands (BuildMode)</title>"
@@ -646,7 +669,7 @@ remember a player, it will record that player in its memory, load a map item
 from its current area, then give that map to the player with a welcome
 greeting.
 """
-), ['examlpe script'])
+), ['script example'])
 
 command_help.register(("<title>ShinyScript (Script Language)</title>"
 """The body of a script is written in a very simple language called
@@ -678,7 +701,7 @@ ShinyScript conventions:
   not. Nested if-statements (if-statements within if-statments) are allowed.
 * Whitespace is ignored before and after commands. If you wish to indent, be
   our guest ;)
-For an example of a ShinyScript, see "help script".
+For an example of a ShinyScript, see "help script example".
 """
 ), ['shinyscript', 'shiny script'])
 
@@ -703,7 +726,7 @@ following are all of the conditionals you can test in a script:
   keyword2, false if keyword1 is not the same as keyword2.
 
 """
-), ['script commands'])
+), ['script conditional', 'script conditionals'])
 
 command_help.register(("<title>Attributes (BuildMode Object)</title>"
 """Attributes are the individual characteristics of an object. For example,

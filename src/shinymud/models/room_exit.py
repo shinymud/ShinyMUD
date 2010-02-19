@@ -41,6 +41,12 @@ class RoomExit(object):
         return d
     
     def save(self, save_dict=None):
+        if not self.to_room:
+            # Quick Hack:
+            # if for some reason the to_room to this room has become None, don't
+            # save it! This should be fixed in later code so that it won't be
+            # possible
+            return
         if self.dbid:
             if save_dict:
                 save_dict['dbid'] = self.dbid

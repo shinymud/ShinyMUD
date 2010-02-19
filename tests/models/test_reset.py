@@ -23,8 +23,14 @@ class TestReset(TestCase):
         World._instance = None
     
     def test_add_nested_reset(self):
-        reset1 = Reset(self.room, self.item, 'item')
-        reset2 = Reset(self.room, self.item, 'item')
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': self.item, 
+                             'reset_type': 'item'})
+        reset2 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': self.item, 
+                             'reset_type':'item'})
         reset1.add_nested_reset(reset2)
         
         self.assertTrue(reset2 in reset1.nested_resets)
@@ -32,13 +38,18 @@ class TestReset(TestCase):
     def test_add_nested_reset_with_item_container(self):
         item2 = self.area.new_item()
         item2.add_type('container')
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': item2, 
+                             'reset_type': 'item'})
+        reset2 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                                      'room':self.room, 
+                                      'obj': self.item, 
+                                      'reset_type': 'item',
+                                      'container': reset1})
         
-        reset1 = Reset(self.room, item2, 'item')
-        reset1.save()
-        reset2 = Reset(self.room, self.item, 'item', reset1)
-        reset2.save()
         expected_spawn_point_reset2 = 'into %s (R:%s)' % (reset1.reset_object.name, 
-                                                          str(reset1.dbid))
+                                                          reset1.id)
         expected_spawn_point_reset1 = 'in room'
         
         # Make sure that the the containee has its container
@@ -53,17 +64,26 @@ class TestReset(TestCase):
                          expected_spawn_point_reset1)
     
     def test_add_nested_reset_with_npc_container(self):
-        reset1 = Reset(self.room, self.npc, 'npc')
-        reset1.save()
-        reset2 = Reset(self.room, self.item, 'item', reset1)
-        reset2.save()
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(),
+                                      'room': self.room,
+                                      'obj': self.npc,
+                                      'reset_type': 'npc'})
+        reset2 = self.room.new_reset({'id': self.room.get_reset_id(),
+                                      'room': self.room,
+                                      'obj': self.item,
+                                      'reset_type': 'item',
+                                      'container': reset1})
+        # reset1 = Reset(self.room, self.npc, 'npc')
+        # reset1.save()
+        # reset2 = Reset(self.room, self.item, 'item', reset1)
+        # reset2.save()
         
         # Make sure that the the containee has its container
         # attribute set
         self.assertTrue(reset2.container)
         self.assertEqual(reset2.container, reset1)
         expected_spawn_point_reset2 = 'into %s\'s inventory (R:%s)' % (reset1.reset_object.name, 
-                                                                       str(reset1.dbid))
+                                                                       reset1.id)
         expected_spawn_point_reset1 = 'in room'
         
         self.assertEqual(reset2.get_spawn_point(),
@@ -72,8 +92,14 @@ class TestReset(TestCase):
                          expected_spawn_point_reset1)
     
     def test_remove_nested_reset(self):
-        reset1 = Reset(self.room, self.item, 'item')
-        reset2 = Reset(self.room, self.item, 'item')
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': self.item, 
+                             'reset_type': 'item'})
+        reset2 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': self.item, 
+                             'reset_type':'item'})
         reset1.add_nested_reset(reset2)
         reset1.remove_nested_reset(reset2)
         
@@ -83,16 +109,25 @@ class TestReset(TestCase):
         pass
     
     def test_to_dict(self):
-        reset = Reset(self.room, self.item, 'item')
+        reset = self.room.new_reset({'id': self.room.get_reset_id(), 
+                                     'room':self.room, 
+                                     'obj': self.item, 
+                                     'reset_type': 'item'})
         d = reset.to_dict()
     
     def test_spawn_npc(self):
-        reset1 = Reset(self.room, self.npc, 'npc')
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                                      'room':self.room, 
+                                      'obj': self.npc, 
+                                      'reset_type': 'npc'})
         npc2 = reset1.spawn()
         self.assertTrue(isinstance(npc2, Npc))
     
     def test_spawn_item(self):
-        reset1 = Reset(self.room, self.item, 'npc')
+        reset1 = self.room.new_reset({'id': self.room.get_reset_id(), 
+                             'room':self.room, 
+                             'obj': self.item, 
+                             'reset_type': 'item'})
         item1 = reset1.spawn()
         self.assertTrue(isinstance(item1, Item))
         

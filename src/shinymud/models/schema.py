@@ -112,10 +112,11 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_resets (
     dbid INTEGER PRIMARY KEY,
+    id INTEGER NOT NULL,
     room INTEGER NOT NULL REFERENCES room(dbid),
     reset_object_id TEXT,
     reset_object_area TEXT,
-    container INTEGER REFERENCES room_reset(dbid),
+    container TEXT,
     reset_type TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
