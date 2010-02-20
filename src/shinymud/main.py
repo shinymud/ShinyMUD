@@ -92,7 +92,12 @@ def create_god(world):
             if row:
                 print "A user with that name already exists. Please choose Another."
             else:
-                save['name'] = username
+                print "You're sure you want your name to be '%s'?" % username
+                choice = (raw_input("Yes/No: ")).strip()
+                if choice.lower().startswith('y'):
+                    save['name'] = username
+                else:
+                    print "Ok, we'll start over. Which name do you REALLY want?"
     
     save['password'] = ''
     while not save['password']:
@@ -141,7 +146,7 @@ def setup():
                     SPort().import_from_shiny('cubicle')
                     print "Importing Construction Zone..."
                     SPort().import_from_shiny('foo')
-                except:
+                except Exception, e:
                     print "Oops, there was an error importing our areas.\n" +\
                           "No worries, we'll just start your game and you can try again later."
             else:
