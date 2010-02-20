@@ -10,7 +10,7 @@ class DB(object):
         self.log = logging.getLogger('DB')
     
     def insert(self, query, params=None):
-        """Insert a new row into a table.
+        """    Insert a new row into a table.
         If successful, return the id of the new row.
         If there is a problem with the query, it will raise an exception.
         If the insert violates a database constraint, it will raise an exception.
@@ -35,14 +35,14 @@ class DB(object):
         self.log.debug("INSERTING: " + str(d))
         for key,val in d.items():
             keys.append(key)
-            values.append(re.sub(r"'+", "''", str(val)))
+            values.append(str(val))
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string
         return self.insert(query, values)
         
     def select(self, query, params=None):
-        """Fetch data from the database.
+        """    Fetch data from the database.
         If the select is successful, it returns a list of dictionaries.
         If there are no rows to return, it returns an empty list.
         If there is a problem with the query, it will raise an exception.
@@ -63,7 +63,7 @@ class DB(object):
         return rows
     
     def update(self, query, params=None):
-        """Change data in the database.
+        """    Change data in the database.
         If successful, returns the number of rows updated (may be zero if no matches).
         If there is a problem with the query, it will raise an exception.
         """
@@ -78,15 +78,21 @@ class DB(object):
     def update_from_dict(self, table, d):
         if 'dbid' in d:
             query = table + " SET "
-            attributes = [str(key) + "='" + (re.sub(r"'+", "''", str(val))) + "'" for key, val in d.items() if key != 'dbid']
+            attributes = []
+            values = []
+            for key, val in d.items():
+                if key != 'dbid':
+                    attributes.append(str(key) + "=?")
+                    values.append(val)
             query = query + ','.join(attributes) + " WHERE dbid=?"
+            values.append(d['dbid'])
             self.log.debug('Updating %s: \n%s' % (table, query))
-            return self.update(query, [d['dbid']])
+            return self.update(query, values)
         else:
             raise Exception("Cannot update unsaved entity.")
     
     def delete(self, query, params=None):
-        """Delete rows from a table.
+        """    Delete rows from a table.
         If successful, returns the number of rows deleted (may be zero if no matches).
         If there is a problem with the query, it will raise an exception.
         """
