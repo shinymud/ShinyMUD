@@ -114,7 +114,8 @@ class User(Character):
             if len(self.outq) > 0:
                 # Start output with a newline so we don't start half-way
                 # through the line their last prompt is on.
-                self.conn.send('\r\n')
+                # self.conn.send('\r\n')
+                pass
             while len(self.outq) > 0:
                 self.conn.send(self.outq[0])
                 sent_output = self.outq[0]

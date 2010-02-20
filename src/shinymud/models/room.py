@@ -316,7 +316,7 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
         link = ''
         if exit.linked_exit:
             # Clear any exit that is associated with this exit
-            if exit.to_room.exits[exit.linked_exit]:
+            if exit.to_room and exit.to_room.exits[exit.linked_exit]:
                 exit.to_room.exits[exit.linked_exit].destruct()
                 exit.to_room.exits[exit.linked_exit] = None
             link = '\nThe linked exit in room %s, area %s, has also been removed.' % (exit.to_room.id,

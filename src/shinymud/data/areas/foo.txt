@@ -1,0 +1,37 @@
+[ShinyMUD Version "1.0, Alpha"]
+
+[Area]
+{"name": "foo", "title": "Construction Zone", "level_range": "Builders Only", "builders": "surrey,vash,murph,blue", "description": "This area is all about being able to experiment. Anything goes!"}
+[End Area]
+
+[Scripts]
+[{"body": "\nload item 2 foo\naward coin to #target_name + \n'A man slips a coin to you.':+\n'A man slips a coin to #target_name.'\nif remember #target_name\nsay 'Do I know you? hmm... Probably not.'\nendif\nsay 'Give this to Maurice and tell him I..aaayyyyy owe him Nothin! -Hic-", "id": "1", "name": "Luz_action", "area": 4}, {"body": "say 'That Maurice was a good man. A Good Man! But he won't let me come back until I clean up.'\nsay 'You... -hic- You should pay him back for me.'\nload item 2\ngive coin to #target_name", "id": "2", "name": "Luz_maurice", "area": 4}]
+[End Scripts]
+
+[Items]
+[{"description": "This couch is in a horrid condition.  It looks as if someone had left\nit out here weeks ago, and it has been rotting ever since.", "weight": 0, "title": "A raggid couch sits next to the dumster here.", "carryable": "False", "area": 4, "equip_slot": "", "keywords": "couch", "base_value": 0, "id": "1", "name": "a couch"}, {"description": "It is an oddly smooth gold coin, in mint condition.", "weight": 0, "title": "A gold coin.", "carryable": "True", "area": 4, "equip_slot": "", "keywords": "coin,gold coin", "base_value": 20, "id": "2", "name": "a gold coin"}]
+[End Items]
+
+[Item Types]
+[{"sit_effects": "", "item": "1", "sleep_effects": "", "item_type": "furniture"}]
+[End Item Types]
+
+[Npcs]
+[{"dexterity": 0, "strength": 0, "name": "Luz", "area": 4, "gender": "male", "hp": 0, "max_hp": 20, "id": "1", "keywords": "man,luz,luz,drunk", "mp": 0, "intelligence": 0, "default_attack": "punch", "title": "A very drunk man sits on the couch mumbling.", "speed": 0, "max_mp": 0, "description": "You see nothing special about this person. The man is wearing tattered\ncloths that match well with the alley. He looks content enough sitting\non the couch, mumbling to himself. In his slurred speech, you can\nalmost catch the words, 'damn russian' and something about owing\nmoney. Mabe you should ask him about the russain..."}]
+[End Npcs]
+
+[Npc Events]
+[{"prototype": "1", "event_trigger": "pc_enter", "probability": 50, "script": "1"}, {"probability": 100, "script": "2", "prototype": "1", "event_trigger": "hears", "condition": "russian"}]
+[End Npc Events]
+
+[Rooms]
+[{"description": "This alley seems almost unnaturally dark.  Apartment buildings tower\nover you, shutting out any ambient light.  Either way in the alley\nreceeds into darkness. TThere is a dumpster to your right, which\nbarely contains all of the trash tlittered everywhere.  Larger pieces\nof broken furniture have been abandoned around the dumster.", "id": "1", "name": "Alley", "area": 4}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 4}]
+[End Rooms]
+
+[Room Exits]
+[]
+[End Room Exits]
+
+[Room Resets]
+{"1": [{"reset_type": "npc", "room": 12, "dbid": 1, "reset_object_id": "1", "reset_object_area": "foo", "id": 5}, {"reset_type": "item", "room": 12, "dbid": 2, "reset_object_id": "1", "reset_object_area": "foo", "id": 6}], "2": []}
+[End Room Resets]
