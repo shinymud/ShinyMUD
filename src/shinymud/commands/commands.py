@@ -310,8 +310,17 @@ command_help.register(Goto.help, ['goto', 'go to'])
 class Go(BaseCommand):
     """Go to the next room in the direction given."""
     def execute(self):
+        if self.alias == 'go':
+            direction = self.args
+        else:
+            dir_map = {'n': 'north', 's': 'south', 'e': 'east', 'w': 'west'}
+            if self.alias in dir_map:
+                direction = dir_map[self.alias]
+            else:
+                direction = self.alias
+        
         if self.user.location:
-            go_exit = self.user.location.exits.get(self.args)
+            go_exit = self.user.location.exits.get(direction)
             if go_exit:
                 if go_exit.closed:
                     self.user.update_output('The door is closed.\n')
@@ -343,7 +352,8 @@ class Go(BaseCommand):
             self.user.update_output('You exist in a void; there is nowhere to go.\n')
     
 
-command_list.register(Go, ['go'])
+command_list.register(Go, ['go', 'north', 'n', 'south', 's', 'east', 'e',
+                           'west', 'w'])
 
 class Say(BaseCommand):
     """Echo a message from the user to the room that user is in."""
