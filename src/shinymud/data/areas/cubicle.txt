@@ -33,5 +33,5 @@
 [End Room Exits]
 
 [Room Resets]
-{"1": [{"reset_type": "item", "room": 8, "dbid": 6, "reset_object_id": "2", "reset_object_area": "cubicle", "id": 2}], "3": [], "2": [{"reset_type": "item", "room": 10, "dbid": 7, "reset_object_id": "1", "reset_object_area": "cubicle", "id": 1}, {"reset_type": "npc", "room": 10, "dbid": 8, "reset_object_id": "1", "reset_object_area": "cubicle", "id": 3}], "5": [], "4": []}
+{"1": [{"reset_type": "item", "room": 8, "reset_object_id": "2", "reset_object_area": "cubicle", "id": 2}], "3": [], "2": [{"reset_type": "item", "room": 10, "reset_object_id": "1", "reset_object_area": "cubicle", "id": 1}, {"reset_type": "npc", "room": 10, "reset_object_id": "1", "reset_object_area": "cubicle", "id": 3}], "5": [], "4": []}
 [End Room Resets]

@@ -87,6 +87,7 @@ class SPort(object):
                     r_exits.append(d)
             for reset in room.resets.values():
                 d = reset.to_dict()
+                del d['dbid']
                 r_resets[room.id].append(d)
         shiny_area += '\n[Rooms]\n' + json.dumps(r_list) + '\n[End Rooms]\n'
         shiny_area += '\n[Room Exits]\n' + json.dumps(r_exits) + '\n[End Room Exits]\n'

@@ -233,11 +233,8 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
     
     def new_reset(self, reset_dict):
         """Create a new reset object from the reset_dict and return it."""
-        if not reset_dict.get('id'):
-            reset_dict['id'] = reset_dict.get('dbid')
-            del reset_dict['dbid']
         reset = Reset(**reset_dict)
-        if not reset_dict.get('dbid'):
+        if not reset.dbid:
             reset.save()
         self.resets[reset.id] = reset
         return reset

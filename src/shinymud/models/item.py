@@ -549,14 +549,20 @@ class Food(object):
         if self.actor_use_message:
             return self.actor_use_message
         item = self.item or self.inv_item
-        m = 'You %s %s.' % (self.food_verbs[self.food_type], item.name)
+        if self.food_type == 'food':
+            m = 'You eat %s.' % (item.name)
+        else:
+            m = 'You drink from %s.' % (item.name)
         return m
     
     def get_room_message(self):
         if self.room_use_message:
             return self.room_use_message
         item = self.item or self.inv_item
-        m = '#actor %ss %s.' % (self.food_verbs[self.food_type], item.name)
+        if self.food_type == 'food':
+            m = '#actor eats %s.' % (item.name)
+        else:
+            m = '#actor drinks from %s.' % (item.name)
         return m
     
     def set_food_type(self, use, user=None):

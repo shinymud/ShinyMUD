@@ -301,11 +301,13 @@ class User(Character):
     
     def change_position(self, pos, furniture=None):
         """Change the user's position."""
+        
         if self.position[1]:
             self.position[1].item_types['furniture'].user_remove(self)
         if furniture:
             furniture.item_types['furniture'].user_add(self)
         self.position = (pos, furniture)
+        self.log.debug(pos + ' ' + str(furniture))
     
     def cycle_effects(self):
         for name in self.effects.keys():

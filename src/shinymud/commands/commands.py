@@ -148,8 +148,6 @@ To enter BuildMode and edit your current location:
         elif self.args == 'here':
             # Builder wants to start building at her current location
             if self.user.location:
-                if self.user.get_mode() != 'BuildMode':
-                    self.enter_build_mode()
                 self.edit(self.user.location.area, self.user.location)
             else:
                 self.user.update_output('You\'re in the void; there\'s nothing to build.')
@@ -175,6 +173,8 @@ To enter BuildMode and edit your current location:
         one command and was too lazy to change things around to work better.
         Should probably clean this up in the future.
         """
+        if self.user.get_mode() != 'BuildMode':
+            self.enter_build_mode()
         if (self.user.name in area.builders) or (self.user.permissions & GOD):
             self.user.mode.edit_area = area
             self.user.mode.edit_object = None
@@ -1302,7 +1302,7 @@ class Sit(BaseCommand):
                 self.user.update_output('You sit down.')
                 if self.user.location:
                     self.user.location.tell_room('%s sits down.' % self.user.fancy_name(), [self.user.name], self.user)
-                self.user.change_position = ('sitting')
+                self.user.change_position('sitting')
         else:
             if not self.user.location:
                 self.user.update_output('The void is bereft of anything to sit on.')

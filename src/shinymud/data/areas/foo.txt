@@ -25,7 +25,7 @@
 [End Npc Events]
 
 [Rooms]
-[{"description": "This alley seems almost unnaturally dark.  Apartment buildings tower\nover you, shutting out any ambient light.  Either way in the alley\nreceeds into darkness. TThere is a dumpster to your right, which\nbarely contains all of the trash tlittered everywhere.  Larger pieces\nof broken furniture have been abandoned around the dumster.", "id": "1", "name": "Alley", "area": 4}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 4}]
+[{"description": "This alley seems almost unnaturally dark.  Apartment buildings tower\nover you, shutting out any ambient light.  Either way in the alley\nreceeds into darkness. There is a dumpster to your right, which\nbarely contains all of the trash tlittered everywhere.  Larger pieces\nof broken furniture have been abandoned around the dumster.", "id": "1", "name": "Alley", "area": 4}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 4}]
 [End Rooms]
 
 [Room Exits]
@@ -33,5 +33,5 @@
 [End Room Exits]
 
 [Room Resets]
-{"1": [{"reset_type": "npc", "room": 12, "dbid": 1, "reset_object_id": "1", "reset_object_area": "foo", "id": 5}, {"reset_type": "item", "room": 12, "dbid": 2, "reset_object_id": "1", "reset_object_area": "foo", "id": 6}], "2": []}
+{"1": [{"reset_type": "npc", "room": 13, "reset_object_id": "1", "reset_object_area": "foo", "id": 5}, {"reset_type": "item", "room": 13, "reset_object_id": "1", "reset_object_area": "foo", "id": 6}], "2": []}
 [End Room Resets]
