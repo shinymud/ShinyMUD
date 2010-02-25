@@ -181,6 +181,14 @@ def initialize_database(connection=None):
     condition TEXT,
     script INTEGER REFERENCES script(dbid),
     probability INTEGER
+)''',\
+'''CREATE TABLE IF NOT EXISTS char_effect (
+    dbid INTEGER PRIMARY KEY,
+    duration INTEGER,
+    name TEXT,
+    item INTEGER,
+    item_type TEXT,
+    user INTEGER NULL REFERENCES user(dbid)
 )'''
 ]
     

@@ -307,7 +307,7 @@ class User(Character):
         if furniture:
             furniture.item_types['furniture'].user_add(self)
         self.position = (pos, furniture)
-        self.log.debug(pos + ' ' + str(furniture))
+        # self.log.debug(pos + ' ' + str(furniture))
     
     def cycle_effects(self):
         for name in self.effects.keys():
@@ -318,14 +318,21 @@ class User(Character):
                 del self.effects[name]
     
     def effects_add(self, effect_list):
+        """Add a list of character effects to the user."""
+        self.log.debug(effect_list)
         for effect in effect_list:
             effect.char = self
             if effect.name in self.effects:
                 self.effects[effect.name].combine(effect)
+                self.log.debug(effect.duration)
             else:
                 self.effects[effect.name] = effect
+                self.log.debug(effect.duration)
+            
+            self.effects[effect.name].begin()
     
     def effect_remove(self, effect):
+        """Remove an effect from this user."""
         if effect.name in self.effects:
             del self.effects[effect.name]
     

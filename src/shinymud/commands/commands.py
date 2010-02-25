@@ -59,8 +59,10 @@ channel off.
         if not self.user.channels['chat']:
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
-        message = '%s chats, "%s"' % (self.user.fancy_name(), self.args)
         exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
+        if 'drunk' in self.user.effects:
+            self.args = self.user.effects['drunk'].filter_speech(self.args)
+        message = '%s chats, "%s"' % (self.user.fancy_name(), self.args)
         self.world.tell_users(message, exclude, chat_color)
     
 
@@ -360,6 +362,8 @@ class Say(BaseCommand):
     def execute(self):
         if self.args:
             if self.user.location:
+                if 'drunk' in self.user.effects:
+                    self.args = self.user.effects['drunk'].filter_speech(self.args)
                 message = '%s says, "%s"' % (self.user.fancy_name(), self.args)
                 message = say_color + message + clear_fcolor
                 self.user.location.tell_room(message, teller=self.user)
@@ -1523,9 +1527,9 @@ To consume an edible item:
             if self.user.permissions & GOD:
                 self.user.item_remove(food)
                 food.destruct()
-                self.user.update_output('You eat %s.' % food.name)
+                self.user.update_output('You consume %s.' % food.name)
                 if self.user.location:
-                    self.user.location.tell_room('%s ate %s.' %\
+                    self.user.location.tell_room('%s consumed %s.' %\
                                                  (self.user.fancy_name(),
                                                   food.name),
                                                 [self.user.name], self.user)
@@ -1540,14 +1544,15 @@ To consume an edible item:
         # Replace it with another object, if applicable
         if food_obj.replace_obj:
             self.user.item_add(food_obj.replace_obj.load())
-        # Add this food's effects to the user
-        # self.user.effects_add(food_obj.load_effects())
         # Tell the user and the room an "eat" message
         u_tell = self.personalize(food_obj.get_actor_message(), self.user)
         self.user.update_output(u_tell)
         if self.user.location:
             r_tell = self.personalize(food_obj.get_room_message(), self.user)
             self.user.location.tell_room(r_tell, [self.user.name], self.user)
+        # Add this food's effects to the user
+        self.log.debug('Adding effects.')
+        self.user.effects_add(food_obj.load_effects())
     
 
 command_list.register(Consume, ['eat', 'drink', 'use'])
@@ -1628,9 +1633,14 @@ The Me command returns a score-card of your player details.
         # doing a boring static screen width
         width = 72
         empty_line = '|' + (' ' * (width - 2)) + '|\n'
+        
+        effects = ', '.join([str(e) for e in self.user.effects.values()])
+        if not effects:
+            effects = 'You feel normal.'
         me = '|' + (' %s ' % self.user.fancy_name()).center(width -2 , '-') + '|\n'
         me += ('| title: ' + self.user.title).ljust(width - 1) + '|\n'
         me += ('| position: ' + self.user.position[0]).ljust(width - 1) + '|\n'
+        me += ('| effects: ' + effects).ljust(width - 1) + '|\n'
         if self.user.permissions > PLAYER:
             me += '|' + (' Permission Details ').center(width - 2, '-') + '|\n'
             me += ('| permissions: ' +\

@@ -116,7 +116,7 @@ Once you are editing an area, you may use the following to edit its contents:
                 self.user.update_output(str(self.user.mode.edit_object))
             else:
                 noexist = ('That ' + obj_id + ' doesn\'t exist. ' +\
-                           'Type "list '+ obj_id +'s" to see all the '+\
+                           'Type "list '+ obj_type +'s" to see all the '+\
                            obj_id +'s in your area.'
                           )
                 self.user.update_output(noexist) 

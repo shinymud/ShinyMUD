@@ -9,23 +9,42 @@ class CharacterEffect(object):
         self.duration = args.get('duration')
         self.char = args.get('char')
         self.dbid = args.get('dbid')
-        self.intensity = args.get('intensity')
+        self.item = args.get('item')
+        self.item_type = args.get('item_type')
     
     def copy(self):
-        new_me = CharacterEffect(**self.to_dict())
+        # Want a new copy of the same class as this instance
+        new_me = self.__class__(**self.to_dict())
         return new_me
     
     def to_dict(self):
         d = {}
+        d['name'] = self.name
         d['duration'] = self.duration
-        d['char'] = self.char
-        d['intensity'] = self.intensity
+        if self.char:
+            d['char'] = self.char.dbid
+        d['item'] = self.item.dbid
+        d['item_type'] = self.item_type
         if self.dbid:
             d['dbid'] = self.dbid
         return d
     
-    def save(self, save_dict=None):
-        pass
+    def save(self, save_dict=None):    
+        world = World.get_world()
+        if self.dbid:
+            if save_dict:
+                save_dict['dbid'] = self.dbid
+                world.db.update_from_dict('char_effect', save_dict)
+            else:    
+                world.db.update_from_dict('char_effect', self.to_dict())
+        else:
+            self.dbid = world.db.insert_from_dict('char_effect', self.to_dict())
+    
+    def destruct(self):
+        """Remove this instance from the database."""
+        world = World.get_world()
+        if self.dbid:
+            world.db.delete('FROM char_effect WHERE dbid=?', [self.dbid])
     
 
 EFFECTS = CommandRegister()
@@ -35,6 +54,7 @@ class Drunk(CharacterEffect):
     def execute(self):
         if self.duration > 0:
             self.duration -= 1
+        # We also aught to do some drunken things randomly, like the following:
         # randomly hiccup if drunk level is above 3
         # vomit and pass out if drunk level is above 5
     
@@ -86,7 +106,7 @@ class Drunk(CharacterEffect):
         """
         words = text.split()
         if len(words) < 4:
-            return args
+            return text
         else:
             x = random.randrange(0, len(words)-1)
             swap = words[x]
@@ -97,12 +117,12 @@ class Drunk(CharacterEffect):
     def hiccup_filter(self, text):
         """Adds *hic* in between random words.
         """
-        if random.randint(1):
+        if random.randrange(5):
             return text
         words = text.split()
         x = random.randrange(len(words))
         ret = words[:x]
-        ret.append['*hic*']
+        ret.append('*hic*')
         ret.extend(words[x:])
         return " ".join(ret)
     
@@ -124,8 +144,29 @@ class Drunk(CharacterEffect):
         """
         self.duration += effect.duration
     
+    def get_drunkness(self):
+        drunk_list = {1: 'You feel slightly tipsy.',
+                      2: 'You feel a bit drunk.',
+                      3: 'You are drunk.',
+                      4: 'You are very drunk.',
+                      5: 'You are on your way to alcohol poisoning.',
+                      'default': 'You are drunk.'
+                     }
+        if self.drunk_level > 5:
+            return drunk_list.get(5)
+        return drunk_list.get(self.drunk_level)
+    
+    def end(self):
+        """What should happen when this effect ends."""
+        self.char.update_output('You are sober.')
+    
+    def begin(self):
+        """What should happen when this effect begins."""
+        self.char.update_output(self.get_drunkness())
+    
     def __str__(self):
-        string = 'drunkeness +' + str(self.drunk_level)
-        return string
+        # string = 'drunkeness +' + str(self.drunk_level)
+        return self.get_drunkness()
+    
 
-EFFECTS.register(Drunk, Drunk.name)
+EFFECTS.register(Drunk, [Drunk.name])

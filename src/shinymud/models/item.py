@@ -458,7 +458,14 @@ class Food(object):
         self.actor_use_message = args.get('actor_use_message', '')
         self.room_use_message = args.get('room_use_message', '')
         self.effects = {}
-        
+        if self.dbid:
+            world = World.get_world()
+            row = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
+                                  ['food', self.dbid])
+            for e in row:
+                e['item'] = self
+                effect = EFFECTS[e['name']](**e)
+                self.effects[effect.name] = effect
     
     def _resolve_ro(self):
         world = World.get_world()
@@ -482,11 +489,16 @@ class Food(object):
                                            self.replace_obj.area.name)
         else:
             rep = 'Nothing.'
+        if self.effects:
+            effects = ('\n'.ljust(18)).join(['%s (%s)' % (e, str(d.duration)) for e, d in self.effects.items()])
+        else:
+            effects = 'None.'
         string = 'FOOD ATTRIBUTES:' + '\n' +\
                  '  Food_type: ' + self.food_type + '\n' +\
                  '  Replace with: ' + rep + '\n' +\
                  '  use message (actor): ' + self.get_actor_message() + '\n' +\
-                 '  use message (room): ' + self.get_room_message() + '\n'
+                 '  use message (room): ' + self.get_room_message() + '\n' +\
+                 '  on-eat effects: ' + effects + '\n'
         return string
     
     def to_dict(self):
@@ -521,6 +533,12 @@ class Food(object):
         new_f.replace_obj = self.replace_obj
         new_f.dbid = None
         new_f.item = None
+        effects = {}
+        for e in self.load_effects():
+            e.item = new_f
+            e.save()
+            effects[e.name] = e
+        new_f.effects = effects
         return new_f
     
     def load_effects(self):
@@ -532,18 +550,36 @@ class Food(object):
         """Add an effect to this food item that will be transferred to the
         user when the item is eaten.
         """
-        return 'Sorry, this functionality is not finished, yet.'
+        # return 'Sorry, this functionality is not finished, yet.'
         # FINISH THIS FUNCTION LOL
-        # if not args:
-        #     return 'Type "help effects" for help on this command.'
-        # exp = r'(?P<effect>\w+)([ ]+(?P<duration>\d+))'
-        # match = re.match(exp, args.lower().strip())
-        # if not match:
-        #     return 'Type "help effects" for help on this command.'
-        # e, dur = match.group('effect', 'duration')
-        # effect = EFFECTS[e]
-        # if not effect:
-        #     return '%s is not a valid effect.' % e
+        if not args:
+            return 'Type "help effects" for help on this command.'
+        exp = r'(?P<effect>\w+)([ ]+(?P<duration>\d+))'
+        match = re.match(exp, args.lower().strip())
+        if not match:
+            return 'Type "help effects" for help on this command.'
+        e, dur = match.group('effect', 'duration')
+        if e in self.effects:
+            self.effects[e].destruct()
+            del self.effects[e]
+        effect = EFFECTS[e]
+        if not effect:
+            return '%s is not a valid effect. Try "help list effects"' % e
+        eff = effect(**{'duration': int(dur), 'item_type': 'food',
+                        'item': self})
+        eff.save()
+        self.effects[e] = eff
+        return '%s effect added.' % e.capitalize()
+    
+    def remove_effect(self, args):
+        """Remove an effect from this item."""
+        if not args:
+            return 'Which effect did you want to remove?'
+        if args not in self.effects:
+            return 'This item doesn\'t have that effect.'
+        self.effects[args].destruct()
+        del self.effects[args]
+        return '%s effect removed.' % args.capitalize()
     
     def get_actor_message(self):
         if self.actor_use_message:
