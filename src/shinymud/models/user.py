@@ -143,6 +143,8 @@ class User(Character):
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
             prompt += '>'
             return prompt
+        elif self.mode.name == 'TextEditMode':
+            return '>'
         else:
             return default
     
