@@ -24,6 +24,7 @@ class ConnectionHandler(threading.Thread):
             except Exception, e:
                 self.log.debug(str(e))
             else:
+                self.negotiate_line_mode(new_user.conn)
                 self.log.info("Client logging in from: %s" % str(new_user.addr))
                 new_user.conn.setblocking(0)
                 # The user_add function in the world requires access to the user_list,
@@ -34,3 +35,10 @@ class ConnectionHandler(threading.Thread):
                 self.world.user_list_lock.release()
         self.log.info('Listener closing down.')
         self.listener.close()
+    
+    def negotiate_line_mode(self, con):
+        # IAC + WILL + LINEMODE
+        con.send(chr(255) + chr(251) + chr(34) + '\r\n')
+        result = con.recv(256)
+        self.log.debug(list(result))
+    

@@ -36,6 +36,7 @@ class InitMode(object):
         if len(self.user.inq) > 0:
             username = self.user.inq[0]
             if username:
+                self.log.debug(list(username))
                 if username.lower() == 'new':
                     self.state = self.new_username
                     self.user.update_output('Please choose a username. It should be a single word, using only letters.')

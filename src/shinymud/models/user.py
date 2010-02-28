@@ -92,6 +92,9 @@ class User(Character):
             # everything anyway. If for some reason the output needs to have
             # extra newlines at the end, pass strip_nl=False
             data = data.rstrip('\n')
+        # Replace all of the \n with \r\n so that we're understood by telnet
+        # clients everywhere
+        data = data.replace('\n', '\r\n')
         if terminate_ln:
             # If you want the user to enter input on the same line as the
             # last output, pass terminate_ln=False. Otherwise the line will
@@ -103,7 +106,12 @@ class User(Character):
         """Gets raw input from the user and queues it for later processing."""
         try:
             new_stuff = self.conn.recv(256)
-            self.inq.append(new_stuff.replace('\n', '').replace('\r', ''))
+            # Get rid of the \r \n line terminators
+            new_stuff = new_stuff.replace('\n', '').replace('\r', '')
+            # Ignore any telnet negotiations
+            new_stuff = re.sub(r"\xff((\xfa.*?\xf0)|(..))", '', new_stuff)
+            if new_stuff:
+                self.inq.append(new_stuff)
         except Exception, e:
             pass
     
