@@ -12,6 +12,7 @@ LOG_LEVEL = 10 # 10 is the equivalent of "DEBUG"
 DB_NAME = ROOT_DIR + '/shinymud.db'
 AREAS_IMPORT_DIR = ROOT_DIR + '/areas'
 AREAS_EXPORT_DIR = ROOT_DIR + '/areas'
+PREPACK = ROOT_DIR + '/areas/builtin'
 RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an area resets
 DEFAULT_LOCATION = ('cubicle', '1')
 

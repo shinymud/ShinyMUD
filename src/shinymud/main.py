@@ -136,16 +136,15 @@ def setup():
               "God character (a character with full in-game priviliges).\n"
         create_god(world)
         r = SPort.list_importable_areas()
-        if os.path.exists(AREAS_IMPORT_DIR + '/cubicle.txt'):
+        if os.path.exists(PREPACK):
             print "\nDo you want to import our pre-packaged starting areas?"
             print "You can always delete them later in-game if you don't want them anymore."
             choice = (raw_input("Yes/No: ")).strip()
             if choice.lower().startswith('y'):
                 try:
-                    print "Importing The Cubicle..."
-                    SPort().import_from_shiny('cubicle')
-                    print "Importing Construction Zone..."
-                    SPort().import_from_shiny('foo')
+                    print ' Importing Built-in Areas '.center(50, '-')
+                    result = SPort(PREPACK).import_list('all')
+                    print result
                 except Exception, e:
                     print "Oops, there was an error importing our areas.\n" +\
                           "No worries, we'll just start your game and you can try again later."

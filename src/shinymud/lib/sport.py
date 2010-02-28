@@ -12,9 +12,12 @@ import simplejson as json
 
 class SPort(object):
     """Export and import areas (and their objects) to a file."""
-    def __init__(self):
+    def __init__(self, import_dir=AREAS_IMPORT_DIR,
+                 export_dir=AREAS_EXPORT_DIR):
         self.log = logging.getLogger('SPort')
         self.world = World.get_world()
+        self.import_dir = import_dir
+        self.export_dir = export_dir
         error = self.check_export_path()
         if error:
             return error
@@ -145,7 +148,7 @@ class SPort(object):
             raise SPortImportError('There was a horrible error on import! '
                                    'Aborting! Check logfile for details.')
         
-        return 'Area %s has been successfully imported.' % new_area.name
+        return '%s has been successfully imported.' % new_area.title
     
     def match_shiny_tag(self, tag, text):
         """Match a ShinyTag from the ShinyAreaFormat.
@@ -161,14 +164,44 @@ class SPort(object):
             raise SPortImportError('Corrupted file: missing or malformed %s tag.' % tag)
         return match.group('tag_body')
     
+    def import_list(self, area_list):
+        """Import a batch of area files from area_list.
+        area_list can either be a list of area-names to be imported,
+        or the string 'all'. If the string 'all' is given, import_list will
+        attempt to import all areas in self.import_dir
+        """
+        results = ''
+        if area_list == 'all':
+            area_list = [area.replace('.txt', '') for area in\
+                         os.listdir(self.import_dir) if\
+                         area.endswith('.txt')]
+            if not area_list:
+                return "I couldn't find any pre-packaged areas.\n"
+        for area in area_list:
+            results += 'Importing %s.txt... ' % area
+            area_obj = self.world.get_area(area)
+            if area_obj:
+                results += 'Aborted: area %s already exists.\n' % area_obj.name
+            else:
+                try:
+                    status = self.import_from_shiny(area)
+                except SPortImportError, e:
+                    results += 'Failed: ' + str(e) + '\n'
+                else:
+                    results += status + '\n'
+        if not results:
+            return 'No pre-packaged areas were found.\n'
+        return results
+                
+    
     @classmethod
-    def list_importable_areas(cls):
-        if not os.path.exists(AREAS_IMPORT_DIR):
+    def list_importable_areas(cls, import_dir=AREAS_IMPORT_DIR):
+        if not os.path.exists(import_dir):
             return 'There are no area files in your import directory.'
         # Give the user a list of names of all the area files in their import directory
-        # and trim off the .xml extension for readibility. Ignore all files that aren't xml
+        # and trim off the .txt extension for readibility. Ignore all files that aren't txt
         # files
-        alist = [area.replace('.txt', '') for area in os.listdir(AREAS_IMPORT_DIR) if area.endswith('.txt')]
+        alist = [area.replace('.txt', '') for area in os.listdir(import_dir) if area.endswith('.txt')]
         if alist:
             string = ' Available For Import '.center(50, '-')
             string += '\n' + '\n'.join(alist) + '\n' + ('-' * 50)
@@ -180,9 +213,9 @@ class SPort(object):
         """Make sure the path to the export directory exists. If it doesn't,
         create it and return an empty string. If there's an error, log it and
         return an error message."""
-        if not os.path.exists(AREAS_EXPORT_DIR):
+        if not os.path.exists(self.export_dir):
             try:
-                os.mkdir(AREAS_EXPORT_DIR)
+                os.mkdir(self.export_dir)
             except Exception, e:
                 self.log.error('EXPORT FAILED: ' + str(e))
                 # TODO: reraise an SPortExportError here...
@@ -195,7 +228,7 @@ class SPort(object):
         fails.
         filename -- the name of the file the area data should be read from
         """
-        filepath = os.path.join(AREAS_IMPORT_DIR, filename)
+        filepath = os.path.join(self.import_dir, filename)
         if not os.path.exists(filepath):
             raise SPortImportError('Error: %s does not exist.' % filename)
             
@@ -214,7 +247,7 @@ class SPort(object):
     
     def save_to_file(self, file_content, file_name):
         """Write out the file contents under the given file_name."""
-        filepath = os.path.join(AREAS_EXPORT_DIR, file_name)
+        filepath = os.path.join(self.export_dir, file_name)
         try:
             f = open(filepath, 'w')
         except IOError, e:

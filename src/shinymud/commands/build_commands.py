@@ -464,10 +464,22 @@ command_help.register(Destroy.help, ['destroy'])
 
 class Export(BaseCommand):
     required_permissions = BUILDER
+    help = (
+    """<title>Export (Build Command)</title>
+The Export Command allows Builders to export their areas to text files.
+\nUSAGE:
+  export [area] <area-name>
+\nExported areas can be found in your AREAS_EXPORT_DIR, which is listed in your
+config file. To import an area that has been exported to a text file, see
+"help import".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Try: "export <area-name>"')
         else:
+            if self.args.startswith('area '):
+                self.args = self.args[5:]
             area = self.world.get_area(self.args)
             if area:
                 self.user.update_output('Exporting area %s. This may take a moment.' % area.name)
@@ -486,10 +498,36 @@ command_help.register(Export.help, ['export'])
 
 class Import(BaseCommand):
     required_permissions = BUILDER
+    help = (
+    """<title>Import (BuildCommand)</title>
+The Import command allows Builders to import areas from text files.
+\nUSAGE:
+To get a list of areas in your area-import-directory:
+  import
+To import an area:
+  import [area] <area-name>
+To import the built-in areas that came pre-packaged with your MUD:
+  import built-in
+\n The <area-name> should be the same as the file-name without the
+file-extension. For example, if the name of the file you're trying to import
+is foo.txt, you should type:
+    import foo
+The area-import-directory path is listed in your config file.
+To export areas to text-files, see "help export".
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output(SPort.list_importable_areas())
+        elif self.args.startswith('built-in'):
+            # Import all of areas in the PREPACK directory
+            self.user.update_output(' Importing Built-In Areas '.center(50, '-'))
+            result = SPort(PREPACK).import_list('all')
+            self.user.update_output(result + ('-' * 50))
         else:
+            # Import the desired area
+            if self.args.startswith('area '):
+                self.args = self.args[5:]
             area = self.world.get_area(self.args)
             if area:
                 self.user.update_output('That area already exists in your world.\n' +\
@@ -508,7 +546,7 @@ command_help.register(Import.help, ['import'])
 
 class Log(BaseCommand):
     help = (
-    """Log (BuildCommand)
+    """<title>Log (BuildCommand)</title>
 Npc's receive the same feedback for preforming actions (commands) as a player
 character, but since they can't read, their feedback gets accumulated in an
 action log rather than being output to a screen. The Log command allows you to

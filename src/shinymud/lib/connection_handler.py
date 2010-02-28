@@ -16,6 +16,10 @@ class ConnectionHandler(threading.Thread):
         self.world = world
     
     def run(self):
+        """Start the connection-handler thread running.
+        This thread will accept connections, create a User object for the
+        player logging in, and then add that User object to the world.
+        """
         self.listener.listen(5)
         self.log.debug("Listener started")
         while self.world.listening:
@@ -37,8 +41,23 @@ class ConnectionHandler(threading.Thread):
         self.listener.close()
     
     def negotiate_line_mode(self, con):
+        """Petition client to run in linemode.
+        Some telnet clients, such as putty, start in non-linemode by default
+        (they transmit each character as they receive it from the user). We
+        want them to switch to linemode in this case, where they tranmit each
+        line after it's been assembled.
+        """
         # IAC + WILL + LINEMODE
         con.send(chr(255) + chr(251) + chr(34) + '\r\n')
-        result = con.recv(256)
-        self.log.debug(list(result))
+        # We should get a response from their client (immediately)
+        con.settimeout(1.0)
+        try:
+            result = list(con.recv(256))
+        except socket.timeout:
+            # This just means that their telnet client didn't send us a timely
+            # response to our initiating linemode... we should just move on
+            result = 'Client response FAIL for linemode.'
+        finally:
+            con.settimeout(None)
+            self.log.debug(result)
     
