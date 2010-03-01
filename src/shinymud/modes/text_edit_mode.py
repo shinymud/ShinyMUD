@@ -2,6 +2,7 @@ import re
 import logging
 
 class TextEditMode(object):
+    """The mode for editing large amounts of text, such as rooms or descriptions."""
     
     def __init__(self, user, obj, obj_attr, edit_text, format='paragraph'):
         self.user = user
@@ -26,6 +27,7 @@ class TextEditMode(object):
         self.edit_lines = self._format_for_editor(edit_text)
     
     def edit_intro(self):
+        """What TextEditMode should do when it first starts up."""
         self.show_progress()
         self.state = self.process_input
     
@@ -73,7 +75,7 @@ class TextEditMode(object):
     
     def preview_text(self, **args):
         preview = 'Preview %s of %s:\n' % (self.edit_attribute, self.edit_object.name)
-        preview += self._format()
+        preview += '    ' + self._format()
         self.user.update_output(preview)
     
     def help(self, **args):
@@ -102,52 +104,52 @@ class TextEditMode(object):
         self.edit_object.save({self.edit_attribute: save_text})
     
     def cancel_edit(self, **args):
-        self.user.update_output('Reverting to original %s. Any changes have been discarded.\n' %
+        self.user.update_output('Reverting to original %s. Any changes have been discarded.' %
                                                                                 self.edit_attribute)
         self.active = False
     
     def clear_description(self, **args):
         self.edit_lines = []
-        self.user.update_output('%s cleared.\n' % self.edit_attribute.capitalize())
+        self.user.update_output('%s cleared.' % self.edit_attribute.capitalize())
     
     def replace_line(self, **args):
         try:
             line_number = int(args.get('line'))
         except:
-            self.user.update_output('%s is not a valid line number.\n' % line_number)
+            self.user.update_output('%s is not a valid line number.' % line_number)
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 self.edit_lines[line_number-1] = args.get('args')
-                self.user.update_output('Line replaced.\n')
+                self.user.update_output('Line replaced.')
                 self.show_progress()
             else:
-                self.user.update_output('%s is not a valid line number.\n' % str(line_number))
+                self.user.update_output('%s is not a valid line number.' % str(line_number))
         
     def insert_line(self, **args):
         try:
             line_number = int(args.get('line'))
         except:
-            self.user.update_output('%s is not a valid line number.\n' % args.get('line'))
+            self.user.update_output('%s is not a valid line number.' % args.get('line'))
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 self.edit_lines.insert(line_number-1, args.get('args'))
                 self.user.update_output('Line replaced.\n')
                 self.show_progress()
             else:
-                self.user.update_output('%s is not a valid line number.\n' % args.get('line'))
+                self.user.update_output('%s is not a valid line number.' % args.get('line'))
     
     def delete_line(self, **args):
         try:
             line_number = int(args.get('line'))
         except:
-            self.user.update_output('%s is not a valid line number.\n' % line_number)
+            self.user.update_output('%s is not a valid line number.' % line_number)
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 del self.edit_lines[line_number-1]
                 self.user.update_output('Line deleted.\n')
                 self.show_progress()
             else:
-                self.user.update_output('%s is not a valid line number.\n' % str(line_number))
+                self.user.update_output('%s is not a valid line number.' % str(line_number))
     
     def _format_for_editor(self, edit_text):
         """Format the text to be edited so that it looks nice in the editor."""

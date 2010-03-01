@@ -56,6 +56,9 @@ channel off.
     """
     )
     def execute(self):
+        if not self.args:
+            self.user.update_output("What do you want to chat?")
+            return
         if not self.user.channels['chat']:
             self.user.channels['chat'] = True
             self.user.update_output('Your chat channel has been turned on.\n')
@@ -311,11 +314,35 @@ command_help.register(Goto.help, ['goto', 'go to'])
 
 class Go(BaseCommand):
     """Go to the next room in the direction given."""
+    help = (
+    """<title>Go (Command)</title>
+The Go command and its aliases allows a player to travel in a given direction.
+\nUSAGE:
+  go <direction>
+Or just give the direction you want to go:
+  <direction>
+\nDirections and their shorthands:
+  north (n)
+  west (w)
+  east (e)
+  south (s)
+  up (u)
+  down (d)
+    """
+    )
     def execute(self):
+        dir_map = {'n': 'north', 's': 'south', 'e': 'east', 'w': 'west',
+                   'u': 'up', 'd': 'down'
+                  }
         if self.alias == 'go':
-            direction = self.args
+            if not self.args:
+                self.user.update_output('Go in which direction?')
+                return
+            if self.args in dir_map:
+                direction = dir_map[self.args]
+            else:
+                direction = self.args
         else:
-            dir_map = {'n': 'north', 's': 'south', 'e': 'east', 'w': 'west'}
             if self.alias in dir_map:
                 direction = dir_map[self.alias]
             else:
@@ -355,10 +382,21 @@ class Go(BaseCommand):
     
 
 command_list.register(Go, ['go', 'north', 'n', 'south', 's', 'east', 'e',
-                           'west', 'w'])
+                           'west', 'w', 'up', 'down', 'u', 'd'])
+command_help.register(Go.help, ['go', 'north', 'east', 'south', 'west', 'up',
+                                'down', 'u', 'd', 'n', 'e', 's', 'w'])
 
 class Say(BaseCommand):
     """Echo a message from the user to the room that user is in."""
+    help = (
+    """Say (Command)
+The Say command sends a message to everyone in the same room (and only the
+people in the same room). Players that are asleep will not hear things that
+are said while they are sleeping.
+\nUSAGE:
+  say <message>
+    """
+    )
     def execute(self):
         if self.args:
             if self.user.location:
@@ -368,12 +406,13 @@ class Say(BaseCommand):
                 message = say_color + message + clear_fcolor
                 self.user.location.tell_room(message, teller=self.user)
             else:
-                self.user.update_output('Your words are sucked into the void.\n')
+                self.user.update_output('Your words are sucked into the void.')
         else:
-            self.user.update_output('Say what?\n')
+            self.user.update_output('Say what?')
     
 
 command_list.register(Say, ['say'])
+command_help.register(Say.help, ['say'])
 
 class Load(BaseCommand):
     required_permissions = ADMIN | BUILDER | DM
@@ -1292,6 +1331,16 @@ command_help.register(Version.help, ['version', 'credit', 'credits'])
 
 class Sit(BaseCommand):
     """Change the player's position to sitting."""
+    help = (
+    """<title>Sit (Command)</title>
+The Sit command changes your position to sitting.
+\nUSAGE:
+To sit on the floor:
+  sit
+To sit on furniture:
+  sit [on/in] <furniture-name>
+    """
+    )
     def execute(self):
         if self.user.position[0].find(self.alias) != -1:
             self.user.update_output('You are already sitting.')
@@ -1339,6 +1388,11 @@ command_help.register(Sit.help, ['sit'])
 
 class Stand(BaseCommand):
     """Change the player's position to standing."""
+    help = (
+    """<title>Stand (Command)</title>
+The Stand command changes your position from sitting or sleeping to standing.
+    """
+    )
     def execute(self):
         if self.user.position[0].find(self.alias) != -1:
             self.user.update_output('You are already standing.')
@@ -1359,6 +1413,19 @@ command_help.register(Stand.help, ['stand'])
 
 class Sleep(BaseCommand):
     """Change the player's position to sleeping."""
+    help = (
+    """<title>Sleep (Command)</title>
+The Sleep command changes your character's position to sleeping. NOTE:
+sleeping characters are oblivious to things happening around them (in the same
+room) and can be more vulnerable to attack. To awake from sleeping, us the
+Wake, Sit, or Stand commands.
+\nUSAGE:
+To sleep on the floor:
+  sleep
+To sleep on a piece of furniture:
+  sleep [on/in] <furniture-name>
+    """
+    )
     def execute(self):
         if self.user.position[0].find(self.alias) != -1:
             self.user.update_output('You are already sleeping.')
@@ -1401,6 +1468,16 @@ command_help.register(Sleep.help, ['sleep'])
 
 class Wake(BaseCommand):
     """Change a player's status from sleeping to awake (and standing)."""
+    help = (
+    """<title>Wake (Command)</title>
+Wake can be used to wake yourself or another character from sleeping.
+\nUSAGE:
+To wake yourself:
+  wake
+To wake someone else:
+  wake <player-name>
+    """
+    )
     def execute(self):
         if not self.args:
             # Wake up yourself
@@ -1439,7 +1516,7 @@ class Award(BaseCommand):
     """Award an item to a user."""
     required_permissions = required_permissions = DM | ADMIN
     help = (
-    """Award (Command)
+    """<title>Award (Command)</title>
 \nThe Award command allows a DM or an Admin to award an item to a player. Note
 that you must have the item you wish to award in your inventory for the Award
 command to work, and you must also be in the same room as the person you wish
@@ -1502,7 +1579,7 @@ command_help.register(Award.help, ['award'])
 class Consume(BaseCommand):
     """Consume a food or drink item."""
     help = (
-    """Eat, Drink, Use (Command)
+    """<title>Eat, Drink, Use (Command)</title>
 \nThe commands Eat, Drink, and Use can all be used interchangeably to consume
 an edible food or drink item. Be careful what you eat or drink though;
 consuming some items may cause undesirable effects, such as poisoning or
@@ -1537,6 +1614,9 @@ To consume an edible item:
             else:
                 self.user.update_output('That\'s not edible!')
                 return
+        if 'drunk' in self.user.effects:
+            self.user.update_output('You\'re too drunk to manage it.')
+            return
         # Remove the food object
         self.log.debug(food_obj)
         self.user.item_remove(food)
@@ -1661,7 +1741,7 @@ command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as
 room or character descriptions. TextEditMode lets you enter text
 (line-by-line), until you are finished, letting you replace, delete, and
-insert lines as you go. Help for TextEditMode can be accessed by typing @help
-at anytime.
+insert lines as you go. Help for TextEditMode commands can be accessed by
+typing @help while in TextEditMode.
 """
 ), ['TextEditMode', 'text edit mode', 'textedit', 'text edit'])
