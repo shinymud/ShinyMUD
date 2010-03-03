@@ -116,7 +116,7 @@ class TextEditMode(object):
         try:
             line_number = int(args.get('line'))
         except:
-            self.user.update_output('%s is not a valid line number.' % line_number)
+            self.user.update_output('%s is not a valid line number.' % args.get('line'))
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 self.edit_lines[line_number-1] = args.get('args')

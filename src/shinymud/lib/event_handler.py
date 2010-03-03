@@ -38,18 +38,28 @@ class EventHandler(object):
         """Execute each command in a parsed script."""
         # Execute each line in 
         self.log.debug('About to execute script %s.' % self.script.id)
-        for line in self.parse_script():
-            self.log.debug(line)
-            match = re.search(r'\s*(\w+)([ ](.+))?$', line)
-            if match:
-                cmd_name, _, args = match.groups()
-                if cmd_name in self.script_cmds:
-                    self.script_cmds[cmd_name](args)
-                else:
-                    cmd = command_list[cmd_name]
-                    if cmd:
-                        cmd(self.obj, args, cmd_name).run()
-        self.log.debug(self.obj.actionq)
+        try:
+            lines = self.parse_script()
+        except ParseError, e:
+            self.log.error(str(e))
+            self.obj.actionq.append(str(e))
+        except ConditionError, e:
+            self.obj.actionq.append(str(e))
+        else:        
+            for line in lines:
+                self.log.debug(line)
+                match = re.search(r'\s*(\w+)([ ](.+))?$', line)
+                if match:
+                    cmd_name, _, args = match.groups()
+                    if cmd_name in self.script_cmds:
+                        try:
+                            self.script_cmds[cmd_name](args)
+                        except CommandError, e:
+                            self.obj.actionq.append(str(e))
+                    else:
+                        cmd = command_list[cmd_name]
+                        if cmd:
+                            cmd(self.obj, args, cmd_name).run()
     
     def personalize(self, replace_dict):
         """Replace a set of word place-holders with their real counterparts."""
@@ -99,8 +109,8 @@ class EventHandler(object):
                 elif lines[index] == 'else':
                     state = F
                 index += 1
-        except IndexError:
-            self.log.debug('Error: "if" block was not terminated by an "endif".')
+        except IndexError, e:
+            raise ParseError('Script %s Error: "if" block was not terminated by an "endif"' % self.script.id)
         pl.extend({True: T, False: F}[condition])
         return index + 1
     
@@ -110,29 +120,56 @@ class EventHandler(object):
         if args[0] in self.conditions:
             return self.conditions[args[0]](*args[1:])
         else:
-            raise Exception('Error: unrecognized condition: "%s".' % args[0])
+            raise ParseError('Script %s Error: unrecognized condition: "%s"' % (self.script.id, args[0]))
     
     # *********** SCRIPT COMMANDS ***********
     
-    def record_user(self, name):
+    def record_user(self, name=None):
         """Record the name in this object's memory."""
+        if not name:
+            raise CommandError("Script %s Error: record command requires a name argument" % self.script.id)
         self.obj.remember.append(name.lower().strip())
     
     # *********** CONDITION FUNCTIONS ***********
-    def remember_user(self, name):
+    def remember_user(self, name=None):
         """Return true if this name is in the object's memory, false if
         it isn't.
         """
+        if not name:
+            raise ConditionError("Script %s Error: remember condition requires a name argument" % self.script.id)
         if name.lower().strip() in self.obj.remember:
             return True
         return False
     
-    def equal(self, args):
+    def equal(self, args=None):
         """Check if two strings are equal."""
+        bad_args = "Script %s Error: equal condition requires two string arguments to compare" % self.script.id
+        if not args:
+            raise ConditionError(bad_args)
+        args = args.split()
+        if len(args) < 2:
+            raise ConditionError(bad_args)
         if args[0] == args[1]:
             return True
         return False
     
+
+class ParseError(Exception):
+    """ParseError should be raised if there's an error in parsing a script."""
+    pass
+
+class ConditionError(Exception):
+    """ConditionError should be raised if there's an error with a ShinyScript
+    Conditional
+    """
+    pass
+
+class CommandError(Exception):
+    """CommandError should be raised if there's an error with a ShinyScript
+    Command
+    """
+    pass
+
 
 EVENTS = CommandRegister()
 

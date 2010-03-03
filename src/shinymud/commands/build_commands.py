@@ -14,6 +14,18 @@ build_list = CommandRegister()
 class Create(BaseCommand):
     """Create a new item, npc, or area."""
     required_permissions = BUILDER
+    help = (
+    """<title>Create (BuildCommand)</title>
+The Create command allows Builders to create new objects and areas.
+\nALIASES: new
+\nUSAGE:
+To create a new area:
+  new area <area_name>
+To create a new object:
+  new <object_type>
+\n<object_type> above refers to the following: script, npc, room, item.
+    """
+    )
     def execute(self):
         object_types = ['item', 'npc', 'room', 'script']
         if not self.args:
@@ -56,7 +68,7 @@ class Edit(BaseCommand):
     """Edit an area, object, npc, or room."""
     required_permissions = BUILDER
     help = (
-    """Edit (BuildCommand)
+    """<title>Edit (BuildCommand)</title>
 \nThe Edit command allows you to edit areas and their rooms, npcs, and items. 
 Remember, you must be editing an area before you can edit the rooms, npcs and
 items associated with it!
@@ -73,6 +85,7 @@ Once you are editing an area, you may use the following to edit its contents:
   edit npc <npc-id>
   edit room <room-id>
   edit item <item-id>
+  edit script <script-id>
     """
     )
     def execute(self):
@@ -151,6 +164,19 @@ class List(BaseCommand):
     "list items" will list all of the items that exist in the working area.
     
     """
+    help = (
+    """<title>List (BuildCommand)</title>
+The List command is one of the most useful BuildCommands, as it displays the
+details about objects and areas.
+\nUSAGE:
+To view a list of all object types in an area:
+  list <object-types> [from area <area-name>]
+To get an attribute-by-attribute view of an object:
+  list <object-type> <object-id> [from area <area-name>]
+To get an attribute-by-attribute view of the object you're editing:
+  list
+    """
+    )
     required_permissions = BUILDER
     def execute(self):
         message = 'Type "help list" to get help using this command.\n'
@@ -176,7 +202,7 @@ class List(BaseCommand):
                 else:
                     message = self.list_object(func, obj_id, area_name)
         self.user.update_output(message)
-        
+    
     def list_area(self, obj_id, area_name):
         if area_name:
             # The user wants to know the details of a specific area
@@ -219,22 +245,16 @@ command_help.register(List.help, ['list'])
 
 class Set(BaseCommand):
     required_permissions = BUILDER
-    help = (
-    """Set (BuildCommand)
-Set allows you to set attributes of whatever object you are editing. If you
-wish to set your character attributes, you must exit BuildMode first.
-    """
-    )
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
-            self.user.update_output('You must be editing something to set its attributes.\n')
+            self.user.update_output('You must be editing something to set its attributes.')
         elif not self.args:
-            self.user.update_output('What do you want to set?\n')
+            self.user.update_output('What do you want to set?')
         else:
             match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
             if not match:
-                message = 'Type "help set" for help setting attributes.\n'
+                message = 'Type "help set" for help setting attributes.'
             else:
                 func, _, arg = match.groups()
                 message = 'You can\'t set that.\n'
@@ -253,13 +273,13 @@ wish to set your character attributes, you must exit BuildMode first.
     
 
 build_list.register(Set, ['set'])
-# command_help.register(Set.help, ['set', 'bset'])
+# There is already a help file for this under the generic Set command
 
 class Link(BaseCommand):
     """Link two room objects together through their exits."""
     required_permissions = BUILDER
     help = (
-    """Link (BuildCommand)
+    """<title>Link (BuildCommand)</title>
 \nThe Link command links the exits of two rooms, allowing players to move
 between them.
 \nRequired Permissions: BUILDER
@@ -326,7 +346,7 @@ class Unlink(BaseCommand):
     """Destroys a linked exit between two linked rooms."""
     required_permissions = BUILDER
     help = (
-    """Unlink (BuildCommand)
+    """<title>Unlink (BuildCommand)</title>
 \nUnlink destroys a linked exit. See "help link" for help on linking exits.
 \nRequired Permissions: BUILDER
 \nUSAGE:
@@ -354,6 +374,16 @@ command_help.register(Unlink.help, ['unlink'])
 
 class Add(BaseCommand):
     required_permissions = BUILDER
+    help = (
+    """<title>Add (BuildCommand)</title>
+The Add command is used to add characteristics/options to to an object. To
+remove options that have been added using the Add command, see "help remove".
+\nUSAGE:
+The usage for Add varies depending on the options and object being edited. For
+more details about using Add on a specific object, see the help page for the
+object you're editing.
+    """
+    )
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
@@ -385,17 +415,26 @@ command_help.register(Add.help, ['add'])
 
 class Remove(BaseCommand):
     required_permissions = BUILDER
+    help = (
+    """<title>Remove (BuildCommand)</title>
+The Remove command works opposite the add command ("help add"), in that it
+removes options that have been previously Added to an object.
+\nUSAGE:
+The usage is typically unique to the attribute that's being removed. See the
+help file for the object you're editing for more details.
+    """
+    )
     def execute(self):
         obj = self.user.mode.edit_object or self.user.mode.edit_area
         if not obj:
-            self.user.update_output('You must be editing something to remove attributes.\n')
+            self.user.update_output('You must be editing something to remove attributes.')
         elif not self.args:
-            self.user.update_output('What do you want to remove?\n')
+            self.user.update_output('What do you want to remove?')
         else:
             match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
-            message = 'You can\'t remove that.\n'
+            message = 'You can\'t remove that.'
             if not match:
-                self.user.update_ouput('Type "help remove" for help with this command.\n')
+                self.user.update_ouput('Type "help remove" for help with this command.')
             else:
                 func, _, args = match.groups()
                 if hasattr(obj, 'remove_' + func):
@@ -419,6 +458,25 @@ class Destroy(BaseCommand):
     
     NOTE: Player avatars should not be able to be deleted using this."""
     required_permissions = BUILDER
+    help = (
+    """<title>Destroy (BuildCommand)</title>
+The Destroy command allows a builder to destroy an area, npc, script, item, or
+room.
+<blink>************** BEWARE ***************</blink>
+The effects of the Destroy command cannot be undone. Once something is
+destroyed it is permanently gone. Also, DESTROYING AN AREA WILL DESTROY
+EVERYTHING IN THAT AREA! Moral of the story: be VERY sure you want to delete
+something before you whip out the Destroy command. If in doubt, export your
+area before you destroy it (see "help export")!
+\nUSAGE:
+To PERMANENTLY delete an object:
+  destroy <object-type> <object-id>
+To PERMANENTLY delete an area:
+  destroy area <area-name>
+\n<object_type> in the usage above refers to the following: room, npc, item,
+or script.
+    """
+    )
     def execute(self):
         message = 'Type "help destroy" to get help using this command.\n'
         if not self.args:
@@ -447,11 +505,12 @@ class Destroy(BaseCommand):
                 message = getattr(area, 'destroy_' + func)(obj_id)
             else:
                 message = 'You can\'t destroy something that does\'t exist.'
-            # The destroy function will set the id of whatever it deleted to None
-            # so that any other objects with references will know they should terminate
-            # their reference. If the user destroyed the object they're working on,
-            # make sure that we clear it from their edit_object, and therefore ther prompt 
-            # so they don't try and edit it again before it gets wiped.
+            # The destroy function will set the id of whatever it deleted to
+            # None so that any other objects with references will know they
+            # should terminate their reference. If the user destroyed the object
+            # they're working on, make sure that we clear it from their
+            # edit_object, and therefore ther prompt so they don't try and edit
+            # it again before it gets GC'd.
             if self.user.mode.edit_object and self.user.mode.edit_object.id == None:
                 self.user.mode.edit_object = None
             if self.user.mode.edit_area and self.user.mode.edit_area.name == None:
@@ -506,7 +565,7 @@ To get a list of areas in your area-import-directory:
   import
 To import an area:
   import [area] <area-name>
-To import the built-in areas that came pre-packaged with your MUD:
+To import the built-in areas that came pre-packaged with this MUD:
   import built-in
 \n The <area-name> should be the same as the file-name without the
 file-extension. For example, if the name of the file you're trying to import
@@ -553,6 +612,7 @@ action log rather than being output to a screen. The Log command allows you to
 read the action log (and memory) of an npc to help you debug scripting errors.
 \nUSAGE:
   log <npc-name>
+You must be in the same room as an npc to log it.
     """
     )
     def execute(self):
@@ -588,7 +648,7 @@ command_help.register(Log.help, ['log'])
 command_help.register(("<title>Build Commands (BuildMode)</title>"
 """The following are the commands available during BuildMode:
 %s
-See 'help <command-name> for help on any one of these commands.
+See "help <command-name>" for help on any one of these commands.
 """ % ('\n'.join([cmd.__name__.lower() for cmd in build_list.commands.values()]))
 ), ['build commands', 'build command'])
 
@@ -773,5 +833,70 @@ BuildMode, you can change the attributes of an object that you're editing by
 using one, some, or all of the Set, Add, and Remove commands. The command
 needed to edit an attribute will always be listed next to that attribute in
 paranthesis on the help page for that object.
+\nHelp pages for BuildMode Objects:
+  "help area"
+  "help npc"
+  "help room"
+  "help item"
+  "help item type"
 """
 ), ['attributes', 'attribute'])
+
+command_help.register(("<title>Area (BuildMode Object)</title>"
+"""An area is like a package of rooms, items, npcs and scripts. You must be
+editing an area before you can add new objects to it or edit its existing
+objects.
+\nAREA ATTRIBUTES:
+<b>name - (not changeable)</b> The short name by which an area is referred to
+during BuildMode. This name is given to the area during its creation process
+and should be a short, descriptive, and unique word.
+<b>title - (set title <title-text>)</b> A descriptive title for the area.
+<b>level range - (set levelrange <level-range>)</b> A range of levels (such as
+5-20) or a short description (e.g. Builders Only) the expresses who this level
+is for.
+<b>builders - (add builder <builder-name>)</b> A list of builders who have
+access to edit this area (Builders that create an area are automatically
+added to that area's Builder's List).
+<b>description - (set description, starts TextEditMode)</b> A short description
+about this area.
+\nFor more help about attributes in general, see "help attribute".
+"""), ['area'])
+
+command_help.register(("<title>Item (BuildMode Object) </title>"
+"""Items
+\nITEM ATTRIBUTES:
+<b>name - (set name <name>)</b> The name of the item, seen by the player when
+they interact with it (such as getting it, giving it, dropping it, etc.).
+This should include any necessary articles such as 'a', 'an', or 'the' (e.g.
+"a black-tinted dagger", or "an admiral's hat").
+<b>title - (set title <title-text>)</b> A short (sentence-long) description
+that a player sees when this item is in a room. If a title is not provided in
+sentence format (capital at the beginning, period at the end), then the title
+is automatically converted unless the builder prepends an @ to the title.
+<b>item types - (add type <item-type>)</b> Any special types this item has. See
+"help item types" for a list.
+<b>description - (set description, starts TextEditMode)</b> A long description
+that the player sees if they use the Look command on the item.
+<b>equip location - (set equip <equip-location>)</b> The location this item can
+be equipped to (see "help equip" for a list).
+<b>keywords - (set keywords <kw1>,<kw2>,<kw...>)</b> Keywords that a player
+can use to refer to this item when Getting it, Giving it, etc.Keywords should
+contain words that are used in the item's title and name so as not to confuse
+the player.
+<b>weight - (set weight <weight>)</b> The weight of the object, without units.
+<b>carryable - (set carryable <true/false>)</b> If carryable is true, this item
+can be picked up and taken by a player.
+<b>base value - (set basevalue <base-value>)</b> The base currency value for
+this item, without units.
+"""), ['item'])
+
+command_help.register(("<title>Item Types (BuildMode Object) </title>"
+"""There are currently 5 different item types:
+  Weapon
+  Food
+  Furniture
+  Container
+  Portal
+See their help pages for more information about the attributes and features
+they add to a regular item object.
+"""), ['item types', 'item type'])

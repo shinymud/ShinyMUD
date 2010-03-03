@@ -15,11 +15,13 @@ See http://shiny.game-host.org/wiki/UnitTesting for more details.
 * Open a terminal and cd to the shinymud directory (the directory this README file is in).
 
 * If you've never run the MUD before, you can run the set-up wizard by
-entering the following command: python src/shinymud/main.py setup
+entering the following command: 
+    python src/shinymud/main.py setup
 (The setup wizard just runs you through creating an administrative (or God)
-character, adding starting areas, and then starting the game server.)
+character, adding built-in areas, and then starting the game server.)
 
-* If you're just looking to start the game server, just run the following command: python src/shinymud/main.py start
+* If you're just looking to start the game server, just run the following command:
+    python src/shinymud/main.py start
 
 ShinyMUD will start running on the default port of 4111. You can change the
 port number (as well as lots of other things) in: src/data/config.py

@@ -1183,6 +1183,7 @@ class Help(BaseCommand):
             # This should probably be replaced with a better color parsing
             # function when we decide to have better use of colors
             help = help.replace('<b>', BOLD)
+            help = help.replace('<blink>', BLINK)
             help = help.replace('<title>', help_title).replace('</title>',
                                                                CLEAR + '\n')
             help = re.sub(r'</\w+>', CLEAR, help)

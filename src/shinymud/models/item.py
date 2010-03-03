@@ -181,7 +181,7 @@ class Item(object):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
-    def set_base_value(self, value, user=None):
+    def set_basevalue(self, value, user=None):
         """Set the base currency value for this item."""
         try:
             value = int(value)
