@@ -44,9 +44,7 @@ class User(Character):
         if 'channels' in args:
             self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
         else:
-            self.channels = {'chat': True}
-        self.isequipped = [] #Is a list of the currently equipped weapons
-        
+            self.channels = {'chat': True}        
         self.location = args.get('location')
         if self.location:
             loc = args.get('location').split(',')
