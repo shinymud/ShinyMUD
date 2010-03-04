@@ -89,7 +89,6 @@ class Character(object):
         self.atk = 0
         self.max_mp = args.get('max_mp', 5)
         self.max_hp = args.get('max_hp', 20)
-        self.speed = args.get('speed', 0)
         self.battle = None
         self._battle_target = None
         self._default_attack = args.get('default_attack', "punch")
@@ -216,10 +215,10 @@ class Character(object):
     
     def next_action_cost(self):
         if len(self._attack_queue):
-            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost / (1.0 + (self.speed/10.0))))
-            return self._attack_queue[0].cost/ (1.0 + (self.speed/10.0))
-        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))))
-        return Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))
+            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost ))
+            return self._attack_queue[0].cost
+        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost))
+        return Attack_list[self._default_attack].cost
     
     def attack(self):
         self.log.debug(self.fancy_name() + " is attacking:")
