@@ -281,6 +281,7 @@ class InventoryItem(Item):
         self.owner = args.get('owner')
         self.spawn_id = spawn_id
         self.container = args.get('container')
+        self.is_equipped = to_bool(args.get('is_equipped', False))
         
         if self.dbid:
             for key, value in ITEM_TYPES.items():

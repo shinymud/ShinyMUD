@@ -7,15 +7,15 @@ import hashlib
 import re
 import logging
 
-choose_class_string = """Choose a class, or pick custom:
-Fighter    Thief      Wizard     Custom
-STR:  3    STR:  1    STR:  1    STR: ?
-DEX:  1    DEX:  3    DEX:  1    DEX: ?
-INT:  0    INT:  1    INT:  3    INT: ?
-SPD:  1    SPD:  3    SPD:  0    SPD: ?
- HP: 35     HP: 20     HP: 20     HP: ?
- MP:  0     MP:  0     MP:  6     MP: ?
-"""
+# choose_class_string = """Choose a class, or pick custom:
+# Fighter    Thief      Wizard     Custom
+# STR:  3    STR:  1    STR:  1    STR: ?
+# DEX:  1    DEX:  3    DEX:  1    DEX: ?
+# INT:  0    INT:  1    INT:  3    INT: ?
+# SPD:  1    SPD:  3    SPD:  0    SPD: ?
+#  HP: 35     HP: 20     HP: 20     HP: ?
+#  MP:  0     MP:  0     MP:  6     MP: ?
+# """
 
 class InitMode(object):
     
@@ -141,7 +141,7 @@ class InitMode(object):
     def choose_gender(self):
         if len(self.user.inq) > 0:
             gender = self.user.inq[0]
-            if gender in ['male', 'female', 'neutral']:
+            if gender[0].lower() in 'mfn':
                 self.save['gender'] = gender
                 self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
                                         'your password if you forget it (otherwise, you\'re out of luck ' +\
@@ -161,128 +161,130 @@ class InitMode(object):
                                         '(you can type "help email" for details).\n' +\
                                         'Please enter your e-mail address:')
             elif self.user.inq[0][0].lower() == 'n':
-                self.state = self.assign_defaults
+                self.user.userize(**self.save)
+                self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
                 self.user.update_output(choose_class_string)
             
             # We should only get to this state if the user said they want to enter their e-mail
             # address to be saved
             elif self.inner_state == 'yes_email':
                 self.save['email'] = self.user.inq[0]
-                self.state = self.assign_defaults
-                self.user.update_output(choose_class_string)
+                self.user.userize(**self.save)
+                self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
+                # self.user.update_output(choose_class_string)
             else:
                 self.user.update_output('This is a "yes or no" type of question. Try again:')
             del self.user.inq[0]
     
-    def assign_defaults(self):
-        if len(self.user.inq) > 0:
-            if len(self.user.inq[0]) > 0 and self.user.inq[0][0].lower() in 'ctfw':
-                self.user.userize(**self.save)
-                if self.user.inq[0][0].lower() == 'c':
-                    # Custom stats creation
-                    self.state = self.custom_create
-                    self.custom_points = {'left':8, 'STR':0, 'INT':0, 'DEX':0, 'SPD':0, 'HP':0, 'MP':0}
-                    self.display_custom_create()
-                    del self.user.inq[0]
-                    return
-                elif self.user.inq[0][0].lower() == 't':
-                    # Set Thief defaults
-                    self.user.strength = 1
-                    self.user.dexterity = 3
-                    self.user.intelligence = 1
-                    self.user.speed = 3
-                    self.user.max_hp = 20
-                    self.user.max_mp = 0
-                    self.user.hp = self.user.max_hp
-                    self.user.mp = self.user.max_mp
-                elif self.user.inq[0][0].lower() == 'f':
-                    # Set Fighter defaults
-                    self.user.strength = 3
-                    self.user.dexterity = 1                
-                    self.user.intelligence = 0
-                    self.user.speed = 1
-                    self.user.max_hp = 35
-                    self.user.max_mp = 0
-                    self.user.hp = self.user.max_hp
-                    self.user.mp = self.user.max_mp
-                elif self.user.inq[0][0].lower() == 'w':
-                    # Set wizard defaults
-                    self.user.strength = 1
-                    self.user.dexterity = 1                
-                    self.user.intelligence = 3
-                    self.user.speed = 0
-                    self.user.max_hp = 20
-                    self.user.max_mp = 9
-                    self.user.hp = self.user.max_hp
-                    self.user.mp = self.user.max_mp
-                self.state = self.character_cleanup
-                self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
-            else:
-                # user's input didn't make any sense
-                del self.user.inq[0]
-                self.user.update_output("I don't understand." + choose_class_string)
-    
-    def display_custom_create(self):
-        header = []
-        header.append("You have %s points to spend:" % self.custom_points['left'])
-        header.append("Ability:    Cost:    Effect:")
-        for ability in ['STR', 'DEX', 'INT', 'SPD', 'HP', 'MP']:
-            if ability == 'HP':
-                base = 20
-                delta = 5
-            elif ability == 'MP':
-                base = 0
-                delta = 3
-            else:
-                base = 0
-                delta = 1
-            a = self.custom_points[ability]
-            if a < 3:
-                values = (ability," " * (14-len(ability)), '1', str(base + (a * delta)), str(base + ((a + 1) * delta)))
-            else:
-                values = (ability," " * (14-len(ability)), '*', str(base + (a * delta)), str(base + (a * delta)))
-            header.append("%s%s%s      %s -> %s" % values)
-        header.append('Choose an ability and how many points to add (up to three)')
-        header.append('or negative numbers to remove points. Type "Done" when finished.')
-        header.append("") # one more newline for easier to read input
-        self.user.update_output('\n'.join(header))
-    
-    def custom_create(self):
-        if len(self.user.inq) > 0:
-            m = re.match('(?P<attr>[a-zA-Z]+)[ ]*(?P<amount>-?\d+)?', self.user.inq[0])
-            if m:
-                attr, amount = m.group('attr', 'amount')
-                if amount:
-                    amount = int(amount)
-                attr = attr.upper()
-                if attr in self.custom_points:
-                    new_val = self.custom_points[attr] + amount
-                    new_balance = self.custom_points['left'] - amount
-                    if new_val < 0 or new_val > 3 or new_balance < 0 or new_balance > 8:
-                        self.user.update_output("You can't do that!\n")
-                    else:
-                        self.custom_points[attr] = new_val
-                        self.custom_points['left'] = new_balance
-                elif attr == 'DONE':
-                    if self.custom_points['left'] > 0:
-                        self.user.update_output('You still have points left to spend!')
-                    else:
-                        self.user.strength = self.custom_points['STR']
-                        self.user.intelligence = self.custom_points['INT']
-                        self.user.dexterity = self.custom_points['DEX']
-                        self.user.speed = self.custom_points['SPD']
-                        self.user.max_mp = 3 * int(self.custom_points['MP'])
-                        self.user.mp = self.user.max_mp
-                        self.user.max_hp = 20 + 5 * int(self.custom_points['HP'])
-                        self.user.hp = self.user.max_hp
-                        del self.user.inq[0]
-                        self.state = self.character_cleanup
-                        self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
-                        return
-                else:
-                    self.user.update_output("I don't understand.")
-            else:
-                self.user.update_output("I don't understand.")
-            self.display_custom_create()
-            del self.user.inq[0]
+    # def assign_defaults(self):
+    #     if len(self.user.inq) > 0:
+    #         if len(self.user.inq[0]) > 0 and self.user.inq[0][0].lower() in 'ctfw':
+    #             self.user.userize(**self.save)
+    #             if self.user.inq[0][0].lower() == 'c':
+    #                 # Custom stats creation
+    #                 self.state = self.custom_create
+    #                 self.custom_points = {'left':8, 'STR':0, 'INT':0, 'DEX':0, 'SPD':0, 'HP':0, 'MP':0}
+    #                 self.display_custom_create()
+    #                 del self.user.inq[0]
+    #                 return
+    #             elif self.user.inq[0][0].lower() == 't':
+    #                 # Set Thief defaults
+    #                 self.user.strength = 1
+    #                 self.user.dexterity = 3
+    #                 self.user.intelligence = 1
+    #                 self.user.speed = 3
+    #                 self.user.max_hp = 20
+    #                 self.user.max_mp = 0
+    #                 self.user.hp = self.user.max_hp
+    #                 self.user.mp = self.user.max_mp
+    #             elif self.user.inq[0][0].lower() == 'f':
+    #                 # Set Fighter defaults
+    #                 self.user.strength = 3
+    #                 self.user.dexterity = 1                
+    #                 self.user.intelligence = 0
+    #                 self.user.speed = 1
+    #                 self.user.max_hp = 35
+    #                 self.user.max_mp = 0
+    #                 self.user.hp = self.user.max_hp
+    #                 self.user.mp = self.user.max_mp
+    #             elif self.user.inq[0][0].lower() == 'w':
+    #                 # Set wizard defaults
+    #                 self.user.strength = 1
+    #                 self.user.dexterity = 1                
+    #                 self.user.intelligence = 3
+    #                 self.user.speed = 0
+    #                 self.user.max_hp = 20
+    #                 self.user.max_mp = 9
+    #                 self.user.hp = self.user.max_hp
+    #                 self.user.mp = self.user.max_mp
+    #             self.state = self.character_cleanup
+    #             self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
+    #         else:
+    #             # user's input didn't make any sense
+    #             del self.user.inq[0]
+    #             self.user.update_output("I don't understand." + choose_class_string)
+    # 
+    # def display_custom_create(self):
+    #     header = []
+    #     header.append("You have %s points to spend:" % self.custom_points['left'])
+    #     header.append("Ability:    Cost:    Effect:")
+    #     for ability in ['STR', 'DEX', 'INT', 'SPD', 'HP', 'MP']:
+    #         if ability == 'HP':
+    #             base = 20
+    #             delta = 5
+    #         elif ability == 'MP':
+    #             base = 0
+    #             delta = 3
+    #         else:
+    #             base = 0
+    #             delta = 1
+    #         a = self.custom_points[ability]
+    #         if a < 3:
+    #             values = (ability," " * (14-len(ability)), '1', str(base + (a * delta)), str(base + ((a + 1) * delta)))
+    #         else:
+    #             values = (ability," " * (14-len(ability)), '*', str(base + (a * delta)), str(base + (a * delta)))
+    #         header.append("%s%s%s      %s -> %s" % values)
+    #     header.append('Choose an ability and how many points to add (up to three)')
+    #     header.append('or negative numbers to remove points. Type "Done" when finished.')
+    #     header.append("") # one more newline for easier to read input
+    #     self.user.update_output('\n'.join(header))
+    # 
+    # def custom_create(self):
+    #     if len(self.user.inq) > 0:
+    #         m = re.match('(?P<attr>[a-zA-Z]+)[ ]*(?P<amount>-?\d+)?', self.user.inq[0])
+    #         if m:
+    #             attr, amount = m.group('attr', 'amount')
+    #             if amount:
+    #                 amount = int(amount)
+    #             attr = attr.upper()
+    #             if attr in self.custom_points:
+    #                 new_val = self.custom_points[attr] + amount
+    #                 new_balance = self.custom_points['left'] - amount
+    #                 if new_val < 0 or new_val > 3 or new_balance < 0 or new_balance > 8:
+    #                     self.user.update_output("You can't do that!\n")
+    #                 else:
+    #                     self.custom_points[attr] = new_val
+    #                     self.custom_points['left'] = new_balance
+    #             elif attr == 'DONE':
+    #                 if self.custom_points['left'] > 0:
+    #                     self.user.update_output('You still have points left to spend!')
+    #                 else:
+    #                     self.user.strength = self.custom_points['STR']
+    #                     self.user.intelligence = self.custom_points['INT']
+    #                     self.user.dexterity = self.custom_points['DEX']
+    #                     self.user.speed = self.custom_points['SPD']
+    #                     self.user.max_mp = 3 * int(self.custom_points['MP'])
+    #                     self.user.mp = self.user.max_mp
+    #                     self.user.max_hp = 20 + 5 * int(self.custom_points['HP'])
+    #                     self.user.hp = self.user.max_hp
+    #                     del self.user.inq[0]
+    #                     self.state = self.character_cleanup
+    #                     self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
+    #                     return
+    #             else:
+    #                 self.user.update_output("I don't understand.")
+    #         else:
+    #             self.user.update_output("I don't understand.")
+    #         self.display_custom_create()
+    #         del self.user.inq[0]
     

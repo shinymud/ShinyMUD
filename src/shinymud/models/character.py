@@ -2,42 +2,110 @@ from shinymud.commands.attacks import *
 from shinymud.models.item import *
 import logging 
 
+
+
+from random import randint
+
+class IntRegister(object):
+    """Keeps a dictionary of id:integer pairs, so we can keep track
+    of the things affecting a particular attribute.
+    """
+    def __init__(self):
+        self.things = {}
+        self.next_id = 0
+        self.changed = True
+        self._calculated = None
+    
+    def evaluate(self, thing):
+        # evaluate the value of the thing
+        # This should be overloaded by baseclasses if 
+        # they have something other than an int.
+        return int(thing)
+    
+    def __getitem__(self, key):
+        return self.things.get(key)
+    
+    def __setitem__(self, key, val):
+        self.things[key] = val
+        self.changed = True
+    
+    def append(self, val):
+        self.effects[self.next_id] = val
+        self.next_id += 1
+        self.changed = True
+    
+    def __delitem__(self, key):
+        if key in self.things:
+            del self.things[key]
+            self.changed = True
+    
+    def calculate(self):
+        if self.changed:        
+            self._calculated = 0
+            for val in self.things.values():
+                self._calculated += self.evaluate(val)
+            self.changed = False
+        return self._calculated
+    
+
+class DictRegister(IntRegister):
+    """Keeps a dictionary of id:(group, val) pairs,
+    and returns a dictionary of group:sum(val) pairs.
+    """
+    def evaluate(self, thing):
+        return thing
+    
+    def calculate(self):
+        if self.changed:
+            self._calculated = {}
+            for value in self.things.values():
+                key, val = self.evaluate(value)
+                self._calculated[key] = self._calculated.get(key) + val
+        return self._calculated
+    
+
+class DamageRegister(DictRegister):
+    """Special case of DictRegister, keeps dictionary of id:Damage pairs,
+    and returns a dictionary of Damage.type:sum(calculated_damage) pairs.
+    """
+    changed = property((lambda x: True), (lambda x, y: None))
+    def evaluate(self, thing):
+        key = thing.type
+        if thing.probability == 100 or thing.probability <= randint(1,100):
+            val = randint(thing.range[0], thing.range[1])
+        else:
+            val = 0
+        return key, val
+    
+
 class Character(object):
     """The basic functionality that both player characters (users) and 
     non-player characters share.
     """
     def characterize(self, **args):
         self.gender = str(args.get('gender', 'neutral'))
-        self.strength = args.get('strength', 0)
-        self.intelligence = args.get('intelligence', 0)
-        self.dexterity = args.get('dexterity', 0)
-        self.hp = args.get('hp', 0)
-        self.mp = args.get('mp', 0)
+        self.hp = args.get('hp', 20)
+        self.mp = args.get('mp', 5)
         self.atk = 0
-        self.max_mp = args.get('max_mp', 0)
+        self.max_mp = args.get('max_mp', 5)
         self.max_hp = args.get('max_hp', 20)
-        self.speed = args.get('speed', 0)
         self.battle = None
         self._battle_target = None
         self._default_attack = args.get('default_attack', "punch")
         self.inventory = []
-        self.equipped = {} #Stores current weapon in each slot from SLOT_TYPES
+        self.equipped = {} #Stores current item in each slot from SLOT_TYPES
         for i in SLOT_TYPES.keys():
             self.equipped[i] = ''
-        self.isequipped = [] #Is a list of the currently equipped weapons
+        self.isequipped = [] #Is a list of the currently equipped items
         self._attack_queue = []
-        self.absorb = {}
+        self.hit = IntRegister()
+        self.evade = IntRegister()
+        self.absorb = DictRegister()
+        self.damage = DamageRegister()
     
-    hit = property(lambda self: self.dexterity)
-    evade = property(lambda self: 8 + self.dexterity)
-    dmg = property(lambda self: self.strength)
     def to_dict(self):
         d = {}
         d['gender'] = self.gender
-        d['strength'] = self.strength
-        d['intelligence'] = self.intelligence
-        d['dexterity'] = self.dexterity
-        d['speed'] = self.speed
         d['hp'] = self.hp
         d['mp'] = self.mp
         d['max_mp'] = self.max_mp
@@ -147,10 +215,10 @@ class Character(object):
     
     def next_action_cost(self):
         if len(self._attack_queue):
-            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost / (1.0 + (self.speed/10.0))))
-            return self._attack_queue[0].cost/ (1.0 + (self.speed/10.0))
-        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))))
-        return Attack_list[self._default_attack].cost / (1.0 + (self.speed/10.0))
+            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost ))
+            return self._attack_queue[0].cost
+        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost))
+        return Attack_list[self._default_attack].cost
     
     def attack(self):
         self.log.debug(self.fancy_name() + " is attacking:")
