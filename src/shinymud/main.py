@@ -153,6 +153,46 @@ def setup():
         print "\nOk, you're done with the game setup! Now starting your game server..."
         start()
 
+def clean():
+    """Clean all the pyc files, log files, and the db file that were created by
+    running the game.
+    """
+    def rm_pyc_files(arg, dirname, names):
+        """Remove all of the .pyc files in dirname."""
+        for name in names:
+            if name.endswith('.pyc'):
+                try:
+                    os.remove(os.path.join(dirname, name))
+                except Exception, e:
+                    print "Error removing .pyc file: " + str(e)
+    
+    if check_running():
+        stop()
+    if os.path.exists(DB_NAME):
+        print "Are you sure you want to delete you database? This will delete "
+        print "any saved game data you have so far."
+        choice = raw_input("Yes/No: ")
+        if choice.lower().strip().startswith('y'):
+            print 'Deleting database...'
+            # delete the database.
+            try:
+                os.remove(DB_NAME)
+            except Exception, e:
+                print 'Error removing database: ' + str(e)
+    # Delete all .pyc files in the directory
+    print 'Deleting pyc files...'
+    os.path.walk(path, rm_pyc_files, 'foo')
+    # Delete all the .log files in the logs directory
+    print 'Deleting log files...'
+    if os.path.exists(path + 'shinymud/data/logs'):
+        for logfile in os.listdir(path + 'shinymud/data/logs'):
+            if logfile.endswith('.log'):
+                try:
+                    os.remove(path + 'shinymud/data/logs/' + logfile)
+                except Exception, e:
+                    print 'Error removing logfile: ' + str(e)
+    print "Cleaning complete!"
+
 def setup_stub_world():
     world = World()
     world.db = DB()
@@ -181,8 +221,10 @@ if len(sys.argv) == 2:
                   "You'll have to stop it to create a God character."
         else:
             create_god(setup_stub_world())
+    elif option == 'clean':
+        clean()
     else:
-        print "options: start | stop | restart | setup | create_god\n"
+        print "options: start | stop | restart | setup | create_god | clean\n"
 else:
-    print "options: start | stop | restart | setup | create_god\n"
+    print "options: start | stop | restart | setup | create_god | clean\n"
 
