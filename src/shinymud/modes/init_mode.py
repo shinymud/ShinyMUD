@@ -18,81 +18,126 @@ import logging
 # """
 
 class InitMode(object):
-    
+    """InitMode is a giant state machine that handles the log-in and character
+    create process.
+    Each function in the InitMode class is meant to be (more or less) a single
+    state in the log-in or character creation process. Each state-function
+    takes care of designating which state-function gets executed next by
+    setting the self.state or self.next_state functions (depending on whether
+    the next state-function requires user input or not).
+    -
+    The difference between self.state and self.next_state:
+    self.state is what gets executed by the World every turn. It cannot be
+    None, or the user will no longer recieve their turn from the world.
+    -
+    self.next_state gets executed by self.get_input, so that self.get_input
+    can guard for user input, clean it, and deliver it to whichever state
+    function is stored in self.next_state.
+    -
+    If your state function needs user input, then self.state should point to
+    self.get_input (to guard for user input each turn of the world) and 
+    self.next_state should point to your state_function.
+    """
     def __init__(self, user):
+        """
+        user - a User object that has yet to be userized (initialized)
+        """
         self.user = user
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.'
-        self.user.update_output(intro_message)
-        self.state = self.verify_username
-        self.inner_state = None
+        self.state = self.get_input
+        self.next_state = self.verify_username
         self.active = True
         self.name = 'InitMode'
         self.world = World.get_world()
         self.log = logging.getLogger('InitMode')
-        self.echoing = False
         self.save = {}
+        
+        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.'
+        self.user.update_output(intro_message)
     
-    def verify_username(self):
+    def get_input(self):
+        """Get input from the user and pass it to the appropriate function.
+        
+        This function waits until there is user input (we are not guaranteed
+        to get user-input on each turn), then cleans up any newlines or
+        whitespace and sends it to the next state-function stored in
+        self.next_state.
+        """
         if len(self.user.inq) > 0:
-            username = self.user.inq[0]
-            if username:
-                self.log.debug(list(username))
-                if username.lower() == 'new':
-                    self.state = self.new_username
-                    self.user.update_output('Please choose a username. It should be a single word, using only letters.')
+            # We've got something to work with!
+            arg = self.user.inq[0].strip().replace('\r', '').replace('\n', '')
+            del self.user.inq[0]
+            self.next_state(arg)
+    
+    def verify_username(self, arg):
+        """Get the name of the user logging in. If the user exists, grab their
+        data and verify their password. Otherwise, start the character creation
+        process.
+        
+        PREV STATE: None (this should be the first state function in InitMode)
+        NEXT STATE: self.verify_password, if the user logging in exists, OR
+                    self.verify_new_character if the user logging in is new
+        """
+        username = arg
+        if username:
+            if username.lower() == 'new':
+                self.next_state = self.new_username
+                self.user.update_output('Please choose a name. It should be a single word, using only letters.')
+            else:
+                self.username = username
+                row = self.world.db.select('password,dbid FROM user WHERE name=?', [self.username])
+                if row:
+                    # Awesome, a user with this name does exist! Let's check their password!
+                    self.password = row[0]['password']
+                    self.dbid = row[0]['dbid']
+                    # self.state = self.verify_password
+                    self.user.update_output("Enter password: " + CONCEAL, False)
+                    self.next_state = self.verify_password
                 else:
-                    self.username = username
-                    row = self.world.db.select('password,dbid FROM user WHERE name=?', [self.username])
-                    if row:
-                        # Awesome, a user with this name does exist! Let's check their password!
-                        self.password = row[0]['password']
-                        self.dbid = row[0]['dbid']
-                        # self.state = self.verify_password
-                        self.user.update_output("Enter password: " + CONCEAL, False)
-                        self.state = self.verify_password
-                    else:
-                        # The user entered a name that doesn't exist.. they should create
-                        # a new character or try entering the name again.
-                        self.user.update_output('That user doesn\'t exist. Would you like to create a new character by the name of %s? (Yes/No)' % self.username)
-                        self.state = self.verify_new_character
-            del self.user.inq[0]
+                    # The user entered a name that doesn't exist.. they should create
+                    # a new character or try entering the name again.
+                    self.user.update_output('That user doesn\'t exist. Would you like to create a new character by the name of %s? (Yes/No)' % self.username)
+                    self.next_state = self.verify_new_character
     
-    def verify_password(self):
-        if len(self.user.inq) > 0:
-            password = hashlib.sha1(self.user.inq[0]).hexdigest()
-            if password == self.password:
-                # Wicked cool, our user exists AND the right person is logging in
-                self.user.userize(**self.world.db.select('* FROM user WHERE dbid=?', [self.dbid])[0])
-                # Make sure that we clear the concealed text effect that we 
-                # initiated when we moved to the password state
-                self.user.update_output(CLEAR, False)
-                self.state = self.character_cleanup
-            else:
-                self.state = self.verify_username
-                self.user.update_output(CLEAR + "\r\nBad username or password. Enter username:")
-            del self.user.inq[0]
-    
-    def verify_new_character(self):
-        if len(self.user.inq) > 0:
-            if self.user.inq[0][0].lower() == 'y':
-                self.save['name'] = self.username
-                self.user.update_output('Please choose a password: ' + CONCEAL, False)
-                self.password = None
-                self.state = self.create_password
-            else:
-                self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.')
-                self.state = self.verify_username
-            del self.user.inq[0]
+    def verify_password(self, arg):
+        """Verify that the password provided by the user and the password from
+        their database profile are correct.
+        
+        PREV STATE: self.verify_username
+        NEXT STATE: self.character_cleanup, if the correct password was provided
+                    self.verify_username, if an incorrect password was provided
+        """
+        password = hashlib.sha1(arg).hexdigest()
+        if password == self.password:
+            # Wicked cool, our user exists AND the right person is logging in
+            self.user.userize(**self.world.db.select('* FROM user WHERE dbid=?', [self.dbid])[0])
+            # Make sure that we clear the concealed text effect that we 
+            # initiated when we moved to the password state
+            self.user.update_output(CLEAR, False)
+            self.state = self.character_cleanup
+        else:
+            self.next_state = self.verify_username
+            self.user.update_output(CLEAR + "\r\nBad username or password. Enter username:")
     
     def join_world(self):
+        """The final stop in our InitMode state machine! 
+        We set the state of InitMode to inactive and tell the user they have 
+        entered the world!
+        """
         self.active = False
-        self.user.update_output('\nYou have entered the world of %s.' % GAME_NAME)
+        self.user.update_output('You have entered the world of %s.' % GAME_NAME)
         self.world.tell_users("%s has entered the world." % self.user.fancy_name())
         if self.user.location:
             self.user.update_output(self.user.look_at_room())
             self.user.location.user_add(self.user)
     
     def character_cleanup(self):
+        """This is the final stage before the user enters the world, where any
+        cleanup should happen so that the user can be handed off to the main
+        parse-command mode.
+        
+        PREV STATE: self.verify_password OR self.add_email
+        NEXT STATE: self.join_world
+        """
         # If the user doesn't have a location, send them to the default 
         # location that the World tried to get out of the config file
         if not self.user.location:
@@ -103,78 +148,114 @@ class InitMode(object):
         self.state = self.join_world
     
     # ************Character creation below!! *************
-    def new_username(self):
-        if len(self.user.inq) > 0:
-            username = self.user.inq[0]
-            row = self.world.db.select("dbid from user where name=?", [username.lower()])
-            if row:
-                self.user.update_output('That username is already taken.\n')
-                self.user.update_output('Please choose a username. It should be a single word, using only letters.')
-                del self.user.inq[0]
-            else:
-                self.save['name'] = username
+    def verify_new_character(self, arg):
+        """A user entered a username that doesn't exist; ask if they want to
+        create a new user by that name.
+        
+        PREV STATE: self.verify_username
+        NEXT STATE: self.create_password, if the user wants to create a new character, OR
+                    self.verify_username, if the user does not want to create a new character OR
+                    self.new_username if the user entered an invalid username the first time
+        """
+        if arg.strip().lower().startswith('y'):
+            if self.username.isalpha():
+                self.save['name'] = self.username
                 self.user.update_output('Please choose a password: ' + CONCEAL, False)
                 self.password = None
-                del self.user.inq[0]
-                self.state = self.create_password
-    
-    def create_password(self):
-        if len(self.user.inq) > 0:
-            passwd = self.user.inq[0]
-            if not self.password:
-                self.password = passwd
-                self.user.update_output(CLEAR + '\r\nRe-enter your password to confirm: ' + CONCEAL, False)
-                del self.user.inq[0]
+                self.next_state = self.create_password
             else:
-                if self.password == passwd:
-                    self.save['password'] = hashlib.sha1(self.user.inq[0]).hexdigest()
-                    del self.user.inq[0]
-                    self.state = self.choose_gender
-                    self.user.update_output(CLEAR + "\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
-                else:
-                    self.user.update_output(CLEAR + '\r\nPasswords did not match.' +\
-                                            '\r\nPlease choose a password: ' + CONCEAL, False)
-                    self.password = None
-                    del self.user.inq[0]
+                self.user.update_output("Invalid name. Names should be a single word, using only letters.\r\n" +\
+                "Choose a name: ", False)
+                self.next_state = self.new_username
+        else:
+            self.user.update_output('Type "new" if you\'re a new player. Otherwise, enter your username.')
+            self.next_state = self.verify_username
+    
+    def new_username(self, arg):
+        """The user is choosing a name for their new character.
+        
+        PREV STATE: self.verify_username
+        NEXT STATE: self.create_password
+        """
+        if arg.isalpha():
+            row = self.world.db.select("dbid from user where name=?", [arg.lower()])
+            if row:
+                self.user.update_output('That username is already taken.\r\n')
+                self.user.update_output('Please choose a username. It should be a single word, using only letters.')
+            else:
+                #verify here!
+                self.save['name'] = arg
+                self.user.update_output('Please choose a password: ' + CONCEAL, False)
+                self.password = None
+                self.next_state = self.create_password
+        else:
+            self.user.update_output("Invalid name. Names should be a single word, using only letters.\r\n" +\
+            "Choose a name: ", False)
+    
+    def create_password(self, arg):
+        """The user is choosing a password for their new character.
+        
+        PREV STATE: self.new_username OR self.verify_new_character
+        NEXT STATE: This state will repeat until a password has been chosen and
+                    confirmed, then will change to self.choose_gender
+        """
+        if not self.password:
+            self.password = arg
+            self.user.update_output(CLEAR + '\r\nRe-enter your password to confirm: ' + CONCEAL, False)
+        else:
+            if self.password == arg:
+                self.save['password'] = hashlib.sha1(arg).hexdigest()
+                self.next_state = self.choose_gender
+                self.user.update_output(CLEAR + "\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
+            else:
+                self.user.update_output(CLEAR + '\r\nPasswords did not match.' +\
+                                        '\r\nPlease choose a password: ' + CONCEAL, False)
+                self.password = None
             
     
-    def choose_gender(self):
-        if len(self.user.inq) > 0:
-            gender = self.user.inq[0]
-            if gender[0].lower() in 'mfn':
-                self.save['gender'] = gender
-                self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
-                                        'your password if you forget it (otherwise, you\'re out of luck ' +\
-                                        'if you forget!).\n' +\
-                                        'Would you like to add an e-mail address to this character? ' +\
-                                        '(Y/N)')
-                self.state = self.add_email
-            else:
-                self.user.update_output('Please choose from: male, female, or neutral:')
-            del self.user.inq[0]
+    def choose_gender(self, arg):
+        """The user is choosing a gender for their new character.
+        
+        PREV STATE: self.create_password
+        NEXT STATE: This state will repeat until a gender is chosen, then change
+                    to self.add_email
+        """
+        if arg[0].lower() in 'mfn':
+            genders = {'m': 'male', 'f': 'female', 'n': 'neutral'}
+            self.save['gender'] = genders.get(arg[0])
+            self.user.update_output('If you add an e-mail to this account, we can help you reset ' +\
+                                    'your password if you forget it (otherwise, you\'re out of luck ' +\
+                                    'if you forget!).\n' +\
+                                    'Would you like to add an e-mail address to this character? ' +\
+                                    '(Y/N)')
+            self.next_state = self.add_email
+        else:
+            self.user.update_output('Please choose from: male, female, or neutral:')
     
-    def add_email(self):
-        if len(self.user.inq) > 0:
-            if self.user.inq[0][0].lower() == 'y':
-                self.inner_state = 'yes_email'
-                self.user.update_output('We promise not to use your e-mail for evil ' +\
-                                        '(you can type "help email" for details).\n' +\
-                                        'Please enter your e-mail address:')
-            elif self.user.inq[0][0].lower() == 'n':
-                self.user.userize(**self.save)
-                self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
-                self.user.update_output(choose_class_string)
-            
-            # We should only get to this state if the user said they want to enter their e-mail
-            # address to be saved
-            elif self.inner_state == 'yes_email':
-                self.save['email'] = self.user.inq[0]
-                self.user.userize(**self.save)
-                self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
-                # self.user.update_output(choose_class_string)
-            else:
-                self.user.update_output('This is a "yes or no" type of question. Try again:')
-            del self.user.inq[0]
+    def add_email(self, arg):
+        """The user is adding (or not adding!) an email address to their new
+        character.
+        
+        PREV STATE: self.choose_gender
+        NEXT_STATE: self.character_cleanup
+        """
+        if arg.lower().startswith('y'):
+            self.save['email'] = 'yes_email'
+            self.user.update_output('We promise not to use your e-mail for evil!\n' +\
+                                    'Please enter your e-mail address:')
+        # We should only get to this state if the user said they want to enter their e-mail
+        # address to be saved
+        elif self.save.get('email') == 'yes_email':
+            self.save['email'] = arg
+            self.user.userize(**self.save)
+            self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
+            # self.user.update_output(choose_class_string)
+            self.state = self.character_cleanup
+        else:
+            self.user.userize(**self.save)
+            self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
+            # self.user.update_output(choose_class_string)
+            self.state = self.character_cleanup
     
     # def assign_defaults(self):
     #     if len(self.user.inq) > 0:
