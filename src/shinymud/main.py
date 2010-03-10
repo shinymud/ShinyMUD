@@ -6,6 +6,14 @@ import signal
 import hashlib
 import logging
 
+# H'Okay, so, first we need to set the python path...
+# using __file__ and os.environ
+path = os.path.abspath(os.path.dirname(__file__))
+index = path.rfind('shinymud')
+path = path[:index]
+pypath = path + ':' + os.environ.get('PYTHONPATH', '')
+sys.path.insert(0, path)
+
 from shinymud.data.config import GAME_NAME, DB_NAME, PORT
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
@@ -14,12 +22,7 @@ from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
 from shinymud.lib.sport import SPort
 
-# H'Okay, so, first we need to set the python path...
-# using __file__ and os.environ
-path = os.path.abspath(os.path.dirname(__file__))
-index = path.rfind('shinymud')
-path = path[:index]
-pypath = path + ':' + os.environ.get('PYTHONPATH', '')
+
 # Create the logs folder if it doesn't exist
 if not os.path.exists(path + 'shinymud/data/logs'):
     os.mkdir(path + 'shinymud/data/logs')
