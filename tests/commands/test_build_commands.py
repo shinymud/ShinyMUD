@@ -99,7 +99,7 @@ class TestBuildCommands(TestCase):
              'link').run()
         self.bob.log.debug(self.bob.outq)
         fail = ("This room's (id: 1) west exit is already linked to room 1, "
-                "area cake.\n"
+                "area cake.\r\n"
                 "You must unlink it before linking it to a new room.\r\n")
         self.assertTrue(fail in self.bob.outq)
     

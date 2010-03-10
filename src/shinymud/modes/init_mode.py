@@ -230,7 +230,7 @@ class InitMode(object):
                                     '(Y/N)')
             self.next_state = self.add_email
         else:
-            self.user.update_output('Please choose from: male, female, or neutral:')
+            self.user.update_output('Please choose from male, female, or neutral:')
     
     def add_email(self, arg):
         """The user is adding (or not adding!) an email address to their new
