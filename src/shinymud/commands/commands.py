@@ -1707,6 +1707,18 @@ class Me(BaseCommand):
     help = (
     """<title>Me (Command)</title>
 The Me command returns a score-card of your player details.
+Some of your details are editable using the set command:
+\ntitle - (set title <title-text>)
+email - (set email <e-mail-address>) Your email address. It's never displayed
+publicly, and its only real purpose will be to help you to reset your password
+if you forget it.
+description - (set description, starts TextEditMode) The description that's
+seen when people Look at you.
+\nIf you have authority to use the Goto command, you can also set the following:
+goto appear message - (set goto_appear <appear-message>) The message heard in
+a room when you use the Goto command to enter it
+set goto_disappear - (set goto_disappear <disappear-message) The message heard
+in a room when you use the Goto command to leave it
     """
     )
     def execute(self):

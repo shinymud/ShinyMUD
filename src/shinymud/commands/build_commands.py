@@ -863,7 +863,8 @@ about this area.
 """), ['area'])
 
 command_help.register(("<title>Item (BuildMode Object) </title>"
-"""Items
+"""Items make up all of the "things" in the game. From furniture to food, items
+provide true interactivity to your areas.
 \nITEM ATTRIBUTES:
 <b>name - (set name <name>)</b> The name of the item, seen by the player when
 they interact with it (such as getting it, giving it, dropping it, etc.).
@@ -900,3 +901,23 @@ command_help.register(("<title>Item Types (BuildMode Object) </title>"
 See their help pages for more information about the attributes and features
 they add to a regular item object.
 """), ['item types', 'item type'])
+
+command_help.register(("<title>Portal (ItemType)</title>"
+"""Coming soon!
+"""), ['portal'])
+
+command_help.register(("<title>Weapon (ItemType)</title>"
+"""Coming soon!
+"""), ['weapon'])
+
+command_help.register(("<title>Food (ItemType)</title>"
+"""Coming soon!
+"""), ['food'])
+
+command_help.register(("<title>Container (ItemType)</title>"
+"""Coming soon!
+"""), ['container'])
+
+command_help.register(("<title>Furniture (ItemType)</title>"
+"""Coming soon!
+"""), ['furniture'])
