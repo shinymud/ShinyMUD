@@ -31,6 +31,5 @@ port number (as well as lots of other things) in: src/data/config.py
 A list of ShinyMUD authors and the License for ShinyMUD can be found in the
 AUTHORS file and the LICENSE file, respectively.
 
-Any included libraries in the `resources` folder are authored and
-licensed by their respective owners, see LICENSE files within the
-libraries.
+Any work that is NOT owned by Incendiary Software is included in the resources directory,
+and will have it's own LICENSE file, or the equivalent.
