@@ -8,7 +8,24 @@ from shinymud.data.config import AREAS_IMPORT_DIR, AREAS_EXPORT_DIR, VERSION
 import os
 import re
 import logging
-import simplejson as json
+from resources import simplejson as json
+
+def sanitize(obj):
+    """Sanitize an object that was built by json.
+    simplejson will sometimes use unicode instead of ascii
+    for dictionary keys, which cause them to fail when being
+    dereferenced for function calls like foo(**args).
+    """
+    if isinstance(obj, list) and len(obj):
+        for i in range(len(obj)):
+            obj[i] = sanitize(obj[i])
+        return obj
+    elif isinstance(obj,dict):
+        return dict([(str(k), sanitize(v)) for k,v in obj.items()])
+    else:
+        #integers, strings, floats, etc... fine as they are.
+        return obj
+
 
 class SPort(object):
     """Export and import areas (and their objects) to a file."""
@@ -102,15 +119,15 @@ class SPort(object):
         """Import an area from a text file in ShinyAreaFormat."""
         txt = self.get_import_data(areaname + '.txt')
         # Assemble the data structures from the file text
-        area = json.loads(self.match_shiny_tag('Area', txt))
-        scripts = json.loads(self.match_shiny_tag('Scripts', txt))
-        items = json.loads(self.match_shiny_tag('Items', txt))
-        itypes = json.loads(self.match_shiny_tag('Item Types', txt))
-        npcs = json.loads(self.match_shiny_tag('Npcs', txt))
-        npc_events = json.loads(self.match_shiny_tag('Npc Events', txt))
-        rooms = json.loads(self.match_shiny_tag('Rooms', txt))
-        room_exits = json.loads(self.match_shiny_tag('Room Exits', txt))
-        room_resets = json.loads(self.match_shiny_tag('Room Resets', txt))
+        area = sanitize(json.loads(self.match_shiny_tag('Area', txt)))
+        scripts = sanitize(json.loads(self.match_shiny_tag('Scripts', txt)))
+        items = sanitize(json.loads(self.match_shiny_tag('Items', txt)))
+        itypes = sanitize(json.loads(self.match_shiny_tag('Item Types', txt)))
+        npcs = sanitize(json.loads(self.match_shiny_tag('Npcs', txt)))
+        npc_events = sanitize(json.loads(self.match_shiny_tag('Npc Events', txt)))
+        rooms = sanitize(json.loads(self.match_shiny_tag('Rooms', txt)))
+        room_exits = sanitize(json.loads(self.match_shiny_tag('Room Exits', txt)))
+        room_resets = sanitize(json.loads(self.match_shiny_tag('Room Resets', txt)))
         # Build the area from the assembled dictionary data
         try:
             new_area = Area.create(**area)
