@@ -860,8 +860,8 @@ added to that area's Builder's List).
 <b>description - (set description, starts TextEditMode)</b> A short description
 about this area.
 \nFor more help about attributes in general, see "help attribute".
-"""), ['area'])
-
+"""
+), ['area'])
 command_help.register(("<title>Item (BuildMode Object) </title>"
 """Items make up all of the "things" in the game. From furniture to food, items
 provide true interactivity to your areas.
@@ -889,7 +889,8 @@ the player.
 can be picked up and taken by a player.
 <b>base value - (set basevalue <base-value>)</b> The base currency value for
 this item, without units.
-"""), ['item'])
+"""
+), ['item'])
 
 command_help.register(("<title>Item Types (BuildMode Object) </title>"
 """There are currently 5 different item types:
@@ -900,24 +901,30 @@ command_help.register(("<title>Item Types (BuildMode Object) </title>"
   Portal
 See their help pages for more information about the attributes and features
 they add to a regular item object.
-"""), ['item types', 'item type'])
+"""
+), ['item types', 'item type'])
 
 command_help.register(("<title>Portal (ItemType)</title>"
 """Coming soon!
-"""), ['portal'])
+"""
+), ['portal'])
 
 command_help.register(("<title>Weapon (ItemType)</title>"
 """Coming soon!
-"""), ['weapon'])
+"""
+), ['weapon'])
 
 command_help.register(("<title>Food (ItemType)</title>"
 """Coming soon!
-"""), ['food'])
+"""
+), ['food'])
 
 command_help.register(("<title>Container (ItemType)</title>"
 """Coming soon!
-"""), ['container'])
+"""
+), ['container'])
 
 command_help.register(("<title>Furniture (ItemType)</title>"
 """Coming soon!
-"""), ['furniture'])
+"""
+), ['furniture'])
