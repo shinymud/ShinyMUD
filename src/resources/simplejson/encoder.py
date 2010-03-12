@@ -5,13 +5,13 @@ from decimal import Decimal
 
 def _import_speedups():
     try:
-        from simplejson import _speedups
+        from resources.simplejson import _speedups
         return _speedups.encode_basestring_ascii, _speedups.make_encoder
     except ImportError:
         return None, None
 c_encode_basestring_ascii, c_make_encoder = _import_speedups()
 
-from simplejson.decoder import PosInf
+from resources.simplejson.decoder import PosInf
 
 ESCAPE = re.compile(r'[\x00-\x1f\\"\b\f\n\r\t]')
 ESCAPE_ASCII = re.compile(r'([\\"]|[^\ -~])')
@@ -192,7 +192,7 @@ class JSONEncoder(object):
     def encode(self, o):
         """Return a JSON string representation of a Python data structure.
 
-        >>> from simplejson import JSONEncoder
+        >>> from resources.simplejson import JSONEncoder
         >>> JSONEncoder().encode({"foo": ["bar", "baz"]})
         '{"foo": ["bar", "baz"]}'
 
