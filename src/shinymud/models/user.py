@@ -52,7 +52,6 @@ class User(Character):
             self.location = self.world.get_location(loc[0], loc[1])
         if self.dbid:
             self.load_inventory()
-        self.effects = {}
     
     def load_inventory(self):
         rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])

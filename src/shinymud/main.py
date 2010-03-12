@@ -172,7 +172,7 @@ def clean():
     if check_running():
         stop()
     if os.path.exists(DB_NAME):
-        print "Are you sure you want to delete you database? This will delete "
+        print "Are you sure you want to delete your database? This will delete "
         print "any saved game data you have so far."
         choice = raw_input("Yes/No: ")
         if choice.lower().strip().startswith('y'):

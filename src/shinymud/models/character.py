@@ -102,6 +102,7 @@ class Character(object):
         self.evade = IntRegister()
         self.absorb = DictRegister()
         self.damage = DamageRegister()
+        self.effects = {}
     
     def to_dict(self):
         d = {}

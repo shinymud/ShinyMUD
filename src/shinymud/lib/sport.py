@@ -35,14 +35,14 @@ class SPort(object):
         self.world = World.get_world()
         self.import_dir = import_dir
         self.export_dir = export_dir
-        error = self.check_export_path()
-        if error:
-            return error
     
     def export_to_shiny(self, area):
         """Export an area to a text file in ShinyAreaFormat.
         area -- the area object to be exported
         """
+        error = self.check_export_path()
+        if error:
+            return error
         shiny_area = '[ShinyMUD Version "%s"]\n' % VERSION
         d = area.to_dict()
         del d['dbid']
@@ -164,6 +164,7 @@ class SPort(object):
             self.world.destroy_area(areaname, 'SPort Error')
             raise SPortImportError('There was a horrible error on import! '
                                    'Aborting! Check logfile for details.')
+        new_area.reset()
         
         return '%s has been successfully imported.' % new_area.title
     
