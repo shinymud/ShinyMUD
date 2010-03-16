@@ -25,6 +25,18 @@ class World(object):
         self.log = logging.getLogger('World')
         self.db = DB()
         self.default_location = None
+        self.login_greeting = ''
+        
+        try:
+            greet_file = open(ROOT_DIR + '/login_greeting.txt', 'r')
+        except Exception, e:
+            self.log.error('Error opening login_greeting.txt: ' + str(e))
+        else:
+            self.login_greeting = greet_file.read()
+        finally:
+            greet_file.close()
+        if not self.login_greeting:
+            self.login_greeting = 'Welcome to %s' % GAME_NAME
     
     @classmethod
     def get_world(cls):

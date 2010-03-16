@@ -52,6 +52,7 @@ class InitMode(object):
         self.save = {}
         
         intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.'
+        self.user.update_output(self.world.login_greeting + '\r\n', strip_nl=False)
         self.user.update_output(intro_message)
     
     def get_input(self):
