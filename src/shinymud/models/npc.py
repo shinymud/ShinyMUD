@@ -28,6 +28,7 @@ class Npc(Character):
         self.spawn_id = None
         self.log = logging.getLogger('Npc')
         self.events = {}
+        self.next_event_id = 1
         if self.dbid:
             self.load_events()
     
@@ -53,19 +54,23 @@ class Npc(Character):
     def __str__(self):
         string = ('NPC %s from Area %s' % (self.id, self.area.name)
                    ).center(50, '-') + '\n'
-        if self.events:
-            scripts = '\n  '
-            scripts += '\n  '.join([str(val) for val in self.events.values()])
-        else:
-            scripts = 'None.'
+        events = ''
+        for trigger, e_list in self.events.items():
+            events += '\n  %s:' % trigger
+            i = 0
+            for e in e_list:
+                events += '\n    [%s] %s' % (str(i), str(e))
+                i += 1
+        if not events:
+            events = 'None.'
         string += """name: %s
 title: %s
 gender: %s
 keywords: %s
 description:
     %s
-events: %s""" % (self.name, self.title, self.gender, str(self.keywords), 
-                 self.description, scripts)
+Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords), 
+                 self.description, events)
         string += '\n' + ('-' * 50)
         return string
     
@@ -88,6 +93,7 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         return self.name
     
     def load_events(self):
+        """Load the events associated with this NPC."""
         events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
         self.log.debug(events)
         for event in events:
@@ -98,9 +104,6 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
                 # Only load this event if its script exists
                 event['script'] = s
                 self.new_event(event)
-                # event['prototype'] = self
-                # e = NPCEvent(**event)
-                # self.events[event['event_trigger']] = e
             else:
                 self.log.error('The script this event points to is gone! '
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
@@ -177,9 +180,6 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             prob = int(prob)
             if (prob < 1) or (prob > 100):
                 return 'Probability value must be between 1 and 100.'
-        e = self.events.get(trigger)
-        if e:
-            e.destruct()
         self.new_event({'condition': condition, 
                         'script': script,
                         'probability': int(prob),
@@ -187,26 +187,45 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         return 'Event added.'
     
     def new_event(self, event_dict):
-        """Add a new event to this npc."""
+        """Add a new npc event to this npc."""
         event_dict['prototype'] = self
         new_event = NPCEvent(**event_dict)
         if not new_event.dbid:
             new_event.save()
-        self.events[new_event.event_trigger] = new_event
+        if new_event.event_trigger in self.events:
+            self.events[new_event.event_trigger].append(new_event)
+        else:
+            self.events[new_event.event_trigger] = [new_event]
     
     def remove_event(self, event):
-        """Remove an event from an npc."""
-        if event in self.events:
-            self.events[event].destruct()
-            del self.events[event]
-            return 'Event "%s" removed.' % event
-        return 'Npc %s doesn\'t have an event "%s".' % (self.id, event)
+        """Remove an event from an npc.
+        event -- a string containing the id and trigger type of the event to be removed.
+        """
+        exp = r'(?P<trigger>\w+)[ ]+(?P<index>\d+)'
+        match = re.match(exp, event, re.I)
+        if not match:
+            return 'Try: "remove event <event-trigger> <event-id>" or see "help npc events".'
+        trigger, index = match.group('trigger', 'index')
+        if trigger not in self.events:
+            return 'Npc %s doesn\'t have an event with the trigger type "%s".' % (self.id, trigger)
+        if int(index) > len(self.events[trigger]):
+            return 'Npc %s doesn\'t have the event %s #%s.' % (self.id, trigger, index)
+        event = self.events[trigger].pop(int(index))
+        event.destruct()
+        return 'Event %s, number %s has been removed.' % (trigger, index)
     
     def notify(self, event_name, args):
+        """An event has been fired and this NPC should check if it should
+        react.
+        event_name -- the name of the event being fired
+        args -- the args that should be passed to the event constructor
+        """
         if event_name in self.events.keys():
             args['obj'] = self
-            args.update(self.events[event_name].get_args())
-            EVENTS[event_name](**args).run()
+            for e in self.events[event_name]:
+                args.update(e.get_args())
+                EVENTS[event_name](**args).run()
     
     def set_mode(self, mode):
         pass
+    
