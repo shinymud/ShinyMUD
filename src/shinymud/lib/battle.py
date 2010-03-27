@@ -23,7 +23,7 @@ class Battle(object):
         while len(ready_characters) and self.active():
             # while we have someone ready to attack AND both teams are still active
             #sort the list
-            ready_characters.sort(lambda x,y: -1 if (x.atk < y.atk if x.atk != y.atk else x.speed < y.speed) else 1)
+            ready_characters.sort(lambda x,y: -1 if (x.atk < y.atk) else 1)
             attacker = ready_characters[0]
             if attacker.next_action_cost() > attacker.atk:
                 self.log.debug(attacker.fancy_name() + " has no more attacks this round")

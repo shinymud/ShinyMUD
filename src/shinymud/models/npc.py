@@ -210,3 +210,7 @@ events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
     
     def set_mode(self, mode):
         pass
+    
+    def death(self):
+        # Call any events related to death, and drop a corpse.
+        pass

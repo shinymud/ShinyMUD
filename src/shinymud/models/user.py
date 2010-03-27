@@ -26,7 +26,6 @@ class User(Character):
         self.dbid = None
         self.world = World.get_world()
         self.channels = {'chat': False}
-        self.position = ('standing', None)
     
     def userize(self, **args):
         self.characterize(**args)
@@ -306,16 +305,6 @@ class User(Character):
         look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, items, npcs, users)
         return look
     
-    def change_position(self, pos, furniture=None):
-        """Change the user's position."""
-        
-        if self.position[1]:
-            self.position[1].item_types['furniture'].user_remove(self)
-        if furniture:
-            furniture.item_types['furniture'].user_add(self)
-        self.position = (pos, furniture)
-        # self.log.debug(pos + ' ' + str(furniture))
-    
     def cycle_effects(self):
         for name in self.effects.keys():
             if self.effects[name].duration > 0:
@@ -343,3 +332,10 @@ class User(Character):
         if effect.name in self.effects:
             del self.effects[effect.name]
     
+
+    def death(self):
+        # Send character to the default location, with 1 hp.
+        self.hp = 1
+        self.log.debug("%s has died." % self.fancy_name())
+        self.update_output('You Died.')
+        self.go(self.world.get_location(DEFAULT_LOCATION[0], DEFAULT_LOCATION[1]))

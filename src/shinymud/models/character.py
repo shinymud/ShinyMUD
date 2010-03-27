@@ -91,7 +91,6 @@ class Character(object):
         self.max_hp = args.get('max_hp', 20)
         self.battle = None
         self._battle_target = None
-        self._default_attack = args.get('default_attack', "punch")
         self.inventory = []
         self.equipped = {} #Stores current item in each slot from SLOT_TYPES
         for i in SLOT_TYPES.keys():
@@ -103,6 +102,7 @@ class Character(object):
         self.absorb = DictRegister()
         self.damage = DamageRegister()
         self.effects = {}
+        self.position = ('standing', None)
     
     def to_dict(self):
         d = {}
@@ -111,8 +111,10 @@ class Character(object):
         d['mp'] = self.mp
         d['max_mp'] = self.max_mp
         d['max_hp'] = self.max_hp
-        d['default_attack'] = self._default_attack
         return d
+    
+    def __str__(self):
+        return self.fancy_name()
     
     def load_inventory(self):
         pass
@@ -185,6 +187,16 @@ class Character(object):
         else:
             self.update_output('You better stand up first.')
     
+    def change_position(self, pos, furniture=None):
+        """Change the user's position."""
+        
+        if self.position[1]:
+            self.position[1].item_types['furniture'].user_remove(self)
+        if furniture:
+            furniture.item_types['furniture'].user_add(self)
+        self.position = (pos, furniture)
+        # self.log.debug(pos + ' ' + str(furniture))
+    
     # Battle specific commands
     def _get_battle_target(self):
         if self in self.battle.teamA:
@@ -206,8 +218,8 @@ class Character(object):
         if len(self._attack_queue):
             self.log.debug("next action: %s" % self._attack_queue[0].__class__.__name__)
             return self._attack_queue.pop(0)
-        self.log.debug("next action: %s" % self._default_attack.capitalize())
-        return Attack_list[self._default_attack](self, self.battle_target, self.battle)
+        self.log.debug('next action: Attack')
+        return Action_list['attack'](self, self.battle_target, self.battle)
     
     def _queue_attack(self, attack):
         self._attack_queue.append(attack)
@@ -218,8 +230,8 @@ class Character(object):
         if len(self._attack_queue):
             self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost ))
             return self._attack_queue[0].cost
-        self.log.debug("next action cost %s:" % str(Attack_list[self._default_attack].cost))
-        return Attack_list[self._default_attack].cost
+        self.log.debug("next action cost %s:" % str(Action_list['attack'].cost))
+        return Action_list['attack'].cost
     
     def attack(self):
         self.log.debug(self.fancy_name() + " is attacking:")
@@ -230,22 +242,32 @@ class Character(object):
         self.atk += self.next_action_cost()
         self.attack()
     
-    def takes_damage(self, damages):
+    def takes_damage(self, damages, attacker=None):
         total = 0
+        absorb = self.absorb.calculate()
         for damage_type, damage in damages.items():
-            d = (damage - self.absorb.get(damage_type, 0))
+            d = (damage - absorb.get(damage_type, 0))
             if d >0:
                 total += d
         self.log.debug("%s hit for %s damage" % (self.fancy_name(), str(total)))
         self.hp -= total
+        if attacker:
+            self.update_output("%s hit you for %s damage." % (attacker, str(total)))
+        else:
+            self.update_output("You were hit for %s damage." % str(total))
         if self.hp <= 0:
-            self.hp = 0
             self.battle.remove_character(self)
+            self.battle = None
             self.set_mode('normal')
+            self.death()
         # Call any events related to being hit or hp
         return total
     
     def enter_battle(self):
         if self.char_type == 'user':
             self.set_mode('battle')
+            self.change_position('standing')
     
+    def death(self):
+        raise Exception("Not Implemented")
+        
