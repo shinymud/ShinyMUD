@@ -88,6 +88,9 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         new_npc.remember = []
         return new_npc
     
+    def set_mode(self, mode):
+        pass
+    
     def fancy_name(self):
         """Return a capitalized version of the character's name."""
         return self.name
@@ -111,6 +114,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
     def update_output(self, message):
         self.actionq.append(message)
     
+# ***** BuildMode accessor functions *****
     def set_description(self, description, user=None):
         """Set the description of this npc."""
         user.last_mode = user.mode
@@ -144,12 +148,16 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             return 'Npc keywords have been reset.\n'
     
     def set_gender(self, gender, user=None):
+        """Set the gender of this npc."""
+        if not gender:
+            return 'Try "set gender <gender>", or see "help npc".'
         if gender.lower() not in ['female', 'male', 'neutral']:
             return 'Valid genders are: female, male, neutral.'
         self.gender = gender.lower()
         self.save({'gender': self.gender})
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
+# ***** Event functions *****
     def add_event(self, args):
         """Add an event to an npc."""
         # add event on_enter call script 1
@@ -225,7 +233,4 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             for e in self.events[event_name]:
                 args.update(e.get_args())
                 EVENTS[event_name](**args).run()
-    
-    def set_mode(self, mode):
-        pass
     
