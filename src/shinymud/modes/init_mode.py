@@ -1,6 +1,6 @@
 from shinymud.commands.commands import *
 from shinymud.data.config import GAME_NAME
-from shinymud.lib.ansi_codes import CONCEAL, CLEAR
+from shinymud.lib.ansi_codes import CONCEAL, CLEAR, COLOR_FG_RED
 from shinymud.lib.world import World
 
 import hashlib
@@ -43,6 +43,7 @@ class InitMode(object):
         user - a User object that has yet to be userized (initialized)
         """
         self.user = user
+        self.newbie = False
         self.state = self.get_input
         self.next_state = self.verify_username
         self.active = True
@@ -51,7 +52,7 @@ class InitMode(object):
         self.log = logging.getLogger('InitMode')
         self.save = {}
         
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your username.'
+        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your name.'
         self.user.update_output(self.world.login_greeting + '\r\n', strip_nl=False)
         self.user.update_output(intro_message)
     
@@ -125,8 +126,15 @@ class InitMode(object):
         entered the world!
         """
         self.active = False
-        self.user.update_output('You have entered the world of %s.' % GAME_NAME)
-        self.world.tell_users("%s has entered the world." % self.user.fancy_name())
+        self.user.update_output('\nYou have entered the world of %s.\n' % GAME_NAME, strip_nl=False)
+        if self.newbie:
+            newb = "Welcome, new player!\n" + COLOR_FG_RED + BOLD +\
+                   'If you would like some help playing the game, type ' +\
+                   '"help newbie".\n' + CLEAR
+            self.user.update_output(newb, strip_nl=False)
+            self.world.tell_users("%s, a new player, has entered the world." % self.user.fancy_name())
+        else:
+            self.world.tell_users("%s has entered the world." % self.user.fancy_name())
         if self.user.location:
             self.user.update_output(self.user.look_at_room())
             self.user.location.user_add(self.user)
@@ -252,11 +260,13 @@ class InitMode(object):
             self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
             # self.user.update_output(choose_class_string)
             self.state = self.character_cleanup
+            self.newbie = True
         else:
             self.user.userize(**self.save)
             self.user.dbid = self.world.db.insert_from_dict('user', self.user.to_dict())
             # self.user.update_output(choose_class_string)
             self.state = self.character_cleanup
+            self.newbie = True
     
     # def assign_defaults(self):
     #     if len(self.user.inq) > 0:

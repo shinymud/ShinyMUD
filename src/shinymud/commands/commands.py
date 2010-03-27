@@ -161,7 +161,8 @@ To enter BuildMode and edit your current location:
             if not area:
                 self.user.update_output('Area "%s" doesn\'t exist.' % self.args)
                 self.user.update_output('See "help buildmode" for help with this command.')
-            self.edit(area)
+            else:
+                self.edit(area)
     
     def enter_build_mode(self):
         """The user should enter BuildMode."""
@@ -191,9 +192,10 @@ To enter BuildMode and edit your current location:
                 self.user.update_output('Now editing area "%s".' % area.name)
         else:
             self.user.update_output('You can\'t edit someone else\'s area.')
+    
 
 command_list.register(Build, ['build'])
-command_help.register(Build.help, ['build', 'build mode'])
+command_help.register(Build.help, ['build', 'build mode', 'buildmode'])
 
 class Look(BaseCommand):
     """Look at a room, item, npc, or PC."""
@@ -1741,7 +1743,7 @@ in a room when you use the Goto command to leave it
             me += ('| goto "appear": ' + self.user.goto_appear).ljust(width - 1) + '|\n'
             me += ('| goto "disappear": ' + self.user.goto_disappear).ljust(width - 1) + '|\n'
             me += empty_line
-        me += '|' + (' Personal Details ').center(width - 2, '-') + '|\n'
+        me += '|' + (' Private Details ').center(width - 2, '-') + '|\n'
         me += ('| email: ' + str(self.user.email)).ljust(width - 1) + '|\n'
         me += '|' + ('-' * (width - 2)) + '|' 
         self.user.update_output(me)
@@ -1758,3 +1760,32 @@ insert lines as you go. Help for TextEditMode commands can be accessed by
 typing @help while in TextEditMode.
 """
 ), ['TextEditMode', 'text edit mode', 'textedit', 'text edit'])
+
+command_help.register(("<title>Newbie Help</title>"
+"""Welcome! You've just successfully invoked our help system on the "newbie"
+topic. Any time you need help with something, just type "help" and then the
+name of the topic you want help with. Try it on the topics below to expand
+your knowledge of how to play the game:
+\nSee <b>help commands</b> for a tutorial on what to type and how to interact
+with the game.
+\nSee <b>help go</b> for a tutorial on how to move around and explore
+the game.
+\nSee <b>help talking</b> for a tutorial on how to communicate with other
+players in the game.
+\nSee <b>help mud</b> to get a better idea of what kind of game a MUD is.
+\nHappy MUDding!
+"""
+), ['newbie', 'newb'])
+
+command_help.register(("<title>Communication</title>"
+"""
+"""
+), ['talking', 'talk', 'communication'])
+
+command_help.register(("<title>Commands (Basic Commands)</title>"
+"""Commands are how players interact with the game; in fact, you've just used
+the Help command in order to call up this help page (fancy!).
+
+
+"""
+), ['command', 'commands'])
