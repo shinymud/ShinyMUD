@@ -55,5 +55,6 @@ EMOTES = {  'slap': (['You stand around looking for someone to slap.',
                       ['You raise an eyebrow at #target.',
                        '#actor raises an eyebrow at you.',
                        '#actor raises an eyebrow at #target.'
-                      ])
+                      ]),
+            'sigh': (['You sigh.', '#actor sighs.'], [])
          }

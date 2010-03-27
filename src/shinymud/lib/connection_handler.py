@@ -1,4 +1,5 @@
 from shinymud.models.user import User
+
 import threading
 import socket
 import logging
@@ -8,7 +9,7 @@ class ConnectionHandler(threading.Thread):
     def __init__(self, port, host, world):
         threading.Thread.__init__(self)
         self.log = logging.getLogger('ConnectionHandler')
-        self.daemon = True
+        self.daemon = True # So this thread will exit when the main thread does
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.listener.bind((host, port))
@@ -22,7 +23,7 @@ class ConnectionHandler(threading.Thread):
         """
         self.listener.listen(5)
         self.log.debug("Listener started")
-        while self.world.listening:
+        while 1:
             try:
                 new_user = User(self.listener.accept())
             except Exception, e:
@@ -37,8 +38,6 @@ class ConnectionHandler(threading.Thread):
                 self.world.user_list_lock.acquire()
                 self.world.user_add(new_user)
                 self.world.user_list_lock.release()
-        self.log.info('Listener closing down.')
-        self.listener.close()
     
     def negotiate_line_mode(self, con):
         """Petition client to run in linemode.

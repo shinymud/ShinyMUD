@@ -20,7 +20,6 @@ class World(object):
         self.battles_delete = []
         self.user_list_lock = threading.Lock()
         self.shutdown_flag = False
-        self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
         self.db = DB()

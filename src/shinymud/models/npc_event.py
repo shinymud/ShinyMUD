@@ -39,6 +39,7 @@ class NPCEvent(object):
         return d
     
     def save(self, save_dict=None):
+        """Save this npc_event to the database."""
         world = World.get_world()
         if self.dbid:
             if save_dict:
@@ -50,6 +51,7 @@ class NPCEvent(object):
             self.dbid = world.db.insert_from_dict('npc_event', self.to_dict())
     
     def destruct(self):
+        """Remove this npc_event from the database."""
         world = World.get_world()
         if self.dbid:
             world.db.delete('FROM npc_event WHERE dbid=?', [self.dbid])

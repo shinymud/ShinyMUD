@@ -645,6 +645,7 @@ build_list.register(Log, ['log'])
 command_help.register(Log.help, ['log'])
 
 # Defining Extra Build-related help pages:
+
 command_help.register(("<title>Build Commands (BuildMode)</title>"
 """The following are the commands available during BuildMode:
 %s
@@ -930,3 +931,8 @@ command_help.register(("<title>Furniture (ItemType)</title>"
 """Coming soon!
 """
 ), ['furniture'])
+
+command_help.register(("<title>Npc (BuildMode object)</title>"
+"""Coming soon!
+"""
+), ['npc', 'npcs'])
