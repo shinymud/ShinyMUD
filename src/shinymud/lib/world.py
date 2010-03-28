@@ -25,6 +25,7 @@ class World(object):
         self.db = DB()
         self.default_location = None
         self.login_greeting = ''
+        self.uptime = time.time()
         
         try:
             greet_file = open(ROOT_DIR + '/login_greeting.txt', 'r')

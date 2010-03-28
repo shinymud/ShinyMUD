@@ -27,7 +27,8 @@ class StatSender(threading.Thread):
             else:
                 # Send them the game-stats!
                 plist = ','.join([name for name in self.world.user_list if isinstance(name, str)])
-                conn.send(plist)
+                conn.send(plist + ':' + str(self.world.uptime))
+                # conn.send(str(self.world.uptime))
                 conn.close()
     
 
