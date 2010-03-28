@@ -1,4 +1,5 @@
 from shinymud.lib.connection_handler import ConnectionHandler
+from shinymud.lib.statsender import StatSender
 from shinymud.lib.world import World
 from shinymud.models.area import Area
 from shinymud.models.schema import initialize_database
@@ -25,6 +26,11 @@ world.default_location = world.get_location(DEFAULT_LOCATION[0],
 # Start listening for connections on a different thread
 conn_handler = ConnectionHandler(PORT, HOST, world)
 conn_handler.start()
+
+if STATS_ENABLED:
+    stat_sender = StatSender(STATS_PORT, HOST, world)
+    stat_sender.start()
+
 logger.debug('Started the connection handler. Now listening.')
 
 # Let there be light!
