@@ -20,12 +20,12 @@ class World(object):
         self.battles_delete = []
         self.user_list_lock = threading.Lock()
         self.shutdown_flag = False
-        self.listening = True
         self.areas = {}
         self.log = logging.getLogger('World')
         self.db = DB()
         self.default_location = None
         self.login_greeting = ''
+        self.uptime = time.time()
         
         try:
             greet_file = open(ROOT_DIR + '/login_greeting.txt', 'r')

@@ -16,6 +16,9 @@ PREPACK = ROOT_DIR + '/areas/builtin'
 RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an area resets
 DEFAULT_LOCATION = ('cubicle', '1')
 
+STATS_ENABLED = True
+STATS_PORT = 4112
+
 # Color constants:
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!
 clear_bcolor = COLOR_BG_RESET # DON'T CHANGE THIS ONE EITHER!

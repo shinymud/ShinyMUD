@@ -39,6 +39,7 @@ class Area(object):
         return d
     
     def load(self):
+        """Load all of this area's objects from the database."""
         if self.dbid:
             items = self.world.db.select("* from item where area=?", [self.dbid])
             for item in items:
@@ -75,21 +76,6 @@ class Area(object):
         if self.dbid:
             self.world.db.delete('FROM area WHERE dbid=?', [self.dbid])
     
-    def add_builder(self, username):
-        """Add a user to the builder's list."""
-        self.builders.append(username)
-        self.save()
-        return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
-    
-    def remove_builder(self, username):
-        """Remove a user from the builder's list."""
-        if username in self.builders:
-            self.builders.remove(username)
-            self.save()
-            return '%s has been removed from the builder\'s list for this area.\n' % username.capitalize()
-        else:
-            return '%s is not on the builder\'s list for this area.\n' % username.capitalize()
-    
     def __str__(self):
         """Print out a nice string representation of this area's attributes."""
         
@@ -116,39 +102,25 @@ Description: \n    %s""" % (self.name,
         area_list += '\n' + '-'.center(50, '-')
         return area_list
     
-    def list_rooms(self):
-        names = self.rooms.keys()
-        room_list = (' Rooms in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.rooms.items():
-            room_list += '%s - %s\n' % (key, value.name)
-        room_list += '-'.center(50, '-')
-        return room_list
+    def get_id(self, id_type):
+        """Generate a new id for an item, npc, or room associated with this area."""
+        if id_type in ['room', 'item', 'npc', 'script']:
+            world = World.get_world()
+            rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
+            max_id = rows[0]['id']
+            if max_id:
+                your_id = int(max_id) + 1
+            else:
+                your_id = 1
+            return str(your_id)
     
-    def list_items(self):
-        names = self.items.keys()
-        item_list = (' Items in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.items.items():
-            item_list += '%s - %s\n' % (key, value.name)
-        item_list += '-'.center(50, '-')
-        return item_list
+    def reset(self):
+        """Tell all of this area's rooms to reset."""
+        for room in self.rooms.values():
+            room.reset()
+        self.time_of_last_reset = time.time()
     
-    def list_npcs(self):
-        names = self.npcs.keys()
-        npc_list = (' Npcs in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.npcs.items():
-            npc_list += '%s - %s\n' % (key, value.name)
-        npc_list += '-'.center(50, '-')
-        return npc_list
-    
-    def list_scripts(self):
-        names = self.npcs.keys()
-        script_list = (' Scripts in area "%s" ' % self.name
-                      ).center(50, '-') + '\n'
-        for key, value in self.scripts.items():
-            script_list += '%s - %s\n' % (key, value.name)
-        script_list += '-'.center(50, '-')
-        return script_list
-    
+# ***** BuildMode Accessor Functions *****
     @classmethod
     def create(cls, name, **area_dict):
         """Create a new area instance and add it to the world's area list."""
@@ -162,18 +134,6 @@ Description: \n    %s""" % (self.name,
         new_area.save()
         world.new_area(new_area)
         return new_area
-    
-    def get_id(self, id_type):
-        """Generate a new id for an item, npc, or room associated with this area."""
-        if id_type in ['room', 'item', 'npc', 'script']:
-            world = World.get_world()
-            rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
-            max_id = rows[0]['id']
-            if max_id:
-                your_id = int(max_id) + 1
-            else:
-                your_id = 1
-            return str(your_id)
     
     def set_description(self, desc, user=None):
         """Set this area's description."""
@@ -195,15 +155,51 @@ Description: \n    %s""" % (self.name,
         self.save({'title': self.title})
         return 'Area title set.'
     
-    def reset(self):
-        """Tell all of this area's rooms to reset."""
-        for room in self.rooms.values():
-            room.reset()
-        self.time_of_last_reset = time.time()
+    def add_builder(self, username):
+        """Add a user to the builder's list."""
+        self.builders.append(username)
+        self.save()
+        return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
+    
+    def remove_builder(self, username):
+        """Remove a user from the builder's list."""
+        if username in self.builders:
+            self.builders.remove(username)
+            self.save()
+            return '%s has been removed from the builder\'s list for this area.\n' % username.capitalize()
+        else:
+            return '%s is not on the builder\'s list for this area.\n' % username.capitalize()
     
 # ************************ Room Functions ************************
 # Here exist all the function that an area uses to manage the rooms
 # it contains.
+    def list_rooms(self):
+        names = self.rooms.keys()
+        room_list = (' Rooms in area "%s" ' % self.name).center(50, '-') + '\n'
+        for key, value in self.rooms.items():
+            room_list += '%s - %s\n' % (key, value.name)
+        room_list += '-'.center(50, '-')
+        return room_list
+    
+    def new_room(self, room_dict=None):
+        """Add a new room to this area's room list."""
+        if room_dict:
+            # Create a new room with pre-initialized data
+            room_dict['area'] = self
+            new_room = Room(**room_dict)
+        else:
+            # Create a new 'blank' room
+            new_room = Room.create(self, self.get_id('room'))
+        new_room.save()
+        self.rooms[str(new_room.id)] = new_room
+        return new_room
+    
+    def get_room(self, room_id):
+        """Get a room from this area by its id, if it exists.
+        If it does not exist, return None.
+        """
+        return self.rooms.get(room_id)
+    
     def destroy_room(self, room_id):
         """Destroy a specific room in this area."""
         room = self.get_room(room_id)
@@ -222,29 +218,17 @@ Description: \n    %s""" % (self.name,
             return 'Room %s has been deleted.\n' % room_id
         return 'Room %s doesn\'t exist.\n' % room_id
     
-    def new_room(self, room_dict=None):
-        """Add a new room to this area's room list."""
-        if room_dict:
-            # Create a new room with pre-initialized data
-            room_dict['area'] = self
-            new_room = Room(**room_dict)
-        else:
-            # Create a new 'blank' room
-            new_room = Room.create(self, self.get_id('room'))
-        new_room.save()
-        self.rooms[str(new_room.id)] = new_room
-        return new_room
-    
-    def new_item(self, item_dict=None):
-        """Add a new item to this area's item list."""
-        if item_dict:
-            item_dict['area'] = self
-            new_item = Item(**item_dict)
-        else:
-            new_item = Item.create(self, self.get_id('item'))
-        new_item.save()
-        self.items[str(new_item.id)] = new_item
-        return new_item
+# ************************ NPC Functions ************************
+# Here exist all the function that an area uses to manage the NPC's
+# it contains.
+    def list_npcs(self):
+        """Return a 'pretty list' of all the npcs in this area."""
+        names = self.npcs.keys()
+        npc_list = (' Npcs in area "%s" ' % self.name).center(50, '-') + '\n'
+        for key, value in self.npcs.items():
+            npc_list += '%s - %s\n' % (key, value.name)
+        npc_list += '-'.center(50, '-')
+        return npc_list
     
     def new_npc(self, npc_dict=None):
         """Add a new npc to this area's npc list."""
@@ -257,49 +241,12 @@ Description: \n    %s""" % (self.name,
         self.npcs[str(new_npc.id)] = new_npc
         return new_npc
     
-    def new_script(self, script_dict=None):
-        """Add a new script to this area's script list."""
-        if script_dict:
-            script_dict['area'] = self
-            new_script = Script(**script_dict)
-        else:
-            new_script = Script(self, self.get_id('script'))
-        new_script.save()
-        self.scripts[str(new_script.id)] = new_script
-        return new_script
-    
-    def get_item(self, item_id):
-        """Get an item from this area by its id, if it exists.
-        If it does not exist, return None."""
-        if item_id in self.items.keys():
-            return self.items.get(item_id)
-        return None
-        
-    def get_room(self, room_id):
-        """Get a room from this area by its id, if it exists.
-        If it does not exist, return None."""
-        return self.rooms.get(room_id)
-    
     def get_npc(self, npc_id):
         """Get an npc from this area by its id, if it exists.
-        If it does not exist, return None."""
+        If it does not exist, return None.
+        """
         return self.npcs.get(npc_id)
     
-    def get_script(self, script_id):
-        return self.scripts.get(script_id)
-    
-    def destroy_script(self, script_id):
-        s = self.get_script(script_id)
-        if not s:
-            return 'That script doesn\'t exist.'
-        s.destruct()
-        s.id = None
-        del self.scripts[script_id]
-        return 'Script "%s" has been successfully destroyed.' % script_id
-    
-# ************************ NPC Functions ************************
-# Here exist all the function that an area uses to manage the NPC's
-# it contains.
     def destroy_npc(self, npc_id):
         npc = self.get_npc(npc_id)
         if not npc:
@@ -315,7 +262,37 @@ Description: \n    %s""" % (self.name,
 # ************************ Item Functions ************************
 # Here exist all the function that an area uses to manage the items
 # it contains.
+    def list_items(self):
+        names = self.items.keys()
+        item_list = (' Items in area "%s" ' % self.name).center(50, '-') + '\n'
+        for key, value in self.items.items():
+            item_list += '%s - %s\n' % (key, value.name)
+        item_list += '-'.center(50, '-')
+        return item_list
+    
+    def new_item(self, item_dict=None):
+        """Add a new item to this area's item list."""
+        if item_dict:
+            item_dict['area'] = self
+            new_item = Item(**item_dict)
+        else:
+            new_item = Item.create(self, self.get_id('item'))
+        new_item.save()
+        self.items[str(new_item.id)] = new_item
+        return new_item
+    
+    def get_item(self, item_id):
+        """Get an item from this area by its id, if it exists.
+        If it does not exist, return None.
+        """
+        if item_id in self.items.keys():
+            return self.items.get(item_id)
+        return None
+    
     def destroy_item(self, item_id):
+        """Remove this item from this area's items dictionary and from the database
+        item_id -- the id of the item
+        """
         item = self.get_item(item_id)
         if not item:
             return 'That item doesn\'t exist.\n'
@@ -323,4 +300,42 @@ Description: \n    %s""" % (self.name,
         item.id = None
         del self.items[item_id]
         return '"%s" has been successfully destroyed.\n' % item.name
+    
+# ************************ Script Functions ************************
+# Here exist all the function that an area uses to manage the scripts
+# it contains.
+    def list_scripts(self):
+        names = self.npcs.keys()
+        script_list = (' Scripts in area "%s" ' % self.name
+                      ).center(50, '-') + '\n'
+        for key, value in self.scripts.items():
+            script_list += '%s - %s\n' % (key, value.name)
+        script_list += '-'.center(50, '-')
+        return script_list
+    
+    def new_script(self, script_dict=None):
+        """Add a new script to this area's script list."""
+        if script_dict:
+            script_dict['area'] = self
+            new_script = Script(**script_dict)
+        else:
+            new_script = Script(self, self.get_id('script'))
+        new_script.save()
+        self.scripts[str(new_script.id)] = new_script
+        return new_script
+    
+    def get_script(self, script_id):
+        """Return the script object associated with script_id (or None
+        if the script doesn't exist)
+        """
+        return self.scripts.get(script_id)
+    
+    def destroy_script(self, script_id):
+        s = self.get_script(script_id)
+        if not s:
+            return 'That script doesn\'t exist.'
+        s.destruct()
+        s.id = None
+        del self.scripts[script_id]
+        return 'Script "%s" has been successfully destroyed.' % script_id
     
