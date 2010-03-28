@@ -30,9 +30,11 @@ class IntRegister(object):
         self.changed = True
     
     def append(self, val):
-        self.effects[self.next_id] = val
+        this_id = self.next_id
+        self.things[this_id] = val
         self.next_id += 1
         self.changed = True
+        return this_id
     
     def __delitem__(self, key):
         if key in self.things:
@@ -60,7 +62,7 @@ class DictRegister(IntRegister):
             self._calculated = {}
             for value in self.things.values():
                 key, val = self.evaluate(value)
-                self._calculated[key] = self._calculated.get(key) + val
+                self._calculated[key] = self._calculated.get(key,0) + val
         return self._calculated
     
 
@@ -77,7 +79,16 @@ class DamageRegister(DictRegister):
             val = 0
         return key, val
     
-
+    def display(self):
+        types = {}
+        mins = {}
+        maxs = {}
+        for value in self.things.values():
+            mins[value.type] = mins.get(value.type, 0) + value.range[0]
+            maxs[value.type] = maxs.get(value.type, 0) + value.range[1]
+            types[value.type] = True
+        return [(t, mins[t], maxs[t]) for t in types.keys()]
+    
 class Character(object):
     """The basic functionality that both player characters (users) and 
     non-player characters share.
@@ -145,8 +156,8 @@ class Character(object):
     
     def item_add(self, item):
         """Add an item to the character's inventory."""
-        item.owner = self.dbid
-        item.save({'owner': item.owner})
+        item.owner = self
+        item.save()
         self.inventory.append(item)
     
     def item_remove(self, item):

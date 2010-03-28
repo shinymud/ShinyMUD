@@ -52,7 +52,6 @@ class Item(object):
         self.carryable = True
         if 'carryable' in args:
             self.carryable = to_bool(args.get('carryable'))
-        self.equip_slot = str(args.get('equip_slot', ''))
         self.world = World.get_world()
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Item')
@@ -80,7 +79,6 @@ class Item(object):
         d['weight'] = self.weight
         d['base_value'] = self.base_value
         d['carryable'] = str(self.carryable)
-        d['equip_slot'] = self.equip_slot
         if self.dbid:
             d['dbid'] = self.dbid
         
@@ -103,7 +101,6 @@ class Item(object):
                   'title: ' + self.title + '\n' + \
                   'item types: ' + item_types + '\n' +\
                   'description:\n    ' + self.description + '\n' + \
-                  'equip location: ' + str(self.equip_slot) + '\n' + \
                   'keywords: ' + str(self.keywords) + '\n' + \
                   'weight: ' + str(self.weight) + '\n' + \
                   'carryable: ' + str(self.carryable) + '\n' + \
@@ -158,17 +155,7 @@ class Item(object):
         self.save({'name': self.name})
         # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
-    
-    def set_equip(self, loc, user=None):
-        """Set the equip location for this item."""
-        if loc in SLOT_TYPES.keys():
-            self.equip_slot = loc
-            self.save({'equip_slot': self.equip_slot})
-            # self.world.db.update_from_dict('item', self.to_dict())
-            return 'Item equip location set.\n'
-        else:
-            return 'That equip location doesn\'t exist.\n'
-    
+        
     def set_weight(self, weight, user=None):
         """Set the weight for this object."""
         try:
@@ -270,19 +257,18 @@ class Item(object):
                 value.save()
     
     def is_container(self):
-        if 'container' in self.item_types:
-            return True
-        return False
+        return 'container' in self.item_types
+    
+    def is_equippable(self):
+        return 'equippable' in self.item_types
     
 
 class InventoryItem(Item):
     def __init__(self, spawn_id=None, **args):
         Item.__init__(self, **args)
-        self.owner = args.get('owner')
+        self.owner_id = args.get('owner')
         self.spawn_id = spawn_id
-        self.container = args.get('container')
-        self.is_equipped = to_bool(args.get('is_equipped', False))
-        
+        self.container = args.get('container')        
         if self.dbid:
             for key, value in ITEM_TYPES.items():
                 row = self.world.db.select('* FROM %s WHERE inv_item=?' % key,
@@ -293,8 +279,8 @@ class InventoryItem(Item):
     
     def to_dict(self):
         d = Item.to_dict(self)
-        
-        d['owner'] = self.owner
+        if self.owner:
+            d['owner'] = self.owner.dbid
         if self.dbid:
             d['dbid'] = self.dbid
         if self.container:
@@ -343,49 +329,35 @@ class Damage(object):
         return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
     
 
-class Weapon(object):
+
+class Equippable(object):
     def __init__(self, **args):
-        dmg = args.get('dmg')
         self.item = args.get('item')
         self.inv_item = args.get('inv_item')
+        self.equip_slot = str(args.get('equip_slot', ''))
+        self.hit = args.get('hit', 0)
+        self.evade = args.get('evade', 0)
+        absorb = args.get('absorb')
+        self.log = logging.getLogger('Equippable')
+        self.hit_id = None
+        self.evade_id = None
+        self.absorb_ids = []
+        self.dmg_ids = []
+        self.absorb = {}
+        if absorb:
+            self.absorb = dict([(key, int(val)) for key,val in [a.split('=') for a in absorb.split(',')]])
+        dmg = args.get('dmg')
         self.dmg = []
         if dmg:
             d_list = dmg.split('|')
             for d in d_list:
                 self.dmg.append(Damage(d))
+        self.is_equipped = to_bool(args.get('is_equipped', False))
         self.dbid = args.get('dbid')
-    
-    def __str__(self):
-        string = 'WEAPON ATTRIBUTES:\n' +\
-            '  dmg: \n'
-            
-        dstring =  '    %s: %s\n' 
-        for dmg in range(len(self.dmg)):
-            string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
-        return string
-    
-    def load(self):
-        wep = Weapon()
-        for d in self.dmg:
-            wep.add_dmg(str(d))
-        return wep
-        
-        
-    
-    def to_dict(self):
-        d = {}
-        if self.item:
-            d['item'] = self.item.dbid
-        if self.inv_item:
-            d['inv_item'] = self.inv_item.dbid
-        d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
     
     def set_dmg(self, params, user=None):
         if not params:
-            return 'Sets a damage type to a weapon.\nExample: set dmg slashing 1-4 100%\n'
+            return 'Sets a damage type of an equippable item.\nExample: set dmg slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
         m = re.match(exp, params)
         #if not m:
@@ -407,9 +379,19 @@ class Weapon(object):
                 self.dmg[index - 1] = dmg
         self.save()
         # world = World.get_world()
-        # world.db.update_from_dict('weapon', self.to_dict())
-        
+        # world.db.update_from_dict('equippable', self.to_dict())
+
         return 'dmg ' + str(index) + ' set.\n'
+    
+    def set_equip(self, loc, user=None):
+        """Set the equip location for this item."""
+        if loc in SLOT_TYPES.keys():
+            self.equip_slot = loc
+            self.save({'equip_slot': self.equip_slot})
+            # self.world.db.update_from_dict('item', self.to_dict())
+            return 'Item equip location set.\n'
+        else:
+            return 'That equip location doesn\'t exist.\n'
     
     def add_dmg(self, params):
         #Currently broken will be fixed when the add class in commands is updated.
@@ -419,10 +401,151 @@ class Weapon(object):
             self.dmg.append(Damage(params))
             self.save()
             # world = World.get_world()
-            # world.db.update_from_dict('weapon', self.to_dict())
+            # world.db.update_from_dict('equippable', self.to_dict())
             return 'dmg has been added.\n'
         except Exception, e:
             return str(e)
+    
+    def set_hit(self, params):
+        self.hit = self.parse_value(params) or 0
+        self.save({'hit': self.hit})
+        return "set hit to " + str(self.hit)
+    
+    def set_evade(self, params):
+        self.evade = self.parse_value(params) or 0
+        self.save({'evade': self.evade})
+        return "set evade to " + str(self.evade)
+    
+    def add_absorb(self, params):
+        # params should be of the form "absorb_type amount"
+        exp = r'(?P<absorb_type>\w+)[ ]+(?P<amount>[^ ]+)'
+        m = re.match(exp, params)
+        if not m:
+            return "what type of damage does this absorb?"
+        absorb_type = m.group('absorb_type')
+        if absorb_type not in DAMAGE_TYPES:
+            return "what type of damage does this absorb?"
+        amount = self.parse_value(m.group('amount'))
+        if not amount:
+            if absorb_type in self.absorb:
+                del self.absorb[absorb_type]
+                return "items absorbs 0 %s damage" % absorb_types
+            return "how much damage does this absorb?"
+        self.absorb[absorb_type] = int(amount)
+        self.save()
+        return 'item absorbs %s %s damage' % (str(self.absorb[absorb_type]), absorb_type)
+    
+    set_absorb = add_absorb # alias these to be the same
+    
+    def parse_value(self, params):
+        exp = r'(-(?P<penalty>)\d+)|(\+?(?P<bonus>\d+))'
+        m = re.match(exp, params)
+        if not m:
+            return None
+        if m.group('bonus'):
+            return int(m.group('bonus')) or None
+        elif m.group('penalty'):
+            return -int(m.group('penalty')) or None
+        else:
+            return None
+    
+    def __str__(self):
+        string = 'EQUIPPABLE ATTRIBUTES:\n' +\
+            '  equip location: ' + str(self.equip_slot) + '\n' + \
+            '  hit: ' + str(self.hit) + '\n' +\
+            '  evade: ' + str(self.evade) + '\n' +\
+            '  absorb:\n'
+            
+        dstring =  '    %s: %s\n' 
+        keys = self.absorb.keys()
+        keys.sort() # Keep them in the same order, visually.
+        for k in keys:
+            string += dstring % (k, str(self.absorb[k]))
+        string += '  dmg: \n'
+        for dmg in range(len(self.dmg)):
+            string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
+        return string
+    
+    def load(self):
+        e = Equippable()
+        e.equip_slot = self.equip_slot
+        if self.hit:
+            self.log.debug("self.hit is truthy: %s %s" % (str(self.hit), str(type(self.hit))))
+            e.hit = int(self.hit)
+        if self.evade:
+            e.evade = int(self.evade)
+        a = {}
+        for k,v in self.absorb.items():
+            a[str(k)] = int(v)
+        if a:
+            e.absorb = a
+        for d in self.dmg:
+            e.add_dmg(str(d))
+        return e
+    
+    def on_equip(self):
+        #only Inventory items can be equipped, so make sure
+        # this is an Inventory itemtype.
+        if not self.inv_item or not self.inv_item.owner:
+            return
+        if self.hit:
+            self.hit_id = self.inv_item.owner.hit.append(self.hit)
+            self.log.debug('hit_id:  %s' % str(self.hit_id))
+        if self.evade:
+            self.evade_id = self.inv_item.owner.evade.append(self.evade)
+            self.log.debug('evade_id:  %s' % str(self.evade_id))
+        if self.absorb:
+            for key, val in self.absorb.items():
+                if val:
+                    self.absorb_ids.append(self.inv_item.owner.absorb.append((key, val)))
+            self.log.debug('absorb_ids: %s' % str(self.absorb_ids))
+        if self.dmg:
+            for d in self.dmg:
+                self.dmg_ids.append(self.inv_item.owner.damage.append(d))
+            self.log.debug('dmg_ids: %s' % str(self.dmg_ids))    
+        self.is_equipped = True
+        self.save()
+    
+    def on_unequip(self):
+        if (not self.inv_item) or (not self.inv_item.owner) or (not self.is_equipped):
+            self.log.debug('unequip: nothing to do')
+            return
+        self.log.debug('hit_id:  %s' % str(self.hit_id))
+        if self.hit_id is not None:
+            del self.inv_item.owner.hit[self.hit_id]
+            self.hit_id = None
+        self.log.debug('evade_id:  %s' % str(self.evade_id))
+        if self.evade_id is not None:
+            del self.inv_item.owner.evade[self.evade_id]
+            self.evade_id = None
+        self.log.debug('absorb_ids: %s' % str(self.absorb_ids))
+        for a_id in self.absorb_ids:
+            del self.inv_item.owner.absorb[a_id]
+        self.absorb_ids = []
+        self.log.debug('dmg_ids: %s' % str(self.dmg_ids))
+        for d_id in self.dmg_ids:
+            del self.inv_item.owner.damage[d_id]
+        self.dmg_ids = []
+        self.is_equipped = False
+        self.save()
+    
+    def to_dict(self):
+        d = {}
+        if self.item:
+            d['item'] = self.item.dbid
+        if self.inv_item:
+            d['inv_item'] = self.inv_item.dbid
+        d['is_equipped'] = str(self.is_equipped)
+        d['hit'] = self.hit
+        d['evade'] = self.evade
+        d['absorb'] = ','.join(['='.join([str(key),str(val)]) for key,val in self.absorb.items()])
+        d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
+        d['equip_slot'] = self.equip_slot
+        if self.dbid:
+            d['dbid'] = self.dbid
+        return d
+    
+
     
     def remove_dmg(self, index):
         if not index:
@@ -431,18 +554,18 @@ class Weapon(object):
             if index <= len(self.dmg) and index > 0:
                 del self.dmg[index -1]
                 self.save()
-                # world.db.update_from_dict('weapon', self.to_dict())
+                # world.db.update_from_dict('equippable', self.to_dict())
     
     def save(self, save_dict=None):
         world = World.get_world()
         if self.dbid:
             if save_dict:
                 save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('weapon', save_dict)
+                world.db.update_from_dict('equippable', save_dict)
             else:    
-                world.db.update_from_dict('weapon', self.to_dict())
+                world.db.update_from_dict('equippable', self.to_dict())
         else:
-            self.dbid = world.db.insert_from_dict('weapon', self.to_dict())
+            self.dbid = world.db.insert_from_dict('equippable', self.to_dict())
     
 
 class Food(object):
@@ -993,7 +1116,7 @@ class Portal(object):
         return 'Emerge message set.\n'
     
 
-ITEM_TYPES = {'weapon': Weapon,
+ITEM_TYPES = {'equippable': Equippable,
               'food': Food,
               'container': Container,
               'furniture': Furniture,

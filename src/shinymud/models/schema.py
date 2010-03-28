@@ -53,7 +53,6 @@ def initialize_database(connection=None):
     weight INTEGER DEFAULT 0,
     base_value INTEGER DEFAULT 0,
     carryable TEXT DEFAULT 'True',
-    equip_slot INTEGER,
     UNIQUE (area, id)
 )''',\
 '''CREATE TABLE IF NOT EXISTS room_exit (
@@ -82,8 +81,6 @@ def initialize_database(connection=None):
     weight INTEGER DEFAULT 0,
     base_value INTEGER DEFAULT 0,
     carryable TEXT,
-    equip_slot INTEGER,
-    is_equipped TEXT DEFAULT 'False',
     owner INTEGER REFERENCES user(dbid),
     container INTEGER REFERENCES inventory(dbid)
 )''',\
@@ -145,10 +142,15 @@ def initialize_database(connection=None):
     key_area TEXT,
     key_id TEXT
 )''',\
-'''CREATE TABLE IF NOT EXISTS weapon (
+'''CREATE TABLE IF NOT EXISTS equippable (
     dbid INTEGER PRIMARY KEY,
     item INTEGER NULL REFERENCES item(dbid),
     inv_item INTEGER NULL REFERENCES inventory(dbid),
+    equip_slot TEXT,
+    is_equipped TEXT DEFAULT 'False',
+    hit INTEGER DEFAULT 0,
+    evade INTEGER DEFAULT 0,
+    absorb TEXT,
     dmg TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS furniture (

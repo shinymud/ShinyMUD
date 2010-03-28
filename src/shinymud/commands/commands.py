@@ -736,14 +736,19 @@ class Equip(BaseCommand):
             item = self.user.check_inv_for_keyword(self.args)
             if not item:
                 message = 'You don\'t have it.\n'
-            elif self.user.equipped.get(item.equip_slot, None) == None: #if item has a slot that exists.
-                message = 'You can\'t equip that!\n'
             else:
-                if self.user.equipped[item.equip_slot]: #if slot not empty
-                    self.user.isequipped.remove(item)   #remove item in slot
-                self.user.equipped[item.equip_slot] = item
-                self.user.isequipped += [item]
-                message = SLOT_TYPES[item.equip_slot].replace('#item', item.name) + '\n'
+                equip_type = item.item_types.get('equippable')
+                if not equip_type:
+                    message = 'You can\'t equip that!\n'
+                elif equip_type.equip_slot not in SLOT_TYPES:
+                    message = 'How do you equip that?'
+                else:
+                    if self.user.equipped.get(equip_type.equip_slot): #if slot not empty
+                        self.user.isequipped.remove(item)   #remove item in slot
+                    self.user.equipped[equip_type.equip_slot] = item
+                    self.user.isequipped += [item]
+                    equip_type.on_equip()
+                    message = SLOT_TYPES[equip_type.equip_slot].replace('#item', item.name) + '\n'
         self.user.update_output(message)  
     
 
@@ -758,11 +763,15 @@ class Unequip(BaseCommand):
             message = 'What do you want to unequip?\n'
         elif not item: 
             message = 'You don\'t have that!\n'
-        elif not self.user.equipped[item.equip_slot]:
+        equip_type = item.item_types.get('equippable')
+        if not equip_type:
+            message = 'That item is not equippable.\n'
+        elif not self.user.equipped[equip_type.equip_slot]:
             message = 'You aren\'t using anything in that slot.\n'
         else:
-            self.user.equipped[item.equip_slot] = ''
+            self.user.equipped[equip_type.equip_slot] = ''
             self.user.isequipped.remove(item)
+            equip_type.on_unequip()
             message = 'You remove ' + item.name + '.\n'
         self.user.update_output(message)
             
@@ -1697,7 +1706,7 @@ Use Run like the Go command to escape from a battle.
             def wrapper():
                 action = Go(self.user, self.args, 'go')
                 action.execute()
-            action = Attack_list['run'](self.user, wrapper, self.user.battle)
+            action = Action_list['run'](self.user, wrapper, self.user.battle)
             self.user.next_action = action
     
 
@@ -1745,7 +1754,22 @@ in a room when you use the Goto command to leave it
             me += empty_line
         me += '|' + (' Private Details ').center(width - 2, '-') + '|\n'
         me += ('| email: ' + str(self.user.email)).ljust(width - 1) + '|\n'
-        me += '|' + ('-' * (width - 2)) + '|' 
+        me += '|' + (' Player Stats ').center(width - 2, '-') + '|\n'
+        me += ('| hit: ' + str(self.user.hit.calculate())).ljust(width-1) + '|\n'
+        me += ('| evade: ' + str(self.user.evade.calculate())).ljust(width-1) + '|\n' 
+        if self.user.absorb:
+            me += '| absorb: '.ljust(width-1) + '|\n'
+            for key, val in self.user.absorb.calculate().items():
+                me += ('|   %s: %s' % (key, val)).ljust(width-1) + '|\n'
+        else:
+            me += '| absorb: None'.ljust(width-1) + '|\n'
+        if self.user.damage:
+            me += '| damage: '.ljust(width-1) + '|\n'
+            for t, mn, mx in self.user.damage.display():
+                me += ('|   %s: %s-%s' % (t, mn, mx)).ljust(width-1) + '|\n'
+        else:
+            me += '| damage: None'.ljust(width-1) + '|\n'
+        me += '|' + ('-' * (width - 2)) + '|'         
         self.user.update_output(me)
     
 

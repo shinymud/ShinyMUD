@@ -57,6 +57,13 @@ class User(Character):
         if rows:
             for row in rows:
                 item = InventoryItem(**row)
+                item.owner = self
+                if item.is_equippable():
+                    equip_type = item.item_types['equippable']
+                    if equip_type.is_equipped:
+                        self.equipped[equip_type.equip_slot] = item
+                        self.isequipped.append(item)
+                        equip_type.on_equip()
                 if item.is_container():
                     item.item_types.get('container').load_contents()
                 self.inventory.append(item)

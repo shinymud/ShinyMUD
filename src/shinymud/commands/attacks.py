@@ -18,17 +18,17 @@ class BattleAction(object):
     def roll_to_hit(self):
         # Remove the attack points for this action
         self.attacker.atk -= self.cost
-        roll = randint(1,20) + self.attacker.hit.calculate() + self.bonuses
+        roll = randint(1,20) + self.attacker.hit.calculate() + self.bonuses - self.target.evade.calculate()
         if not (self.target in self.battle.teamA or self.target in self.battle.teamB):
             # If our attack target is no longer part of this battle (died, ran, etc)
             if self.attacker in self.battle.teamA:
                 self.target = self.battle.teamB[0]
             else:
                 self.target = self.battle.teamA[0]
-        if roll > self.target.evade.calculate() + 10:
+        if roll > 20:
             self.log.debug("CRITICAL HIT!")
             self.critical()
-        elif roll > self.target.evade:
+        elif roll > 10:
             self.log.debug("Hit!")
             self.hit()
         else:
@@ -61,9 +61,9 @@ class Attack(BattleAction):
         base_damage = self.attacker.damage.calculate()
         if not base_damage:
             base_damage = {'impact': 3}
-        damage = dict([(key, randint(val, 2* val)) for key, val in base_damage.items()])
-        total = self.target.takes_damage(damage, self.attacker.fancy_name())
-        self.attacker.update_output("You attack %s for %s damage!" % (self.target.fancy_name(), str(total)))
+        damage = dict([(key, randint(int(1.5 * val + 0.5), 2* val)) for key, val in base_damage.items()])
+        total = self.target.takes_damage(damage, "Critical Hit! %s" % self.attacker.fancy_name())
+        self.attacker.update_output("Critical Hit! You strike %s for %s damage!" % (self.target.fancy_name(), str(total)))
     
 
 Action_list.register(Attack, ['attack'])
