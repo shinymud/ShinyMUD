@@ -1,4 +1,5 @@
 from shinymud.commands import CommandRegister
+from shinymud.lib.world import World
 from random import randint
 import logging
 NORMAL_ACTION_COST = 5
@@ -72,14 +73,15 @@ class Run(BattleAction):
     cost = FAST_ACTION_COST
     def roll_to_hit(self):
         if randint(0,3):
-            loc = self.user.location
-            self.target()
-            if loc != self.user.location:
-                self.attacker.mode.active = False
-                self.battle.remove_character(self.user)
-                self.attacker.battle = None
+            loc = self.attacker.location
+            world = World.get_world()
+            self.attacker.go(world.get_location(self.target[0], self.target[1]))
+            self.battle.tell_all(self.attacker.fancy_name() + " ran away!", [self.attacker.name])
+            self.attacker.mode.active = False
+            self.battle.remove_character(self.attacker)
+            self.attacker.battle = None
         else:
-            self.user.update_output("You try to run, but can't get away!")
+            self.attacker.update_output("You try to run, but can't get away!")
     
 
 Action_list.register(Run, ['run'])

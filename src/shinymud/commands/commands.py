@@ -1703,10 +1703,28 @@ Use Run like the Go command to escape from a battle.
     )
     def execute(self):
         if self.user.battle:
-            def wrapper():
-                action = Go(self.user, self.args, 'go')
-                action.execute()
-            action = Action_list['run'](self.user, wrapper, self.user.battle)
+            direction = self.args.lower()[0] if self.args else None
+            if direction == 'e': 
+                room = self.user.location.exits.get('east')
+            elif direction == 'w':
+                room = self.user.location.exits.get('west')
+            elif direction == 'n':
+                room = self.user.location.exits.get('north')
+            elif direction == 's':
+                room = self.user.location.exits.get('south')
+            elif direction == 'u':
+                room = self.user.location.exits.get('up')
+            elif direction == 'd':
+                room = self.user.location.exits.get('down')
+            else:
+                room = None
+            if not room:
+                # just grab one at random
+                room = [_ for _ in self.user.location.exits.values() if _ is not None][0]
+            if not room:
+                self.user.update_output('There\'s nowhere to run!')
+                return
+            action = Action_list['run'](self.user, (room.to_room.area.name, room.to_room.id), self.user.battle)
             self.user.next_action = action
     
 

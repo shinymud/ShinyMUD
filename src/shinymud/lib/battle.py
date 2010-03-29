@@ -54,3 +54,11 @@ class Battle(object):
             elif c in self.teamB:
                 self.teamB.remove(c)
         self.remove_list = []
+    
+    def tell_all(self, message, exclude=[]):
+        r = self.teamA[:]
+        r.extend(self.teamB[:])
+        for user in r:
+            if user.name not in exclude:
+                user.update_output(message)
+        
