@@ -5,6 +5,7 @@ from shinymud.commands.emotes import *
 from shinymud.commands.attacks import *
 from shinymud.commands import *
 from shinymud.lib.battle import Battle
+
 import re
 import logging
    
@@ -248,7 +249,7 @@ class Look(BaseCommand):
         return None
     
 
-command_list.register(Look, ['look', 'read'])
+command_list.register(Look, ['look'])
 
 class Goto(BaseCommand):
     """Go to a location."""
@@ -1793,6 +1794,65 @@ in a room when you use the Goto command to leave it
 
 command_list.register(Me, ['me', 'status', 'stats'])
 command_help.register(Me.help, ['me', 'status'])
+
+class Tell(BaseCommand):
+    """Tell another character a private message."""
+    help = (
+    """<title>Tell (Command)</title>
+The Tell command sends a private message to a specific character (can be a pc or
+npc). However, you can only Tell an npc something if that npc is in the same
+room as you are. You can Tell a player character something regardless of where
+they are in the world, provided they are online.
+\nUSAGE:
+  tell <person-name> <message>
+\nEXAMPLE:
+  tell brian Your princess is in another castle!
+    """
+    )
+    def execute(self):
+        #tell target_name message
+        syntax_error = 'Try "tell <person> <message>", or see "help tell" for help.'
+        if not self.args:
+            self.user.update_output(syntax_error)
+            return
+        exp = r'(?P<target>.*?)[ ](?P<message>.*)'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.user.update_output(syntax_error)
+            return
+        target_name, message = match.group('target', 'message')
+        # first, check to see if there is a character in the same room by that keyword
+        # if we were only to check the world's list of people, we wouldn't be able to tell npcs
+        # anything! However, let's be prudent and only try to tell npcs in the same room...
+        if self.user.location:
+            r = self.user.location
+            # prioritize players over npcs, if there are two characters in the same room with the
+            # same name. Players only have one keyword in their name, while npcs may have many
+            target = r.get_user(target_name) or r.get_npc_by_kw(target_name)
+            if target:
+                self.tell_msg(target, message)
+                return
+        # There was nobody in that room who matched the name (or the user is in the void)
+        pc = self.world.get_user(target_name)
+        if not pc:
+            self.user.update_output('"%s" doesn\'t exist. You\'ll have to tell someone else.' % target_name)
+        else:
+            self.tell_msg(pc, message)
+    
+    def tell_msg(self, target_char, message):
+        """Tell a target_character a message.
+        target_char - the character object to be "telled"
+        message - the message to be passed along.
+        """
+        if target_char.is_npc():
+            # TODO: dispatch a 'tell' notification to this npc (the 'tell'
+            # npc event hasn't been written as of this comment)
+            pass
+        self.user.update_output('You tell %s, "%s"' % (target_char.fancy_name(), message))
+        target_char.update_output('%s tells you, "%s"' % (self.user.fancy_name(), message))
+
+command_list.register(Tell, ['tell'])
+command_help.register(Tell.help, ['tell'])
 
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as

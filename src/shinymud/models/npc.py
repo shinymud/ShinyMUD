@@ -9,6 +9,7 @@ import re
 
 class Npc(Character):
     """Represents a non-player character."""
+    LOG_LINES = 25 # The number of lines an npc should "remember"
     char_type = 'npc'
     def __init__(self, area=None, id=0, **args):
         self.characterize(**args)
@@ -116,7 +117,12 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
     
     def update_output(self, message):
+        """Append any updates to this npc's action queue.
+        Only log up to LOG_LINES worth of updates - once the limit is
+        hit, delete the oldest messages to stay within the limit."""
         self.actionq.append(message)
+        if len(self.actionq) > self.LOG_LINES:
+            del self.actionq[0]
     
 # ***** BuildMode accessor functions *****
     def set_description(self, description, user=None):

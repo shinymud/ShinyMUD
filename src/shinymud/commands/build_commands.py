@@ -240,7 +240,7 @@ To get an attribute-by-attribute view of the object you're editing:
             return getattr(area, "list_" + obj_type + "s")()
     
 
-build_list.register(List, ['list'])
+build_list.register(List, ['list', 'ls'])
 command_help.register(List.help, ['list'])
 
 class Set(BaseCommand):
