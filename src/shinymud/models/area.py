@@ -209,9 +209,9 @@ Description: \n    %s""" % (self.name,
             doors = room.exits.keys()
             for door in doors:
                 room.remove_exit(door)
-            for reset in room.resets.values():
-                reset.destruct()
-            room.resets = {}
+            for spawn in room.spawns.values():
+                spawn.destruct()
+            room.spawns = {}
             room.id = None
             del self.rooms[room_id]
             room.destruct()

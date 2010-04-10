@@ -1110,7 +1110,7 @@ class Reset(BaseCommand):
     required_permissions = DM | BUILDER | ADMIN
     help = ("Reset (command)\n"
     """The reset command is used to force a room to respawn all of the items 
-and npcs on its reset list. If you call reset on an entire area, all of the
+and npcs on its spawn list. If you call reset on an entire area, all of the
 rooms in that area will be told to reset.\n
 USAGE:
 To reset the room you are in, just call reset without any options. If you need
@@ -1123,8 +1123,8 @@ To reset an area:
 Permissions:
 This command requires DM, BUILDER, or ADMIN permissions.\n
 Adding Resets to Rooms
-For help on adding items and npcs to a room's reset list, 
-see "help room resets".""")
+For help on adding items and npcs to a room's spawn list, 
+see "help spawns".""")
     
     def execute(self):
         if not self.args:
@@ -1138,7 +1138,7 @@ see "help room resets".""")
             exp = r'(room[ ]+(?P<room_id>\d+)([ ]+in)?([ ]+area)?([ ]+(?P<room_area>\w+))?)|(area[ ]+(?P<area>\w+))'
             match = re.match(exp, self.args, re.I)
             if not match:
-                self.user.update_output('Type "help resets" to get help with this command.\n')
+                self.user.update_output('Type "help reset" to get help with this command.\n')
                 return
             room_id, room_area, area = match.group('room_id', 'room_area', 'area')
             if area:

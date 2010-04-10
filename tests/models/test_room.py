@@ -18,108 +18,108 @@ class TestRoom(TestCase):
     def tearDown(self):
         World._instance = None
     
-    def test_add_reset_item_inroom(self):
-        """Test adding a reset for an item, with a spawn point 'in room'."""
+    def test_add_spawn_item_inroom(self):
+        """Test adding a spawn for an item, with a spawn point 'in room'."""
         item = self.area.new_item()
-        message = self.room.add_reset('for item %s' % item.id)
-        exp_message = ('A room reset has been added for '
+        message = self.room.add_spawn('for item %s' % item.id)
+        exp_message = ('A room spawn has been added for '
                        '%s number %s.' % ('item', item.id)
                       )
         # Make sure we get the expected result message
         self.assertEqual(message, exp_message)
-        # We should only have one reset in room.resets
-        self.assertEqual(len(self.room.resets.items()), 1)
-        reset = self.room.resets.values()[0]
-        # The object this reset points to should be equal to the item
+        # We should only have one spawn in room.spawns
+        self.assertEqual(len(self.room.spawns.items()), 1)
+        spawn = self.room.spawns.values()[0]
+        # The object this spawn points to should be equal to the item
         # we just created
-        self.assertEqual(reset.reset_object, item)
+        self.assertEqual(spawn.spawn_object, item)
         # its spawn point should be 'in room'
-        self.assertEqual(reset.get_spawn_point(), 'in room')
+        self.assertEqual(spawn.get_spawn_point(), 'in room')
     
-    def test_add_reset_item_nested_in_item(self):
+    def test_add_spawn_item_nested_in_item(self):
         item = self.area.new_item()
         container = self.area.new_item()
         container.add_type('container')
         
-        message1 = self.room.add_reset('for item %s' % container.id)
-        exp_message1 = ('A room reset has been added for '
+        message1 = self.room.add_spawn('for item %s' % container.id)
+        exp_message1 = ('A room spawn has been added for '
                         '%s number %s.' % ('item', container.id)
                        )
-        self.room.log.debug(self.room.resets)
+        self.room.log.debug(self.room.spawns)
         self.assertEqual(message1, exp_message1)
-        message2 = self.room.add_reset('for item %s in reset %s' % (item.id, 
+        message2 = self.room.add_spawn('for item %s in spawn %s' % (item.id, 
                                                                     '1'))
-        exp_message2 = ('A room reset has been added for '
+        exp_message2 = ('A room spawn has been added for '
                         '%s number %s.' % ('item', item.id)
                        )
         self.assertEqual(message2, exp_message2)
-        # Make sure the room has 2 resets in its list
-        self.assertEqual(len(self.room.resets.items()), 2)
-        reset1 = self.room.resets.get('1')
-        reset2 = self.room.resets.get('2')
-        self.assertTrue('container' in reset1.reset_object.item_types)
-        # reset1 should have one nested reset
-        self.assertEqual(len(reset1.nested_resets), 1)
-        self.assertEqual(reset1.get_spawn_point(), 'in room')
-        self.assertEqual(reset1, reset2.container)
-        self.assertEqual(reset2.get_spawn_point(),
+        # Make sure the room has 2 spawns in its list
+        self.assertEqual(len(self.room.spawns.items()), 2)
+        spawn1 = self.room.spawns.get('1')
+        spawn2 = self.room.spawns.get('2')
+        self.assertTrue('container' in spawn1.spawn_object.item_types)
+        # spawn1 should have one nested spawn
+        self.assertEqual(len(spawn1.nested_spawns), 1)
+        self.assertEqual(spawn1.get_spawn_point(), 'in room')
+        self.assertEqual(spawn1, spawn2.container)
+        self.assertEqual(spawn2.get_spawn_point(),
                          'into %s (R:%s)' % (container.name,
-                                             str(reset1.dbid))
+                                             str(spawn1.dbid))
                         )
     
-    def test_remove_reset(self):
+    def test_remove_spawn(self):
         item = self.area.new_item()
-        self.room.add_reset('for item %s' % item.id)
-        self.assertEqual(len(self.room.resets.items()), 1)
-        db_reset = self.world.db.select('* FROM room_resets WHERE dbid=?', [1])
-        self.assertEqual(len(db_reset), 1)
-        self.room.remove_reset('1')
-        # The room should now have an empty resets list
-        self.assertEqual(len(self.room.resets.items()), 0)
-        # The reset should no longer be in the database
-        db_reset = self.world.db.select('* FROM room_resets WHERE dbid=?', [1])
-        self.assertEqual(len(db_reset), 0)
+        self.room.add_spawn('for item %s' % item.id)
+        self.assertEqual(len(self.room.spawns.items()), 1)
+        db_spawn = self.world.db.select('* FROM room_spawns WHERE dbid=?', [1])
+        self.assertEqual(len(db_spawn), 1)
+        self.room.remove_spawn('1')
+        # The room should now have an empty spawns list
+        self.assertEqual(len(self.room.spawns.items()), 0)
+        # The spawn should no longer be in the database
+        db_spawn = self.world.db.select('* FROM room_spawns WHERE dbid=?', [1])
+        self.assertEqual(len(db_spawn), 0)
     
-    def test_remove_nested_reset(self):
+    def test_remove_nested_spawn(self):
         item1 = self.area.new_item()
         item2 = self.area.new_item()
         container = self.area.new_item()
         container.add_type('container')
-        self.room.add_reset('for item %s' % container.id)
-        self.room.add_reset('for item %s inside %s' % (item1.id, '1'))
-        self.room.add_reset('for item %s inside %s' % (item2.id, '1'))
-        self.assertEqual(len(self.room.resets.items()), 3)
-        c_reset = self.room.resets.get('1')
-        reset1 = self.room.resets.get('2')
-        reset2 = self.room.resets.get('3')
-        self.assertEqual(c_reset, reset1.container)
-        self.assertEqual(c_reset, reset2.container)
-        self.assertEqual(len(c_reset.nested_resets), 2)
+        self.room.add_spawn('for item %s' % container.id)
+        self.room.add_spawn('for item %s inside %s' % (item1.id, '1'))
+        self.room.add_spawn('for item %s inside %s' % (item2.id, '1'))
+        self.assertEqual(len(self.room.spawns.items()), 3)
+        c_spawn = self.room.spawns.get('1')
+        spawn1 = self.room.spawns.get('2')
+        spawn2 = self.room.spawns.get('3')
+        self.assertEqual(c_spawn, spawn1.container)
+        self.assertEqual(c_spawn, spawn2.container)
+        self.assertEqual(len(c_spawn.nested_spawns), 2)
         
-        message1 = self.room.remove_reset('2')
-        message2 = self.room.remove_reset('3')
-        self.assertEqual('Room reset 2 has been removed.\n', message1)
-        self.assertEqual('Room reset 3 has been removed.\n', message2)
-        self.assertTrue(c_reset in self.room.resets.values())
-        self.assertEqual(len(self.room.resets.items()), 1)
-        self.assertEqual(len(c_reset.nested_resets), 0)
+        message1 = self.room.remove_spawn('2')
+        message2 = self.room.remove_spawn('3')
+        self.assertEqual('Room spawn 2 has been removed.\n', message1)
+        self.assertEqual('Room spawn 3 has been removed.\n', message2)
+        self.assertTrue(c_spawn in self.room.spawns.values())
+        self.assertEqual(len(self.room.spawns.items()), 1)
+        self.assertEqual(len(c_spawn.nested_spawns), 0)
     
-    def test_remove_nested_reset_container(self):
+    def test_remove_nested_spawn_container(self):
         pass
     
-    def test_reset(self):
+    def test_spawn(self):
         proto_item = self.area.new_item()
         proto_container = self.area.new_item()
         proto_container.add_type('container')
         proto_npc = self.area.new_npc()
         
-        self.room.add_reset('for item %s' % proto_container.id)
-        self.room.add_reset('for item %s in %s' % (proto_item.id, '1'))
-        self.room.add_reset('for npc %s' % proto_npc.id)
+        self.room.add_spawn('for item %s' % proto_container.id)
+        self.room.add_spawn('for item %s in %s' % (proto_item.id, '1'))
+        self.room.add_spawn('for npc %s' % proto_npc.id)
         
         self.assertEqual(len(self.room.items), 0)
         self.assertEqual(len(self.room.npcs), 0)
-        self.room.reset()
+        self.room.spawn()
         self.assertEqual(len(self.room.items), 1)
         self.assertEqual(self.room.npcs[0].id, proto_npc.id)
         self.assertEqual(self.room.npcs[0].area, proto_npc.area)
@@ -141,7 +141,7 @@ class TestRoom(TestCase):
         
         # Reset again, and make sure that we didn't add the objects that
         # we already had
-        self.room.reset()
+        self.room.spawn()
         self.assertEqual(len(self.room.items), 1)
         self.assertEqual(len(self.room.npcs), 1)
         c_flag = False

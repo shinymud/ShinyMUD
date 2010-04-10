@@ -92,13 +92,13 @@ class SPort(object):
         
         r_list = []
         r_exits = []
-        r_resets = {} # r_resets is a dictionary of lists of dictionaries!
+        r_spawns = {} # r_spawns is a dictionary of lists of dictionaries!
         for room in area.rooms.values():
             d = room.to_dict()
             # d['room'] = room.id
             del d['dbid']
             r_list.append(d)
-            r_resets[room.id] = []
+            r_spawns[room.id] = []
             for exit in room.exits.values():
                 if exit:
                     d = exit.to_dict()
@@ -108,13 +108,13 @@ class SPort(object):
                     d['to_room'] = None
                     del d['dbid']
                     r_exits.append(d)
-            for reset in room.resets.values():
-                d = reset.to_dict()
+            for spawn in room.spawns.values():
+                d = spawn.to_dict()
                 del d['dbid']
-                r_resets[room.id].append(d)
+                r_spawns[room.id].append(d)
         shiny_area += '\n[Rooms]\n' + json.dumps(r_list) + '\n[End Rooms]\n'
         shiny_area += '\n[Room Exits]\n' + json.dumps(r_exits) + '\n[End Room Exits]\n'
-        shiny_area += '\n[Room Resets]\n' + json.dumps(r_resets) + '\n[End Room Resets]\n'
+        shiny_area += '\n[Room Spawns]\n' + json.dumps(r_spawns) + '\n[End Room Spawns]\n'
         
         return self.save_to_file(shiny_area, area.name + '.txt')
     
@@ -130,7 +130,7 @@ class SPort(object):
         npc_events = sanitize(json.loads(self.match_shiny_tag('Npc Events', txt)))
         rooms = sanitize(json.loads(self.match_shiny_tag('Rooms', txt)))
         room_exits = sanitize(json.loads(self.match_shiny_tag('Room Exits', txt)))
-        room_resets = sanitize(json.loads(self.match_shiny_tag('Room Resets', txt)))
+        room_spawns = sanitize(json.loads(self.match_shiny_tag('Room Spawns', txt)))
         # Build the area from the assembled dictionary data
         try:
             new_area = Area.create(**area)
@@ -151,9 +151,9 @@ class SPort(object):
                 my_npc.new_event(event)
             for room in rooms:
                 new_room = new_area.new_room(room)
-                my_resets = room_resets.get(new_room.id)
-                if my_resets:
-                    new_room.load_resets(my_resets)
+                my_spawns = room_spawns.get(new_room.id)
+                if my_spawns:
+                    new_room.load_spawns(my_spawns)
             for exit in room_exits:
                 self.log.debug(exit['room'])
                 my_room = new_area.get_room(str(exit['room']))

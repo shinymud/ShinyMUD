@@ -664,7 +664,7 @@ NOTE: <object-type> can be "npc" or "item".
 To add a spawn:
     add spawn [for] <object-type> <object-id> [[from area] <object-area>]
 To remove a spawn:
-  remove spawn <reset-id>
+  remove spawn <spawn-id>
 \n<b>EXAMPLES:</b>
   add spawn for item 1
   add spawn for npc 5 from area bar
@@ -700,15 +700,15 @@ command_help.register(("<title>Nested Spawns (Room Attribute)</title>"
 """A nested spawn is when we have a spawn that tells an item to load
 inside a container item, or inside an npc's inventory.
 \n<b>USAGE:</b>
-  add spawn [for] item <item-id> [in/inside] [spawn] <container-reset-id>
+  add spawn [for] item <item-id> [in/inside] [spawn] <container-spawn-id>
 \n<b>EXAMPLES:</b>
 Let's say that when a room gets Reset, we want to load a chest with a dagger
 inside. First, we need to add a spawn for the containing item (the
 chest), which in this example has an id of 5:
-  add reset for item 5
+  add spawn for item 5
 \nNext we add a spawn for the dagger, telling it to load inside the object that
 spawn #1 loads:
-  add spawn for item 2 in reset 1
+  add spawn for item 2 in spawn 1
 \nIf you list the room's attributes, under spawns you should see something like
 the following:
   [1] Item - a treasure chest (5:bar) - spawns in room

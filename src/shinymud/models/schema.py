@@ -100,14 +100,14 @@ def initialize_database(connection=None):
     description TEXT,
     UNIQUE (area, id)
 )''',\
-'''CREATE TABLE IF NOT EXISTS room_resets (
+'''CREATE TABLE IF NOT EXISTS room_spawns (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     room INTEGER NOT NULL REFERENCES room(dbid),
-    reset_object_id TEXT,
-    reset_object_area TEXT,
+    spawn_object_id TEXT,
+    spawn_object_area TEXT,
     container TEXT,
-    reset_type TEXT
+    spawn_type TEXT
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,

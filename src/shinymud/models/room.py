@@ -1,5 +1,5 @@
 from shinymud.models.room_exit import RoomExit
-from shinymud.models.reset import Reset
+from shinymud.models.spawn import Spawn
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 import logging
@@ -24,14 +24,14 @@ class Room(object):
                       'up': None,
                       'down': None}
         self.npcs = []
-        self.resets = {}
+        self.spawns = {}
         self.users = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
         self.world = World.get_world()
         if self.dbid:
             self.load_exits()
-            self.load_resets()
+            self.load_spawns()
     
     def load_exits(self):
         rows = self.world.db.select("* from room_exit where room_id=? and area=?", [self.id, self.area.name])
@@ -39,25 +39,25 @@ class Room(object):
             row['from_room'] = self
             self.exits[row['direction']] = RoomExit(**row)
     
-    def load_resets(self, reset_list=None):
-        self.log.debug(reset_list)
-        if not reset_list:
-            reset_list = self.world.db.select('* FROM room_resets WHERE room=?', [self.dbid])
-        for row in reset_list:
+    def load_spawns(self, spawn_list=None):
+        self.log.debug(spawn_list)
+        if not spawn_list:
+            spawn_list = self.world.db.select('* FROM room_spawns WHERE room=?', [self.dbid])
+        for row in spawn_list:
             row['room'] = self
-            area = self.world.get_area(row['reset_object_area'])
+            area = self.world.get_area(row['spawn_object_area'])
             if area:
-                obj = getattr(area, row['reset_type'] + "s").get(row['reset_object_id'])
+                obj = getattr(area, row['spawn_type'] + "s").get(row['spawn_object_id'])
                 if obj:
                     row['obj'] = obj
                     self.log.debug(row)
-                    self.new_reset(row)
-        for reset in self.resets.values():
-            if reset.container:
-                if reset.container in self.resets:
-                    container = self.resets.get(reset.container)
-                    reset.container = container
-                    container.add_nested_reset(reset)
+                    self.new_spawn(row)
+        for spawn in self.spawns.values():
+            if spawn.container:
+                if spawn.container in self.spawns:
+                    container = self.spawns.get(spawn.container)
+                    spawn.container = container
+                    container.add_nested_spawn(spawn)
     
     def to_dict(self):
         d = {}
@@ -96,11 +96,11 @@ class Room(object):
                 nice_exits += '    ' + direction + ': ' + str(value) + '\n'
             else:
                 nice_exits += '    ' + direction + ': None\n'
-        resets = ''
-        for reset in self.resets.values():
-            resets += '\n    [%s] %s' % (reset.id, str(reset))
-        if not resets:
-            resets = 'None.'
+        spawns = ''
+        for spawn in self.spawns.values():
+            spawns += '\n    [%s] %s' % (spawn.id, str(spawn))
+        if not spawns:
+            spawns = 'None.'
             
         room_list = (' Room %s in Area %s ' % (self.id, self.area.name)
                      ).center(50, '-') + '\n'
@@ -109,15 +109,15 @@ description:
     %s
 exits: 
 %s
-resets: %s""" % (self.name, self.description, nice_exits, resets)
+spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         room_list += '\n' + ('-' * 50)
         return room_list
     
     def reset(self):
         """Reset (or respawn) all of the items and npc's that are on this 
-        room's reset lists.
+        room's spawn lists.
         """
-        self.clean_resets()
+        self.clean_spawns()
         room_id = '%s,%s' % (self.id, self.area.name)
         for item in self.items:
             if item.is_container():
@@ -125,39 +125,39 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                     self.item_purge(item)
         present_obj = [item.spawn_id for item in self.items if item.spawn_id]
         present_obj.extend([npc.spawn_id for npc in self.npcs if npc.spawn_id])
-        for reset in self.resets.values():
-            if reset.spawn_id not in present_obj and \
-               (reset.get_spawn_point() == 'in room'):
-                if reset.reset_type == 'npc':
-                    npc = reset.spawn()
+        for spawn in self.spawns.values():
+            if spawn.spawn_id not in present_obj and \
+               (spawn.get_spawn_point() == 'in room'):
+                if spawn.spawn_type == 'npc':
+                    npc = spawn.spawn()
                     npc.location = self
                     self.npcs.append(npc)
                 else:
-                    self.items.append(reset.spawn())
+                    self.items.append(spawn.spawn())
     
-    def clean_resets(self):
-        """Make sure that all of the resets for this room are valid, and
+    def clean_spawns(self):
+        """Make sure that all of the spawns for this room are valid, and
         remove the ones that aren't.
         """
-        room_resets = self.resets.values()
-        for reset in room_resets:
-            # Make sure any resets that have nested resets still have their
+        room_spawns = self.spawns.values()
+        for spawn in room_spawns:
+            # Make sure any spawns that have nested spawns still have their
             # container item_type -- if they don't, we need to remove them
-            # and their nested resets, because otherwise things will break
+            # and their nested spawns, because otherwise things will break
             # when they try to add other items to a container object that
             # doesn't exist.
-            if reset.nested_resets:
-                if not reset.reset_object.is_container():
+            if spawn.nested_spawns:
+                if not spawn.spawn_object.is_container():
                     # Somehow the container item type was removed from this
                     # object (perhaps a builder edited it and forgot to
-                    # remove this reset). We should delete all resets that
+                    # remove this spawn). We should delete all spawns that
                     # were supposed to have objects spawned inside this one
-                    for sub_reset in reset.nested_resets:
-                        if sub_reset.id in self.resets:
-                            sub_reset.destruct()
-                            del self.resets[sub_reset.id]
-                    reset.destruct()
-                    del self.resets[reset.id]
+                    for sub_spawn in spawn.nested_spawns:
+                        if sub_spawn.id in self.spawns:
+                            sub_spawn.destruct()
+                            del self.spawns[sub_spawn.id]
+                    spawn.destruct()
+                    del self.spawns[spawn.id]
     
     def user_add(self, user):
         self.users[user.name] = user
@@ -222,8 +222,8 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
                 message = 'That area doesn\'t exist.\n'
         return message
     
-    def get_reset_id(self):
-        rows = self.world.db.select("max(id) as id from room_resets where room=?", [self.dbid])
+    def get_spawn_id(self):
+        rows = self.world.db.select("max(id) as id from room_spawns where room=?", [self.dbid])
         max_id = rows[0]['id']
         if max_id:
             your_id = int(max_id) + 1
@@ -231,20 +231,20 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
             your_id = 1
         return str(your_id)
     
-    def new_reset(self, reset_dict):
-        """Create a new reset object from the reset_dict and return it."""
-        reset = Reset(**reset_dict)
-        if not reset.dbid:
-            reset.save()
-        self.resets[reset.id] = reset
-        return reset
+    def new_spawn(self, spawn_dict):
+        """Create a new spawn object from the spawn_dict and return it."""
+        spawn = Spawn(**spawn_dict)
+        if not spawn.dbid:
+            spawn.save()
+        self.spawns[spawn.id] = spawn
+        return spawn
     
-    def add_reset(self, args):
+    def add_spawn(self, args):
         if not args:
-            return 'Type "help room resets" to get help using this command.'
+            return 'Type "help room spawns" to get help using this command.'
         exp = r'((for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))' +\
               r'(([ ]+from)?([ ]+area)([ ]+(?P<area_name>\w+)))?' +\
-              r'(([ ]+((in)|(into)|(inside)))?([ ]+reset)?([ ]+(?P<container>\d+)))?)'
+              r'(([ ]+((in)|(into)|(inside)))?([ ]+spawn)?([ ]+(?P<container>\d+)))?)'
         match = re.match(exp, args, re.I)
         if match:
             obj_type, obj_id, area_name, container = match.group('obj_type', 
@@ -258,51 +258,51 @@ resets: %s""" % (self.name, self.description, nice_exits, resets)
             if not obj:
                 return '%s number %s does not exist.' % (obj_type, obj_id)
             if container:
-                if container not in self.resets:
-                    return 'Reset %s doesn\'t exist.' % container
-                container_reset = self.resets.get(container)
-                c_obj = container_reset.reset_object
-                if container_reset.reset_object.is_container():
-                    reset = self.new_reset({'id': self.get_reset_id(),
+                if container not in self.spawns:
+                    return 'Spawn %s doesn\'t exist.' % container
+                container_spawn = self.spawns.get(container)
+                c_obj = container_spawn.spawn_object
+                if container_spawn.spawn_object.is_container():
+                    spawn = self.new_spawn({'id': self.get_spawn_id(),
                                             'room':self,
                                             'obj':obj,
-                                            'reset_type':obj_type,
-                                            'container': container_reset})
-                    container_reset.add_nested_reset(reset)
-                    return 'A room reset has been added for %s number %s.' % (obj_type, obj_id)
+                                            'spawn_type':obj_type,
+                                            'container': container_spawn})
+                    container_spawn.add_nested_spawn(spawn)
+                    return 'A room spawn has been added for %s number %s.' % (obj_type, obj_id)
                 else:
-                    return 'Room reset %s is not a container.' % container
-            self.new_reset({'id': self.get_reset_id(), 'room':self, 'obj':obj, 'reset_type':obj_type})
-            return 'A room reset has been added for %s number %s.' % (obj_type, obj_id)
-        return 'Type "help room resets" to get help using this command.'
+                    return 'Room spawn %s is not a container.' % container
+            self.new_spawn({'id': self.get_spawn_id(), 'room':self, 'obj':obj, 'spawn_type':obj_type})
+            return 'A room spawn has been added for %s number %s.' % (obj_type, obj_id)
+        return 'Type "help room spawns" to get help using this command.'
     
-    def remove_reset(self, args):
-        exp = r'(?P<reset_num>\d+)'
+    def remove_spawn(self, args):
+        exp = r'(?P<spawn_num>\d+)'
         match = re.match(exp, args, re.I)
         if not match:
-            return 'Type "help resets" to get help using this command.\n'
-        reset_id = match.group('reset_num')
-        if reset_id in self.resets:
-            reset = self.resets[reset_id]
-            del self.resets[reset_id]
-            # If this reset has a container, we need to destroy
+            return 'Type "help spawns" to get help using this command.\n'
+        spawn_id = match.group('spawn_num')
+        if spawn_id in self.spawns:
+            spawn = self.spawns[spawn_id]
+            del self.spawns[spawn_id]
+            # If this spawn has a container, we need to destroy
             # that container's link to it
-            if reset.container and reset.container.id in self.resets:
-                self.resets[reset.container.id].remove_nested_reset(reset)
-            # Delete all resets that were supposed to be
-            # reset into this container -- their spawn point is being deleted,
-            # so they should no longer be on the reset list.
-            message = 'Room reset %s has been removed.\n' % reset_id
-            dependents = ', '.join([sub_reset.id for sub_reset in reset.nested_resets])
-            for sub_reset in reset.nested_resets:
-                sub_reset.destruct()
-                del self.resets[sub_reset.id]
-            reset.destruct()
+            if spawn.container and spawn.container.id in self.spawns:
+                self.spawns[spawn.container.id].remove_nested_spawn(spawn)
+            # Delete all spawns that were supposed to be
+            # spawn into this container -- their spawn point is being deleted,
+            # so they should no longer be on the spawn list.
+            message = 'Room spawn %s has been removed.\n' % spawn_id
+            dependents = ', '.join([sub_spawn.id for sub_spawn in spawn.nested_spawns])
+            for sub_spawn in spawn.nested_spawns:
+                sub_spawn.destruct()
+                del self.spawns[sub_spawn.id]
+            spawn.destruct()
             if dependents:
-                message += ('The following nested resets were also removed: ' + 
+                message += ('The following nested spawns were also removed: ' + 
                             dependents + '.\n')
             return message
-        return 'Room reset #%s doesn\'t exist.\n' % reset_id
+        return 'Room spawn #%s doesn\'t exist.\n' % spawn_id
     
     def remove_exit(self, args):
         if not args:
