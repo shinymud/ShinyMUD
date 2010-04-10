@@ -252,7 +252,10 @@ Description: \n    %s""" % (self.name,
         if not npc:
             return 'That npc doesn\'t exist.'
         npc.destruct()
-        for event in npc.events.values():
+        elist = []
+        for el in npc.events.values():
+            elist.extend(el)
+        for event in elist:
             event.destruct()
         npc.events = {}
         npc.id = None

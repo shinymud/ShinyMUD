@@ -1850,6 +1850,7 @@ they are in the world, provided they are online.
             pass
         self.user.update_output('You tell %s, "%s"' % (target_char.fancy_name(), message))
         target_char.update_output('%s tells you, "%s"' % (self.user.fancy_name(), message))
+    
 
 command_list.register(Tell, ['tell'])
 command_help.register(Tell.help, ['tell'])

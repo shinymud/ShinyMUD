@@ -78,7 +78,10 @@ class SPort(object):
             d = npc.to_dict()
             del d['dbid']
             npc_list.append(d)
-            for event in npc.events.values():
+            event_list = []
+            for elist in npc.events.values():
+                event_list.extend(elist)
+            for event in event_list:
                 d = event.to_dict()
                 del d['dbid']
                 d['prototype'] = npc.id

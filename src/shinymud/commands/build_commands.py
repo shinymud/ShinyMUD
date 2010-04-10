@@ -280,7 +280,7 @@ class Link(BaseCommand):
     required_permissions = BUILDER
     help = (
     """<title>Link (BuildCommand)</title>
-\nThe Link command links the exits of two rooms, allowing players to move
+The Link command links the exits of two rooms, allowing players to move
 between them.
 \nRequired Permissions: BUILDER
 \nUSAGE:
@@ -653,62 +653,73 @@ See "help <command-name>" for help on any one of these commands.
 """ % ('\n'.join([cmd.__name__.lower() for cmd in build_list.commands.values()]))
 ), ['build commands', 'build command'])
 
-command_help.register(("<title>Room Resets (Room Attribute)</title>"
-"""Every room has a list of "room resets". A room reset is an object that
-keeps track of an item or npc and a spawn point. When a room is told to Reset
-itself (see "help reset"), it goes through its list of room resets and spawns
-each room reset's item or npc into the place designated by the room reset's
-spawn point. You can only add room resets to a room while you are editing that
-room during BuildMode.\n
-USAGE:
-<object-type> can be "npc" or "item".
-To add a room reset:
-    add reset [for] <object-type> <object-id> [[from area] <object-area>]
-To remove a room reset:
-  remove reset <reset-id>\n
-Examples:
-    add reset for item 1
-    add reset for npc 5 from area bar
-If we list the attributes of the room we were editing, we should see something
-like the following under room resets:
-  [1] Item - a treasure chest (1:foo) - spawns in room
-  [2] Npc - Shiny McShinerson (5:bar) - spawns in room\n
-The first number in brackets is the room reset id. This is how we identify a
-particular reset (so we can remove it, for example). Next we have the object
-type, which tells us if this room reset spawns an item or an npc. Then we have
-the name of the item/npc to be spawned, with its item/npc id and area-name in
-parenthesis next to it. Finally, the last part is the spawn point for the room
-reset's object. We can see here that the default is 'in room', which means
-both the item and the npc will appear inside the room when the room is told to
-Reset. To learn how to set a spawn point so that you can nest room resets (for
-example, tell a dagger to spawn inside of a chest), see "help nested resets".
+command_help.register(("<title>Spawns (Room Attribute)</title>"
+"""Every room has a list of "spawns". A spawn is an object that keeps track of
+an item or npc and where should be loaded. When a room is told to Reset itself
+(see "help reset"), it goes through its list of spawns and loads their items and
+npcs into the place designated by the spawn's spawn point. You can only add
+spawns to a room while you are editing that room during BuildMode.
+\n<b>USAGE:</b>
+NOTE: <object-type> can be "npc" or "item".
+To add a spawn:
+    add spawn [for] <object-type> <object-id> [[from area] <object-area>]
+To remove a spawn:
+  remove spawn <reset-id>
+\n<b>EXAMPLES:</b>
+  add spawn for item 1
+  add spawn for npc 5 from area bar
+\nFor a more detailed explanation of spawns, see "help spawn example".
+For help on nesting spawns, see "help nested spawns".
 """
-), ['room resets', 'room reset'])
+), ['spawn', 'spawns'])
 
-command_help.register(("<title>Nested Resets (Room Attribute)</title>"
-"""A nested reset is when we have a room reset that tells an item to spawn
+command_help.register(("<title>Spawn Example</title>"
+"""Let's start by adding a couple of examplespawns:
+  add spawn for item 1
+  add spawn for npc 5 from area bar
+\nIf we list the attributes of the room we were editing, we should see something
+like the following under spawns (of course, the actual item and npc are made up
+here as an example-- you'll have to create your own with their own names):
+  [1] Item - a treasure chest (1:foo) - spawns in room
+  [2] Npc - Shiny McShinerson (5:bar) - spawns in room
+\nThe first number in brackets is the spawn id. This is how we identify a
+particular spawn (so we can remove it, for example).
+Next we have the object type, which tells us if this spawn loads an item or an
+npc.
+Then we have the name of the item/npc to be loaded, with its item/npc id and
+area-name in parenthesis next to it.
+Finally, the last part is the spawn point for the spawn's object. We can
+see here that the default is 'in room', which means both the item and the npc
+will appear inside the room when the room is told to Reset. To learn how to set
+a spawn point so that you can nest spawns (for example, tell a dagger to
+load inside of a chest), see "help nested spawns".
+"""
+), ['spawn example'])
+
+command_help.register(("<title>Nested Spawns (Room Attribute)</title>"
+"""A nested spawn is when we have a spawn that tells an item to load
 inside a container item, or inside an npc's inventory.
-USAGE:
-  add reset [for] item <item-id> [in/inside] [reset] <container-reset-id>\n
-Examples:
-Let's say that when a room gets Reset, we want to spawn a chest with a dagger
-inside. First, we need to add a room reset for the containing item (the
-chest), which happens to have an item id of 5:
-  add reset for item 5\n
-Next we add a reset for the dagger, telling it to spawn into the object that
-room reset #1 spawns:
-  add reset for item 2 into reset 1
-If you list the room's attributes, under resets you should see something like
+\n<b>USAGE:</b>
+  add spawn [for] item <item-id> [in/inside] [spawn] <container-reset-id>
+\n<b>EXAMPLES:</b>
+Let's say that when a room gets Reset, we want to load a chest with a dagger
+inside. First, we need to add a spawn for the containing item (the
+chest), which in this example has an id of 5:
+  add reset for item 5
+\nNext we add a spawn for the dagger, telling it to load inside the object that
+spawn #1 loads:
+  add spawn for item 2 in reset 1
+\nIf you list the room's attributes, under spawns you should see something like
 the following:
   [1] Item - a treasure chest (5:bar) - spawns in room
-  [2] Item - a dagger (2:bar) - spawns into a treasure chest (R:1)\n
-The (R:1) on the end of the second room reset clarifies that the dagger is
-spawned into reset 1's item.\n
-NOTE: Only items can be nested resets (npcs can't be spawned inside other
-items or npcs). Also, an item can only be spawned into another item if the
-second item is of type container.
+  [2] Item - a dagger (2:bar) - spawns into a treasure chest (S:1)
+\nThe (S:1) on the end of the second spawn clarifies that the dagger is
+loaded into spawn 1's item.
+\nNOTE: Only items can be nested spawns (npcs can't be loaded inside other
+items or npcs). Also, an item can only be loaded inside another item if the
+second item is of type container ("help container").
 """
-), ['nested resets', 'nested reset'])
+), ['nested spawn', 'nested spawns'])
 
 command_help.register(("<title>NPC Events (NPC Attribute)</title>"
 """NPC events are what trigger an npc to perform a scripted action. 
@@ -737,7 +748,9 @@ hears 'condition' - call script when the npc hears 'condition' text in the
 command_help.register(("<title>Scripts (BuildMode object)</title>"
 """Scripts are a BuildMode object like items, npcs and rooms. They are
 essentially documents containing a set of actions that an npc should preform
-when a certain event happens (see "help npc event").
+when a certain event happens (see <b>"help npc event"</b>).
+\nSCRIPT NOTES:
+  <b>*Scripts can be created using the Create command (see "help create")*</b>
 \nSCRIPT ATTRIBUTES:
 <b>name - (set name <script-name>)</b> A name to help distinguish this script
 from other scripts in this area.
@@ -849,13 +862,15 @@ command_help.register(("<title>Area (BuildMode Object)</title>"
 """An area is like a package of rooms, items, npcs and scripts. You must be
 editing an area before you can add new objects to it or edit its existing
 objects.
+\nAREA NOTES:
+  <b>*Areas can be created using the Create command (see "help create")*</b>
 \nAREA ATTRIBUTES:
 <b>name - (not changeable)</b> The short name by which an area is referred to
 during BuildMode. This name is given to the area during its creation process
 and should be a short, descriptive, and unique word.
 <b>title - (set title <title-text>)</b> A descriptive title for the area.
 <b>level range - (set levelrange <level-range>)</b> A range of levels (such as
-5-20) or a short description (e.g. Builders Only) the expresses who this level
+5-20) or a short description (e.g. Builders Only) that expresses who this level
 is for.
 <b>builders - (add builder <builder-name>)</b> A list of builders who have
 access to edit this area (Builders that create an area are automatically
@@ -868,6 +883,8 @@ about this area.
 command_help.register(("<title>Item (BuildMode Object) </title>"
 """Items make up all of the "things" in the game. From furniture to food, items
 provide true interactivity to your areas.
+<b>*Items can be created using the Create command (see "help create")*</b>
+<b>*For help adding items to rooms, see "help spawns"*</b>
 \nITEM ATTRIBUTES:
 <b>name - (set name <name>)</b> The name of the item, seen by the player when
 they interact with it (such as getting it, giving it, dropping it, etc.).
@@ -884,7 +901,7 @@ that the player sees if they use the Look command on the item.
 <b>equip location - (set equip <equip-location>)</b> The location this item can
 be equipped to (see "help equip" for a list).
 <b>keywords - (set keywords <kw1>,<kw2>,<kw...>)</b> Keywords that a player
-can use to refer to this item when Getting it, Giving it, etc.Keywords should
+can use to refer to this item when Getting it, Giving it, etc. Keywords should
 contain words that are used in the item's title and name so as not to confuse
 the player.
 <b>weight - (set weight <weight>)</b> The weight of the object, without units.
@@ -933,6 +950,52 @@ command_help.register(("<title>Furniture (ItemType)</title>"
 ), ['furniture'])
 
 command_help.register(("<title>Npc (BuildMode object)</title>"
-"""Coming soon!
+"""Npcs (Non-player-characters) make up the virtual citizenry of the world. They
+can hand out quests, fight against players, or dozens of other things to make
+your area come to life.
+\nNPC NOTES:
+  <b>*Npcs can be created using the Create command (see "help create")*</b>
+  <b>*For help adding npcs to rooms, see "help spawns"*</b>
+  <b>*For help making your npcs come to life, see "help npc events"*</b>
+\nNPC ATTRIBUTES:
+<b>name - (set name <npc-name>)</b> The name of the npc.
+<b>title - (set title <npc-title>)</b> A short (sentence-long) description that
+a player sees when this item is in a room.
+<b>gender - (set gender <gender-type>) The gender of the npc. Can be male,
+female, or neutral. This really only affects the pronoun that will be used in
+describing the npc.
+<b>keywords - (set keywords <kw1>,<kw2>,<kw...>)</b> Keywords that a player can
+use to refer to this npc when interacting with it. Keywords should contain words
+that are used in the npc's title and name so as not to confuse the player. A
+neat trick: if you want a list of keywords to be made for you based on the npc's
+name, try just "set keywords".
+<b>description - (set description, starts TextEditMode)</b> A long description
+that the player sees if they use the Look command on the npc.
+<b>Npc events</b> - See "help npc events" for adding npc events.
 """
 ), ['npc', 'npcs'])
+
+command_help.register(("<title>Room (BuildMode object)</title>"
+"""Rooms are what make up the "physical" area of the world. Players, npcs, and
+items all exist inside rooms.
+\nROOM NOTES:
+  <b>*Rooms can be created using the Create command (see "help create")*</b>
+  <b>*For help adding npcs or items to rooms, see "help room spawns"*</b>
+\nROOM ATTRIBUTES:
+<b>name - (set name <room-name>)</b> The name of the room.
+<b>description - (set description, starts TextEditMode)</b> A description of the
+room. This should be anywhere from two to five sentences and should give the
+player a good idea of the place they're in.
+<b>exits -</b> Exits are "doorways" from this room to another that allow players
+to move from room to room. For help editing exits, see "help exits".
+<b>spawns -</b> Spawns are the items and npcs that get loaded into this room when
+the room is told to reset itself. Areas reset their rooms automatically when
+they sense player activity. See "help spawns" for help adding spawn points
+to your rooms, or "help reset" for help on manually resetting your room.
+"""
+), ['room', 'rooms'])
+
+command_help.register(("<title>Exits (Room Attribute)</title>"
+""" Coming soon!
+"""
+), ['exits', 'exit'])
