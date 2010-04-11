@@ -883,8 +883,9 @@ about this area.
 command_help.register(("<title>Item (BuildMode Object) </title>"
 """Items make up all of the "things" in the game. From furniture to food, items
 provide true interactivity to your areas.
-<b>*Items can be created using the Create command (see "help create")*</b>
-<b>*For help adding items to rooms, see "help spawns"*</b>
+\nITEM NOTES:
+  <b>*Items can be created using the Create command (see "help create")*</b>
+  <b>*For help adding items to rooms, see "help spawns"*</b>
 \nITEM ATTRIBUTES:
 <b>name - (set name <name>)</b> The name of the item, seen by the player when
 they interact with it (such as getting it, giving it, dropping it, etc.).
@@ -961,7 +962,7 @@ your area come to life.
 <b>name - (set name <npc-name>)</b> The name of the npc.
 <b>title - (set title <npc-title>)</b> A short (sentence-long) description that
 a player sees when this item is in a room.
-<b>gender - (set gender <gender-type>) The gender of the npc. Can be male,
+<b>gender - (set gender <gender-type>)</b> The gender of the npc. Can be male,
 female, or neutral. This really only affects the pronoun that will be used in
 describing the npc.
 <b>keywords - (set keywords <kw1>,<kw2>,<kw...>)</b> Keywords that a player can

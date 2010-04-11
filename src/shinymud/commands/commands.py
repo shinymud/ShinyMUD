@@ -207,7 +207,7 @@ class Look(BaseCommand):
             # room they're in.
             message = self.look_at_room()
         else:
-            exp = r'(at[ ]+)?((?P<thing1>(\w|[ ])+)([ ]in[ ](?P<place>(room)|(inventory)|)))|(?P<thing2>(\w|[ ])+)'
+            exp = r'(at[ ]+)?((?P<thing1>(\w|[ ])+)([ ]in[ ](?P<place>(room)|(inventory)|)))|((at[ ]+)?(?P<thing2>(\w|[ ])+))'
             match = re.match(exp, self.args, re.I)
             if match:
                 thing1, thing2, place = match.group('thing1', 'thing2', 'place')
@@ -1855,6 +1855,45 @@ they are in the world, provided they are online.
 command_list.register(Tell, ['tell'])
 command_help.register(Tell.help, ['tell'])
 
+class Commands(BaseCommand):
+    help = (
+    """<title>Commands (Basic Commands)</title>
+Commands are how players interact with the game; in fact, you've just used the
+Help command in order to call up this help page (fancy!). A command is a word
+(usually a verb) that represents an action you want to do, and is sometimes
+followed by one or more words that clarify how that action is being done, or who
+that action is being done to.
+\n<b>USAGE:</b>
+The help pages for commands all come with a USAGE section that explain the
+syntax of a command. For example, the USAGE section for the Tell command looks
+like this:
+  <b>tell <person-name> <message></b>
+The angle brackets (<>) mean that the word inside them is a place-holder. In the
+Tell example above, I would want to replace <person-name> with the name of the
+person I want to send a message to, and <message> with the message I want to
+send. Some commands have optional words, like the USAGE for the Look command:
+  <b>look [[at] <person-name>]</b>
+Anything enclosed in square brackets ([]) is optional. In the example above,
+both the words "at" and "<person-name>" are optional. I could type any of the
+following and the Look command would work:
+  look          (this would make me look at the room by default)
+  look brian    (this would make me look at the character Brian)
+  look at brian (this would also make me look at the character Brian)
+    """
+    )
+    def execute(self):
+        l = 'Your permission group(s): ' % get_permission_names(self.user.permissions)
+        l += 'You can use the following commands. Type "help <command-name>" for ' +\
+             'help on that particular command. Type "help commands" for help on ' +\
+             'commands in general.'
+        coms = [value for key,value in command_list.commands.items() if key.required_permissions & self.user.permissions]
+        l += '\n'.join(coms)
+        self.user.update_output(l)
+    
+
+command_list.register(Commands, ['command', 'commands'])
+command_help.register(Commands.help, ['command', 'commands'])
+
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as
 room or character descriptions. TextEditMode lets you enter text
@@ -1865,30 +1904,41 @@ typing @help while in TextEditMode.
 ), ['TextEditMode', 'text edit mode', 'textedit', 'text edit'])
 
 command_help.register(("<title>Newbie Help</title>"
-"""Welcome! You've just successfully invoked our help system on the "newbie"
-topic. Any time you need help with something, just type "help" and then the
-name of the topic you want help with. Try it on the topics below to expand
-your knowledge of how to play the game:
-\nSee <b>help commands</b> for a tutorial on what to type and how to interact
+"""Welcome! You've successfully invoked our help system on the "newbie" topic.
+Anytime you need help with something, just type "help" and then the name of the
+topic you want help with. Try it on the topics below to expand your knowledge of
+how to play the game:
+\nSee "<b>help commands</b>" for a tutorial on what to type and how to interact
 with the game.
-\nSee <b>help go</b> for a tutorial on how to move around and explore
+\nSee "<b>help go</b>" for a tutorial on how to move around and explore
 the game.
-\nSee <b>help talking</b> for a tutorial on how to communicate with other
+\nSee "<b>help talking</b>" for a tutorial on how to communicate with other
 players in the game.
-\nSee <b>help mud</b> to get a better idea of what kind of game a MUD is.
+\nSee "<b>help mud</b>" to get a better idea of what kind of game a MUD is.
 \nHappy MUDding!
 """
 ), ['newbie', 'newb'])
 
 command_help.register(("<title>Communication</title>"
-"""
+"""There are lots of ways to get your message across, depending on who you want
+to hear it.
+<b>Chat</b>
+The Chat command will broadcast your message to every player in the game (unless
+they have their chat channel turned off). It's meant solely for discussion
+between players, and topics may not be relevant to the game. For even more help
+with the chat command, type "help chat".
+Tutorial - try typing:
+  chat I'm testing out the chat command!
+\n<b>Say</b>
+The Say command will only broadcast your message to people in the same room as
+you. Both players and npcs (non-player-characters) can hear a message you send with
+the Say command. Type "help say" for help with this command.
+Tutorial - try typing:
+  say I'm testing out the say command!
+\n<b>Tell</b>
+The tell command will send a private message to a specific person. It only works
+if the person you're trying to Tell is online, or the npc you're trying to tell
+is in the same room as you.
 """
 ), ['talking', 'talk', 'communication'])
 
-command_help.register(("<title>Commands (Basic Commands)</title>"
-"""Commands are how players interact with the game; in fact, you've just used
-the Help command in order to call up this help page (fancy!).
-
-
-"""
-), ['command', 'commands'])

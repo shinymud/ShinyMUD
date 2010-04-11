@@ -128,9 +128,10 @@ class InitMode(object):
         self.active = False
         self.user.update_output('\nYou have entered the world of %s.\n' % GAME_NAME, strip_nl=False)
         if self.newbie:
-            newb = "Welcome, new player!\n" + COLOR_FG_RED + BOLD +\
-                   'If you would like some help playing the game, type ' +\
-                   '"help newbie".\n' + CLEAR
+            nl = '*' + (' ' * 67) + '*\n'
+            newb = ' Welcome, new player! '.center(69, '*') + '\n' + nl
+            newb += ('* If you would like some help playing the game, type "help newbie". *').center(69, ' ') + '\n' + nl
+            newb += ('*' * 69)
             self.user.update_output(newb, strip_nl=False)
             self.world.tell_users("%s, a new player, has entered the world." % self.user.fancy_name())
         else:
