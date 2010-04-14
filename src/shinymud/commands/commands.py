@@ -1856,6 +1856,7 @@ command_list.register(Tell, ['tell'])
 command_help.register(Tell.help, ['tell'])
 
 class Commands(BaseCommand):
+    """Spit out a list of basic commands."""
     help = (
     """<title>Commands (Basic Commands)</title>
 Commands are how players interact with the game; in fact, you've just used the
@@ -1882,11 +1883,16 @@ following and the Look command would work:
     """
     )
     def execute(self):
-        l = 'Your permission group(s): ' % get_permission_names(self.user.permissions)
-        l += 'You can use the following commands. Type "help <command-name>" for ' +\
-             'help on that particular command. Type "help commands" for help on ' +\
-             'commands in general.'
-        coms = [value for key,value in command_list.commands.items() if key.required_permissions & self.user.permissions]
+        # TODO: This should be cleaned up so it's not just a horrible long list.
+        # also, we should probably throw emotes out of this list since they don't 
+        # add real actions
+        l = 'Type "help <command-name>" for help on that particular command.\n' +\
+            'Type "help commands" for help on commands in general.\n' +\
+            ('-' * 50) + '\nBasic Commands (some commands may be aliases of another):\n'
+        coms = []
+        for alias, cmd in command_list.commands.items():
+            if cmd.required_permissions & PLAYER:
+                coms.append(alias)
         l += '\n'.join(coms)
         self.user.update_output(l)
     

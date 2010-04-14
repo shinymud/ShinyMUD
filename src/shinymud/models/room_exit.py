@@ -94,6 +94,12 @@ class RoomExit(object):
         self._key = key
     key = property(_resolve_key, _set_key)
     
+    def _str_key(self):
+        if self.key:
+            return '%s (%s, %s)' % (self.key.name, self.key.id, self.key.area.name)
+        else:
+            return 'None'
+    
     def __str__(self):
         linked = "false"
         if self.linked_exit:
@@ -101,7 +107,7 @@ class RoomExit(object):
         list_exit = "[to: %s-%s, linked: %s, openable: %s, closed: %s, hidden: %s, locked: %s, key: %s]" % (self.to_room.area.name, self.to_room.id, linked,
                                                                                                         str(self.openable), str(self.closed),
                                                                                                         str(self.hidden), str(self.locked),
-                                                                                                        str(self.key))
+                                                                                                        self._str_key())
         return list_exit
     
     def close_me(self, username):
@@ -203,7 +209,7 @@ class RoomExit(object):
     
     def set_key(self, args):
         if not args:
-            return 'Usage: set key <item-id> from area <area-name>\n'
+            return 'Usage: set exit <direction> key <item-id> from area <area-name>\n'
         exp = r'([ ]+)?(?P<key_id>\d+)(([ ]+in)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
         match = re.match(exp, ''.join(args), re.I)
         if not match:

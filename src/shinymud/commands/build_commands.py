@@ -669,12 +669,13 @@ To remove a spawn:
   add spawn for item 1
   add spawn for npc 5 from area bar
 \nFor a more detailed explanation of spawns, see "help spawn example".
-For help on nesting spawns, see "help nested spawns".
+For help on nesting spawns (loading an item inside of a container item), see
+"help nested spawns".
 """
 ), ['spawn', 'spawns'])
 
 command_help.register(("<title>Spawn Example</title>"
-"""Let's start by adding a couple of examplespawns:
+"""Let's start by adding a couple of example spawns:
   add spawn for item 1
   add spawn for npc 5 from area bar
 \nIf we list the attributes of the room we were editing, we should see something
@@ -886,6 +887,7 @@ provide true interactivity to your areas.
 \nITEM NOTES:
   <b>*Items can be created using the Create command (see "help create")*</b>
   <b>*For help adding items to rooms, see "help spawns"*</b>
+  <b>*Gods can eat non-edible items. They can also carry non-carryble items*</b>
 \nITEM ATTRIBUTES:
 <b>name - (set name <name>)</b> The name of the item, seen by the player when
 they interact with it (such as getting it, giving it, dropping it, etc.).
@@ -895,8 +897,8 @@ This should include any necessary articles such as 'a', 'an', or 'the' (e.g.
 that a player sees when this item is in a room. If a title is not provided in
 sentence format (capital at the beginning, period at the end), then the title
 is automatically converted unless the builder prepends an @ to the title.
-<b>item types - (add type <item-type>)</b> Any special types this item has. See
-"help item types" for a list.
+<b>item types - (add type <item-type>, remove type <item-type)</b> Any special
+types this item has. See "help item types" for a list.
 <b>description - (set description, starts TextEditMode)</b> A long description
 that the player sees if they use the Look command on the item.
 <b>equip location - (set equip <equip-location>)</b> The location this item can
@@ -907,7 +909,8 @@ contain words that are used in the item's title and name so as not to confuse
 the player.
 <b>weight - (set weight <weight>)</b> The weight of the object, without units.
 <b>carryable - (set carryable <true/false>)</b> If carryable is true, this item
-can be picked up and taken by a player.
+can be picked up and taken by a player. NOTE: Gods can still pick up
+non-carryable items; they're just cool like that.
 <b>base value - (set basevalue <base-value>)</b> The base currency value for
 this item, without units.
 """
@@ -926,7 +929,22 @@ they add to a regular item object.
 ), ['item types', 'item type'])
 
 command_help.register(("<title>Portal (ItemType)</title>"
-"""Coming soon!
+"""Portals are objects that manipulate the space-time continuum to allow players
+to quickly travel from one place to another.
+\nPORTAL NOTES:
+  *Players (and npcs) can go through a portal using the Enter command*
+\nPORTAL ATTRIBUTES:
+<b>port location - (set portal to room <room-id> in area <area-name>)</b> This
+is the location the user will be transported to when they enter the portal.
+<b>entrance message - (set entrance <entrance-message>)</b> The message that the
+user will see upon entering the portal.
+<b>leave message - (set leave <leave-message>)</b> The message that will be
+broadcast to the room that the player is leaving.
+<b>emerge message - (set emerge <emerge-message>)</b> The message that will be
+broadcast to the room that the player is emerging in.
+\nNOTE: In the case of the attributes <b>emerge message</b> and <b>leave
+message</b>, #actor can be used as a stand-in for the name of the player
+entering the portal. See "help personalize" for details.
 """
 ), ['portal'])
 
@@ -936,17 +954,61 @@ command_help.register(("<title>Weapon (ItemType)</title>"
 ), ['weapon'])
 
 command_help.register(("<title>Food (ItemType)</title>"
-"""Coming soon!
+"""Food items can be consumed using the Eat and Drink commands.
+\nFOOD ATTRIBUTES:
+<b>food type - (set food_type <food/drink>)</b> Sets whether this item is a food
+or a drink (this really only changes what message is given when a player
+consumes it).
+<b>replace - (set replace [item] <item-id> [from area] <area-name>)</b> Set this
+to have the food item be replaced by another item upon upon consumption. To
+clear this attribute, try "set replace none".
+<b>use message (actor) - (set actor_message <message>)</b> The message that will
+be given to the character when they consume this item.
+<b>use message (room) - (set room_message <message>)</b> The message that will
+be broadcast to the surrounding room when a character eats this item. The
+personalizer #actor can be used here.
+<b>on-eat effects - (see "help effects")</b> The special effects that will be
+transferred to a character when they consume this food.
 """
 ), ['food'])
 
 command_help.register(("<title>Container (ItemType)</title>"
-"""Coming soon!
+"""Containers are items that can hold other items. Characters can manage the
+items inside containers by using the Put and Get commands.
+\nCONTAINER ATTRIBUTES:
+<b>weight capacity - (set weight_cap <capacity>)</b> The total weight capacity
+that this container can hold. None means that container's weight capacity is
+infinite.
+<b>item capacity - (set item_cap <capacity>)</b> The total number of items that
+this container can hold. None means that the container's item capacity is
+infinite.
+<b>weight reduction - (set reduction <percentage>)</b> The percentage of an
+item's weight that is reduced when it is placed in this container.
+<b>openable - (set openable <true/false>)</b> If true, then this container can
+be opened and closed by the character (using the Open and Close commands).
+<b>closed - (set closed <true/false>)</b> If closed is set to false, then this
+container is set to closed by default; if false, this container is set to be
+open by default.
+<b>locked - (set locked <true/false>)</b> If locked is set to true, then this
+container is locked by default and cannot be opened without first being
+unlocked.
+<b>key - (set key <key-item-id> [from area <area-name>])</b> The item that acts
+as this container's key and can unlock it. NOTE: items can be locked and yet not
+have an assigned key.
 """
 ), ['container'])
 
 command_help.register(("<title>Furniture (ItemType)</title>"
-"""Coming soon!
+"""Furniture items are items that can be slept and sat on. They can also confer
+character effects upon their occupant.
+\nFURNITURE ATTRIBUTES:
+<b>sit effects - (not yet available)</b> The effects conferred to a sitting
+character during their occupancy.
+<b>sleep effects - (not yet available)</b> The effects conferred to a sleeping
+character during their occupancy.
+<b>capacity - (set capacity <capacity>)</b> The number of characters that this
+furniture item can accommodate at one time. None means this furniture can hold
+an infinite number of people.
 """
 ), ['furniture'])
 
@@ -987,8 +1049,7 @@ items all exist inside rooms.
 <b>description - (set description, starts TextEditMode)</b> A description of the
 room. This should be anywhere from two to five sentences and should give the
 player a good idea of the place they're in.
-<b>exits -</b> Exits are "doorways" from this room to another that allow players
-to move from room to room. For help editing exits, see "help exits".
+<b>exits -</b> For help editing exits, see "help exits" or "help link".
 <b>spawns -</b> Spawns are the items and npcs that get loaded into this room when
 the room is told to reset itself. Areas reset their rooms automatically when
 they sense player activity. See "help spawns" for help adding spawn points
@@ -997,6 +1058,34 @@ to your rooms, or "help reset" for help on manually resetting your room.
 ), ['room', 'rooms'])
 
 command_help.register(("<title>Exits (Room Attribute)</title>"
-""" Coming soon!
+"""Exits are "doorways" from this room to another that allow players
+to move from room to room.
+\n<b>EXIT NOTES:</b>
+  *To quickly add doorways between rooms, see "help link"*
+  * An exit "direction" can be one of north, east, south, west, up, down*
+\nEXIT ATTRIBUTES:
+<b>to - (see "help link")</b> The area and id of the room that this exit leads
+to.
+<b>linked - (see "help link")</b> If true, then the room this exit goes to has
+an exit linked back to this one.
+<b>openable - (set exit <direction> openable <true/false>)</b> If openable is
+set to true, that means this door can be opened and closed by a character.
+<b>closed - (set exit <direction> closed <true/false>)</b> If closed is true,
+this door will be closed by default. If closed is false, this door will be open
+by default. Be careful about setting closed = true without having openable =
+true -- you don't want a door closed by default that your players can't open!
+<b>hidden - (set exit <direction> hidden <true/false>)</b> If hidden is set to
+true, this exit won't be visible to the naked eye (a player will need "detect
+hidden" to see it).
+<b>locked - (set exit <direction> locked <true/false)</b> If locked is set to
+true, then this door cannot be opened without first being unlocked.
+<b>key - (set key <key-item-id> [from area <area-name>])</b> The item that acts
+as this container's key and can unlock it. NOTE: items can be locked and yet not
+have an assigned key.
 """
 ), ['exits', 'exit'])
+
+command_help.register(("<title>Character Effects</title>"
+"""Coming Soon! Sorry for the delay.
+"""
+), ['effects', 'character effects'])
