@@ -47,6 +47,33 @@ WorldEcho echoes a message to all users currently in the world.
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
 command_help.register(WorldEcho.help, ['wecho', 'world echo', 'worldecho'])
 
+class RoomEcho(BaseCommand):
+    """Echoes a message to everyone in a specific room.
+    args - message to be sent to the room
+    """
+    required_permissions = DM | ADMIN
+    help = (
+    """<title>Room Echo (Command)</title>
+The RoomEcho command (or, recho) sends a "disembodied" message to everyone at your
+current room location.
+\nREQUIRED PERMISSIONS: DM or ADMIN
+\nUSAGE:
+  recho <message>
+    """
+    )
+    def execute(self):
+        if not self.user.location:
+            self.user.update_output('Your message echoes faintly off into the void.')
+            return
+        if not self.args:
+            self.user.update_output('Usage: recho <message>. See "help recho" for details.')
+            return
+        self.user.location.tell_room(self.args)
+    
+
+command_list.register(RoomEcho, ['recho', 'room echo', 'roomecho'])
+command_help.register(RoomEcho.help, ['recho', 'room echo', 'roomecho'])
+
 class Chat(BaseCommand):
     """Sends a message to every user on the chat channel."""
     help = (
@@ -947,7 +974,7 @@ Anyone in the same room would then see the following:
     aliases.extend(EMOTES.keys())
     def execute(self):
         if not self.user.location:
-            self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.\n')
+            self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.')
         elif self.alias == 'emote':
             self.user.location.tell_room('%s %s' % (self.user.fancy_name(),
                                                     self.args), 
