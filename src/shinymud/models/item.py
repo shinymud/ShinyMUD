@@ -14,7 +14,7 @@ DAMAGE_TYPES =  [   'slashing',
                     'shock', 
                     'sonic', 
                     'poison',
-                    'holy'
+                    # 'holy'
                 ]
 SLOT_TYPES =    {   'main-hand': 'You wield #item in your main-hand.',
                     'off-hand': 'You weild #item in your off-hand.',

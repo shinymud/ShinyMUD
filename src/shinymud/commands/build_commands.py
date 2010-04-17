@@ -918,7 +918,7 @@ this item, without units.
 
 command_help.register(("<title>Item Types (BuildMode Object) </title>"
 """There are currently 5 different item types:
-  Weapon
+  Equippable
   Food
   Furniture
   Container
@@ -950,26 +950,26 @@ entering the portal. See "help personalize" for details.
 
 command_help.register(("<title>Equippable (ItemType)</title>"
 """Equippable items can be worn on the character's body, or held in their hands.
-\n<b>EQUIPPABLE ATTRIBUTES:</b>
-<b>damage (set damage <damage_type> <min>-<max> <percent>%)</b> Sets the amount 
-of damage this item can do if its wielder successfully hits an opponent. 
-"set damage" will always set the primary damage for an item. If you want to 
-add additional types of damage, use <b>add damage</b>. See also <b>help damage</b>.
-<b>hit (set hit (+ or -) <amount>)</b> Sets the bonus or penalty to a character's
-chance of hitting their target in battle. To cancel the bonus/penalty, you can
-reset it to none using "set hit 0".
-<b>evade (set evade (+ or -) <amount>)</b> Sets the bonus or penalty to a 
-character's evade ability. A high evade will make a character much harder to hit.
-To undo, try "set evade 0".
-<b>absorb (set absorb <damage_type> <amount>)</b> Sets the amount of damage that this
-item can absorb, and of which types. Damage absorbed by items does not hurt the
-chararter wearing them. A single item may absorb multiple types of damage, by
-specifying a different damage_type each time you set it. Setting a negative
+\n<b>EQUIPPABLE ATTRIBUTES:</b> 
+<b>damage (set damage <damage_type> <min>-<max> <percent>%)</b> Sets the amount
+of damage this item can do if its wielder successfully hits an opponent. "set
+damage" will always set the primary damage for an item. If you want to add
+additional types of damage, use <b>add damage</b>. See also <b>help damage</b>.
+<b>hit (set hit (+ or -) <amount>)</b> Sets the bonus or penalty to a
+character's chance of hitting their target in battle. To cancel the
+bonus/penalty, you can reset it to none using "set hit 0".
+<b>evade (set evade (+ or -) <amount>)</b> Sets the bonus or penalty to a
+character's evade ability. A high evade will make a character much harder to
+hit. To undo, try "set evade 0".
+<b>absorb (set absorb <damage_type> <amount>)</b> Sets the amount of damage that
+this item can absorb, and of which types. Damage absorbed by items does not hurt
+the chararter wearing them. A single item may absorb multiple types of damage,
+by specifying a different damage_type each time you set it. Setting a negative
 amount of damage means that the character will take extra damage of that type,
-if they are hit. Some cursed items may make characters very vulnerable to 
+if they are hit. Some cursed items may make characters very vulnerable to
 certain types of damage. see <b>help damage</b> for more info on damage types.
-<b>equip (set equip <equip-slot>)</b> Set the location this item is worn/held. The
-equip-slot may be one of the following:
+<b>equip (set equip <equip-slot>)</b> Set the location this item is worn/held.
+The equip-slot may be one of the following:
   """ + ",\n  ".join([key for key in SLOT_TYPES.keys()]) + '.'
 ), ['weapon', 'equippable', 'armor', ])
 
@@ -981,11 +981,11 @@ examples:
     slashing 3-7
     piercing 1-5 50%
 
-<b>percent</b> The percentage of the time that this damage is applied, after
-the hit is successful. This allows you to specify extra damage that only happens
+<b>percent</b> The percentage of the time that this damage is applied, after the
+hit is successful. This allows you to specify extra damage that only happens
 some of the time. This is optional, and if not specified the damage will be
 applied 100% of the time.
-<b>type</b> The type of damage. Different enemies may be stronger or weaker 
+<b>type</b> The type of damage. Different enemies may be stronger or weaker
 against different types of damage. The different types of damage are:
   """ +",\n  ".join([_ for _ in DAMAGE_TYPES]) + '.'
 ), ['damage', 'damage-type', 'damage-types'])
