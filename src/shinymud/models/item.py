@@ -306,7 +306,7 @@ class InventoryItem(Item):
 
 class Damage(object):
     def __init__(self, dstring):
-        exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)[ ]+(?P<d_prob>\d+)'
+        exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)([ ]+(?P<d_prob>\d+))?'
         m = re.match(exp, dstring)
         if m and m.group('d_type') in DAMAGE_TYPES:
             self.type = m.group('d_type')
@@ -321,7 +321,7 @@ class Damage(object):
                 elif self.probability < 0:
                     self.probability = 0
             else:
-                raise Exception('Bad damage probability given.\n')
+                self.probability = 100
         else:
             raise Exception('Bad damage type given.\n')
     
@@ -355,9 +355,9 @@ class Equippable(object):
         self.is_equipped = to_bool(args.get('is_equipped', False))
         self.dbid = args.get('dbid')
     
-    def set_dmg(self, params, user=None):
+    def set_damage(self, params, user=None):
         if not params:
-            return 'Sets a damage type of an equippable item.\nExample: set dmg slashing 1-4 100%\n'
+            return 'Sets a damage type of an equippable item.\nExample: set damage slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
         m = re.match(exp, params)
         #if not m:
@@ -381,7 +381,7 @@ class Equippable(object):
         # world = World.get_world()
         # world.db.update_from_dict('equippable', self.to_dict())
 
-        return 'dmg ' + str(index) + ' set.\n'
+        return 'damage ' + str(index) + ' set.\n'
     
     def set_equip(self, loc, user=None):
         """Set the equip location for this item."""
@@ -393,7 +393,7 @@ class Equippable(object):
         else:
             return 'That equip location doesn\'t exist.\n'
     
-    def add_dmg(self, params):
+    def add_damage(self, params):
         #Currently broken will be fixed when the add class in commands is updated.
         if not params:
             return 'What damage would you like to add?\n'
@@ -402,7 +402,7 @@ class Equippable(object):
             self.save()
             # world = World.get_world()
             # world.db.update_from_dict('equippable', self.to_dict())
-            return 'dmg has been added.\n'
+            return 'damage has been added.\n'
         except Exception, e:
             return str(e)
     
@@ -461,7 +461,7 @@ class Equippable(object):
         keys.sort() # Keep them in the same order, visually.
         for k in keys:
             string += dstring % (k, str(self.absorb[k]))
-        string += '  dmg: \n'
+        string += '  damage: \n'
         for dmg in range(len(self.dmg)):
             string += dstring % (str(dmg + 1), str(self.dmg[dmg]) )
         return string
@@ -480,7 +480,7 @@ class Equippable(object):
         if a:
             e.absorb = a
         for d in self.dmg:
-            e.add_dmg(str(d))
+            e.add_damage(str(d))
         return e
     
     def on_equip(self):
@@ -547,13 +547,22 @@ class Equippable(object):
     
 
     
-    def remove_dmg(self, index):
-        if not index:
-            return 'which dmg would you like to remove?'
+    def remove_damage(self, index):
+        if len(self.dmg) == 0:
+            return "this item does not do any damage"
+        elif not index and len(self.dmg) > 1:
+            return 'which damage would you like to remove?'
+        elif len(self.dmg) == 1:
+            del self.dmg[0]
+            self.save()
+            return "damage removed"
         else:
+            index = int(index)
             if index <= len(self.dmg) and index > 0:
                 del self.dmg[index -1]
                 self.save()
+                return "damage removed"
+            return "you must specify which damage to remove: 1 - %s" % str(len(self.dmg))
                 # world.db.update_from_dict('equippable', self.to_dict())
     
     def save(self, save_dict=None):

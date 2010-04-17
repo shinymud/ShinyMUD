@@ -1,6 +1,6 @@
 from shinymud.models.area import Area
 from shinymud.models.room import Room
-from shinymud.models.item import Item, SLOT_TYPES
+from shinymud.models.item import Item, SLOT_TYPES, DAMAGE_TYPES
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
 from shinymud.lib.sport import *
@@ -440,12 +440,12 @@ help file for the object you're editing for more details.
                 if hasattr(obj, 'remove_' + func):
                     self.user.update_output(getattr(obj, 'remove_' + func)(args))
                 elif obj.__class__.__name__ == 'Item':
-                    # If we didn't find the set function in the object's native set functions,
-                    # but the object is of type Item, then we should search the set functions
+                    # If we didn't find the remove function in the object's native remove functions,
+                    # but the object is of type Item, then we should search the remove functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
-                        if hasattr(iType, 'set_' + func):
-                            message = getattr(iType, 'set_' + func)(args)
+                        if hasattr(iType, 'remove_' + func):
+                            message = getattr(iType, 'remove_' + func)(args)
                             break
                     self.user.update_output(message)
     
@@ -948,10 +948,47 @@ entering the portal. See "help personalize" for details.
 """
 ), ['portal'])
 
-command_help.register(("<title>Weapon (ItemType)</title>"
-"""Coming soon!
-"""
-), ['weapon'])
+command_help.register(("<title>Equippable (ItemType)</title>"
+"""Equippable items can be worn on the character's body, or held in their hands.
+\n<b>EQUIPPABLE ATTRIBUTES:</b>
+<b>damage (set damage <damage_type> <min>-<max> <percent>%)</b> Sets the amount 
+of damage this item can do if its wielder successfully hits an opponent. 
+"set damage" will always set the primary damage for an item. If you want to 
+add additional types of damage, use <b>add damage</b>. See also <b>help damage</b>.
+<b>hit (set hit (+ or -) <amount>)</b> Sets the bonus or penalty to a character's
+chance of hitting their target in battle. To cancel the bonus/penalty, you can
+reset it to none using "set hit 0".
+<b>evade (set evade (+ or -) <amount>)</b> Sets the bonus or penalty to a 
+character's evade ability. A high evade will make a character much harder to hit.
+To undo, try "set evade 0".
+<b>absorb (set absorb <damage_type> <amount>)</b> Sets the amount of damage that this
+item can absorb, and of which types. Damage absorbed by items does not hurt the
+chararter wearing them. A single item may absorb multiple types of damage, by
+specifying a different damage_type each time you set it. Setting a negative
+amount of damage means that the character will take extra damage of that type,
+if they are hit. Some cursed items may make characters very vulnerable to 
+certain types of damage. see <b>help damage</b> for more info on damage types.
+<b>equip (set equip <equip-slot>)</b> Set the location this item is worn/held. The
+equip-slot may be one of the following:
+  """ + ",\n  ".join([key for key in SLOT_TYPES.keys()]) + '.'
+), ['weapon', 'equippable', 'armor', ])
+
+command_help.register(("<title>Damage (Equippable Attribute)</title>"
+"""Damage specifies how effective your attack is when you hit an opponent.
+Damage is always shown and specified in the following format:
+    <b><type> <min>-<max> <percent>%</b>
+examples:
+    slashing 3-7
+    piercing 1-5 50%
+
+<b>percent</b> The percentage of the time that this damage is applied, after
+the hit is successful. This allows you to specify extra damage that only happens
+some of the time. This is optional, and if not specified the damage will be
+applied 100% of the time.
+<b>type</b> The type of damage. Different enemies may be stronger or weaker 
+against different types of damage. The different types of damage are:
+  """ +",\n  ".join([_ for _ in DAMAGE_TYPES]) + '.'
+), ['damage', 'damage-type', 'damage-types'])
 
 command_help.register(("<title>Food (ItemType)</title>"
 """Food items can be consumed using the Eat and Drink commands.
