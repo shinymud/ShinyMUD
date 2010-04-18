@@ -748,6 +748,19 @@ command_help.register(Put.help, ['put'])
 
 class Equip(BaseCommand):
     """Equip an item from the user's inventory."""
+    help = (
+    """<title>Equip (Command)</title>
+The equip command allows you to wear or hold an item that can be worn or held. 
+Weapons, armor, clothing, and jewelry for example, can all be equipped. You have
+a number of places where you may wear/hold equipped items, such as on your head
+(for hats) or on your feet (for shoes or boots). 
+\n<b>USAGE</b>:
+To just see a list of currently equipped items, type
+  <b>equip</b>
+To equip an item in your inventory, type
+  <b>equip <item></b>
+\nFor removing items, see <b>help unequip</b>.
+    """)
     def execute(self):
         message = ''
         if not self.args:
@@ -780,10 +793,18 @@ class Equip(BaseCommand):
         self.user.update_output(message)  
     
 
-command_list.register(Equip, ['equip'])
-
+command_list.register(Equip, ['equip', 'wear', 'wield'])
+command_help.register(Equip.help, ['equip', 'wear', 'wield'])
 class Unequip(BaseCommand):
     """Unequip items."""
+    help = ("""<title>Unequip (Command)</title>
+Removes an equipped item and places it back in your inventory.
+<b>USAGE:</b>
+To remove an item that is currently equipped, try
+  <b>unequip <item></b>
+To equip items, or to see a list of currently equipped items,
+see <b>help equip</b>
+""")
     def execute(self):
         item = self.user.check_inv_for_keyword(self.args)
         message = ''
@@ -805,6 +826,7 @@ class Unequip(BaseCommand):
             
 
 command_list.register(Unequip, ['unequip'])
+command_help.register(Unequip.help, ['unequip'])
 
 class Who(BaseCommand):
     """Return a list of names comprised of users who are currently playing the game."""
@@ -1687,7 +1709,7 @@ the character you specify. If you are not yet in a battle, this
 will start a fight between you and the character you specify. You
 must be in the same room as your target to fight them, and can
 only attack other players if they have PVP enabled.
-\nUSAGE:
+\n<b>USAGE:</b>
 To start a fight with a character (or if you are fighting multiple
 monsters/characters and want to focus your attacks on a different
 character)
@@ -1726,7 +1748,14 @@ command_help.register(Attack.help, ['attack', 'kill'])
 class Run(BaseCommand):
     help = (
     """<title>Run, Flee, Escape (Command)</title>
-Use Run like the Go command to escape from a battle. 
+Use Run like the Go command to escape from a battle.
+\n<b>USAGE:</b>
+If you are in a hurry, you can run away from a battle in a random
+direction using
+  <b>run</b>
+If you want to escape in a specific direction, try
+  <b>run <direction></b>
+\nFor more info on directions, see <b>help go</b>.
     """
     )
     def execute(self):

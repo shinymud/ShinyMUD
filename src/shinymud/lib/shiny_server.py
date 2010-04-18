@@ -38,7 +38,7 @@ logger.info('The world is about to start turning')
 try:
     world.start_turning()
 except:
-    with open("src/shinymud/data/logs/death_errors.log", 'w') as fp:
+    with open(ROOT_DIR + "/logs/death_errors.log", 'w') as fp:
         fp.write('\n' + (str(datetime.datetime.today())).center(50, '*') + '\n')
         traceback.print_exc(file=fp)
         fp.write('\n' + ('*' * 50))
