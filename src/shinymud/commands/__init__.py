@@ -61,29 +61,33 @@ class BaseCommand(object):
         user-specific data to make the message more personal. Below is a list
         of the keywords that will be replaced if they are found in the message:
         
-        #actor - replaced with the name of the actor (user commiting the action)
+        #actor - replaced with the name of the actor (user committing the action)
         #a_she/he - replaced with the gender-specific pronoun of the actor
         #a_her/him - replaced with the gender-specific pronoun of the actor (grammatical alternative)
-        #a_hers/his - replace with the gender-specific possessve-pronoun of the actor
-        #a_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
+        #a_hers/his - replace with the gender-specific possessive-pronoun of the actor
+        #a_her/his - replace with the gender-specific possessive-pronoun of the actor (grammatical alternative)
+        #a_self - replace with the gender-specific reflexive pronoun of the actor (himself/herself/itself)
         
         #target - replace with the name of the target (user being acted upon)
         #t_she/he - replaced with the gender-specific pronoun of the target
         #t_her/him - replace with the gender-specific pronoun of the target (grammatical alternative)
         #t_hers/his - replace with a gender-specific possessive-pronoun of the target
-        #t_her/his - replace with the gender-specific possessve-pronoun of the actor (grammatical alternative)
+        #t_her/his - replace with the gender-specific possessive-pronoun of the target (grammatical alternative)
+        #t_self - replace with the gender-specific reflexive pronoun of the target (himself/herself/itself)
         """
                                                              #Examples:
         she_pronouns = {'female': 'she', 'male': 'he', 'neutral': 'it'} #she/he looks tired
         her_pronouns = {'female': 'her', 'male': 'him', 'neutral': 'it'} #Look at her/him.
         hers_possesive = {'female': 'hers', 'male': 'his', 'neutral': 'its'} #That thing is hers/his.
         her_possesive = {'female': 'her', 'male': 'his', 'neutral': 'its'} #Person lost her/his thingy.
+        reflexives = {'female': 'herself', 'male': 'himself', 'neutral': 'itself'}
         
         message = message.replace('#actor', actor.fancy_name())
         message = message.replace('#a_she/he', she_pronouns.get(actor.gender)) 
         message = message.replace('#a_her/him', her_pronouns.get(actor.gender)) 
         message = message.replace('#a_hers/his', hers_possesive.get(actor.gender))
-        message = message.replace('#a_her/his', her_possesive.get(actor.gender)) 
+        message = message.replace('#a_her/his', her_possesive.get(actor.gender))
+        message = message.replace('#a_self', reflexives.get(actor.gender))
         
         # We should always have an actor, but we don't always have a target.
         if target:
@@ -92,6 +96,7 @@ class BaseCommand(object):
             message = message.replace('#t_her/him', her_pronouns.get(target.gender))
             message = message.replace('#t_hers/his', hers_possesive.get(target.gender))
             message = message.replace('#t_her/his', her_possesive.get(target.gender))
+            message = message.replace('#t_self', reflexives.get(target.gender))
         return message
     
 

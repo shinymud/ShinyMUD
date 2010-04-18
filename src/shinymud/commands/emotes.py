@@ -9,7 +9,7 @@
               )
 """
 EMOTES = {  'slap': (['You stand around looking for someone to slap.',
-                      '#actor lookes like #a_she/he\'s going to slap someone.'
+                      '#actor looks like #a_she/he\'s going to slap someone.'
                      ], 
                      ['You slap #target.',
                       '#actor slaps you.',
@@ -25,10 +25,10 @@ EMOTES = {  'slap': (['You stand around looking for someone to slap.',
                      ]
                     ),
             'explode': (['You explode into thousands of bloody chunks!',
-                         '#actor expodes into thousands of bloody chunks!'
+                         '#actor explodes into thousands of bloody chunks!'
                         ],
                         ['You explode on #target, getting bloody chunks all over #t_her/him!',
-                         '#actor explodes, covoring you in bloody chunks!',
+                         '#actor explodes, covering you in bloody chunks!',
                          '#actor explodes all over #target. Eww.'
                         ]
                        ),
@@ -50,11 +50,17 @@ EMOTES = {  'slap': (['You stand around looking for someone to slap.',
                         '#actor gallantly tips #a_her/his hat to #target.'
                        ],
                       ),
-            'eyebrow': (['You raise an eyebrow.', '#actor raises an eybrow.'
+            'eyebrow': (['You raise an eyebrow.', '#actor raises an eyebrow.'
                       ],
                       ['You raise an eyebrow at #target.',
                        '#actor raises an eyebrow at you.',
                        '#actor raises an eyebrow at #target.'
                       ]),
-            'sigh': (['You sigh.', '#actor sighs.'], [])
+            'sigh': (['You sigh.', '#actor sighs.'], []),
+            'pet': (['You pet yourself.','#actor pets #t_self.'], 
+                    ['You pet #target.',
+                     '#actor pets you.',
+                     '#actor pets #target.'
+                    ]),
+            'purr': (['You purr contentedly.', '#actor purrs contentedly.'], [])
          }
