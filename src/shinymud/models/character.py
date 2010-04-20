@@ -167,6 +167,14 @@ class Character(object):
             item.save({'owner': item.owner})
             self.inventory.remove(item)
     
+    def has_item(self, item):
+        found = False
+        for i in self.inventory:
+            if i.id == item.id and i.area == item.area:
+                found = True
+                break
+        return found
+    
     def check_inv_for_keyword(self, keyword):
         """Check all of the items in a character's inventory for a specific
         keyword. Return the item that matches that keyword, else return None.

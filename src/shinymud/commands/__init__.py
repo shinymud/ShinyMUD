@@ -1,10 +1,5 @@
 from shinymud.lib.world import *
-# Define Permission Constants
-PLAYER = 1
-BUILDER = 2
-DM = 4
-ADMIN = 8
-GOD = 16
+from shinymud.data.config import *
 
 def get_permission_names(perm_int):
     """Takes an integer representing a set of permissions and returns a list

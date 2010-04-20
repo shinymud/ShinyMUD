@@ -19,6 +19,15 @@ DEFAULT_LOCATION = ('cubicle', '1')
 STATS_ENABLED = True
 STATS_PORT = 4112
 
+# User Permissions
+PLAYER = 1
+BUILDER = 2
+DM = 4
+ADMIN = 8
+GOD = 16
+
+
+
 # Color constants:
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!
 clear_bcolor = COLOR_BG_RESET # DON'T CHANGE THIS ONE EITHER!
