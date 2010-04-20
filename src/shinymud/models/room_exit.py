@@ -1,5 +1,6 @@
 from shinymud.models import to_bool
 from shinymud.lib.world import World
+from shinymud.data.config import *
 import re
 
 class RoomExit(object):
@@ -30,12 +31,13 @@ class RoomExit(object):
         if self.linked_exit:
             d['linked_exit'] = self.linked_exit
         d['direction'] = self.direction
-        d['openable'] = self.openable
+        d['openable'] = str(self.openable)
         d['closed'] = self.closed
         d['hidden'] = self.hidden
         d['locked'] = self.locked
         if self.key:
-            d['key'] = self.key.dbid
+            d['key_area'] = self.key.area.name
+            d['key_id'] = self.key.id
         if self.dbid:
             d['dbid'] = self.dbid
         return d
@@ -84,11 +86,13 @@ class RoomExit(object):
     def _resolve_key(self):
         if self._key:
             return self._key
-        try: 
-            self.key = self.world.get_area(self.key_area).get_item(self.key_id)
-            return self._key
-        except:
-            return None
+        if self.key_area and self.key_id:
+            try: 
+                self.key = self.world.get_area(self.key_area).get_item(self.key_id)
+                return self._key
+            except:
+                pass
+        return None
     
     def _set_key(self, key):
         self._key = key
@@ -110,29 +114,45 @@ class RoomExit(object):
                                                                                                         self._str_key())
         return list_exit
     
-    def close_me(self, username):
+    def close_me(self, user):
         if self.openable == False:
             return 'You can\'t close that.\n'
         if self.closed:
             return 'It\'s already closed.\n'
         self.closed = True
-        self.room.tell_room('%s closed the %s door.\n' % (username, self.direction), [username.lower()])
+        self.room.tell_room('%s closed the %s door.\n' % (user.fancy_name(), self.direction), [user.name])
         if self.linked_exit:
             self.to_room.exits[self.linked_exit].closed = True
             self.to_room.tell_room('The %s door was closed from the other side.\n' % self.linked_exit)
         return 'You close the %s door.\n' % self.direction
     
-    def open_me(self, username):
+    def open_me(self, user):
         if self.openable == False:
-            return 'You can\'t open that.'
+            return 'You can\'t open that.\n'
         if not self.closed:
-            return 'It\'s already open.'
+            return 'It\'s already open.\n'
+        if self.key and self.locked:
+            if (user.permissions & GOD or user.has_item(self.key)):
+                self.locked = False
+            else:
+                return "It's locked.\n"
         self.closed = False
-        self.room.tell_room('%s opened the %s door.' % (username, self.direction), [username.lower()])
+        self.room.tell_room('%s opened the %s door.\n' % (user.fancy_name(), self.direction), [user.name])
         if self.linked_exit:
             self.to_room.exits[self.linked_exit].closed = False
             self.to_room.tell_room('The %s door was opened from the other side.\n' % self.linked_exit)
         return 'You open the %s door.\n' % self.direction
+    
+    def lock_me(self, user):
+        if self.key and (user.permissions & GOD or user.has_item(self.key)):
+            self.locked = True
+            message = self.close_me(user)
+            self.room.tell_room('%s locked the %s door.\n' % (user.fancy_name(), self.direction), [user.name])
+            if self.linked_exit:
+                self.to_room.exits[self.linked_exit].locked = True
+                self.to_room.tell_room('The %s door was locked from the other side.\n' % self.linked_exit)
+            return message + "You lock it."
+        return "You can't lock that."
     
     def set_closed(self, args):
         try:
@@ -153,7 +173,7 @@ class RoomExit(object):
             return 'Acceptable values are true or false.'
         else:
             self.openable = boolean
-            self.save({'openable': self.openable})
+            self.save({'openable': str(self.openable)})
             if self.linked_exit:
                 self.to_room.exits[self.linked_exit].openable = boolean
                 self.to_room.exits[self.linked_exit].save()
@@ -166,7 +186,7 @@ class RoomExit(object):
             return str(e)
         else:
             self.hidden = boolean
-            self.save({'hidden': self.hidden})
+            self.save({'hidden': str(self.hidden)})
             return 'Exit attribute "hidden" is now %s.\n' % str(boolean)
     
     def set_locked(self, args):
@@ -176,7 +196,10 @@ class RoomExit(object):
             return str(e)
         else:
             self.locked = boolean
-            self.save({'locked': self.locked})
+            self.save({'locked' : str(self.locked)})
+            if self.linked_exit:
+                self.to_room.exits[self.linked_exit].locked = boolean
+                self.to_room.exits[self.linked_exit].save()
             return 'Exit attribute "locked" is now %s.\n' % str(boolean)
     
     def set_to(self, args):
@@ -225,7 +248,10 @@ class RoomExit(object):
         if not key:
             return 'That item doesn\'t exist.\n'
         self.key = key
-        self.save({'key': self.key.dbid})
+        self.save()
+        if self.linked_exit:
+            self.to_room.exits[self.linked_exit].key = self.key
+            self.to_room.exits[self.linked_exit].save()
         return '%s has been added as a key to room %s\'s %s exit.\n' % (key.name.capitalize(),
                                                                         self.room.id,
                                                                         self.direction)

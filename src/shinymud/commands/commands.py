@@ -1322,7 +1322,7 @@ with "close."
         if not self.args:
             self.user.update_output('Open what?')
             return
-        exp = r'(?P<dir>(north)|(south)|(east)|(west))|(?P<kw>(\w|[ ])+)'
+        exp = r'(?P<dir>(north)|(south)|(east)|(west)|(up)|(down))|(?P<kw>(\w|[ ])+)'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
             self.user.update_output('Type "help open" for help with this command.')
@@ -1340,10 +1340,10 @@ with "close."
         exit = self.user.location.exits.get(direction)
         if not exit:
             return 'There isn\'t a door there.'
-        if toggle == 'open':
-            return exit.open_me(self.user.fancy_name())
+        if toggle == 'open' or toggle == 'unlock':
+            return exit.open_me(self.user)
         else:
-            return exit.close_me(self.user.fancy_name())
+            return exit.close_me(self.user)
     
     def toggle_container(self, kw, toggle):
         obj = self.user.check_inv_for_keyword(kw)
@@ -1371,8 +1371,33 @@ with "close."
             return 'You open %s.' % obj.name
     
 
-command_list.register(ToggleOpen, ['open', 'close'])
-command_help.register(ToggleOpen.help, ['open', 'close'])
+command_list.register(ToggleOpen, ['open', 'close', 'unlock'])
+command_help.register(ToggleOpen.help, ['open', 'close', 'unlock'])
+
+class Lock(BaseCommand):
+    help = (
+    """<title>Lock (Command)</title>
+Locks a door, only those with a key may unlock it.
+<b>USAGE:</b>
+to lock (and close) a door, try
+    <b>lock <direction></b>""")
+    def execute(self):
+        if not self.args:
+            return "unlock what?"
+        dir_map = {'n':'north', 's':'south', 'e':'east', 'w':'west', 'u':'up', 'd':'down'}
+        direction = dir_map.get(self.args[0].lower())
+        if not direction:
+            self.user.update_output('Try "help lock" for help with this command')
+            return
+        if self.user.location.exits[direction]:
+            message = self.user.location.exits[direction].lock_me(self.user)
+            self.user.update_output(message)
+            return
+        self.user.update_output("There is nothing to lock in that direction")
+        return
+
+command_list.register(Lock, ['lock'])
+command_help.register(Lock.help, ['lock'])
 
 class Version(BaseCommand):
     """Display the credits and the version of ShinyMUD currently running."""

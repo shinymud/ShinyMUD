@@ -67,7 +67,8 @@ def initialize_database(connection=None):
     closed TEXT,
     hidden TEXT,
     locked TEXT,
-    key INTEGER REFERENCES item(dbid),
+    key_id INTEGER,
+    key_area TEXT,
     UNIQUE (room_id, area, direction)
 )''',\
 '''CREATE TABLE IF NOT EXISTS inventory (
