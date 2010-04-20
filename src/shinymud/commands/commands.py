@@ -795,16 +795,19 @@ To equip an item in your inventory, type
 
 command_list.register(Equip, ['equip', 'wear', 'wield'])
 command_help.register(Equip.help, ['equip', 'wear', 'wield'])
+
 class Unequip(BaseCommand):
     """Unequip items."""
-    help = ("""<title>Unequip (Command)</title>
+    help = (
+    """<title>Unequip (Command)</title>
 Removes an equipped item and places it back in your inventory.
 <b>USAGE:</b>
 To remove an item that is currently equipped, try
   <b>unequip <item></b>
 To equip items, or to see a list of currently equipped items,
 see <b>help equip</b>
-""")
+    """
+    )
     def execute(self):
         item = self.user.check_inv_for_keyword(self.args)
         message = ''
@@ -823,7 +826,7 @@ see <b>help equip</b>
             equip_type.on_unequip()
             message = 'You remove ' + item.name + '.\n'
         self.user.update_output(message)
-            
+    
 
 command_list.register(Unequip, ['unequip'])
 command_help.register(Unequip.help, ['unequip'])
@@ -1057,17 +1060,27 @@ class Bestow(BaseCommand):
     """Bestow a new class of permissions on a PC."""
     required_permissions = GOD
     help = (
-    """Bestow (Command)
+    """<title>Bestow (Command)</title>
 Bestow allows you to extend a player's permissions by giving them another
 permission group.
 \nRequired Permissions: GOD
 \nUSAGE:
+To bestow a privilege upon a player:
   bestow <permission-group> [upon] <player-name>
+To bestow a privilege upon a player:
+  bestow <permission-group> [upon] npc <player-name>
 \nPermission Groups:
   player
   dm
   admin
   god
+\n<b>BEWARE!!!!!
+Bestowing privileges beyond DM upon npcs can be very dangerous. Since npcs can
+be controlled by scripts, it is possible for other builders to run commands
+above their authority level through this npc if they have access to this npc's
+build area (they are on the area's BuildersList). You might want to make sure
+you're the only one with builder privileges to the area of the npc you're giving
+escalated privileges to.</b>
 \nTo revoke permissions, see "help revoke". For more information on
 permissions and permission groups, see "help permissions".
     """
@@ -1076,13 +1089,21 @@ permissions and permission groups, see "help permissions".
         if not self.args:
             self.user.update_output('Bestow what authority upon whom?\n')
             return
-        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<player>\w+))'
+        exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<npc>npc))?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
             self.user.update_output('Type "help bestow" for help on this command.')
             return
-        perm, player = match.group('permission', 'player')
-        user = self.world.get_user(player)
+        perm, npc, player = match.group('permission', 'npc', 'player')
+        if npc:
+            error = 'Npc doesn\'t exist.'
+            if not self.user.location:
+                self.user.update_output(error)
+                return
+            user = self.user.location.get_npc_by_kw(player)
+            self.user.update_output('WARNING: giving npcs wider permissions can be dangerous. See "help bestow".')
+        else:
+            user = self.world.get_user(player)
         permission = globals().get(perm.upper())
         if not user:
             self.user.update_output('That player isn\'t on right now.')
@@ -1132,7 +1153,9 @@ permissions and permission groups, see "help permissions".
             self.user.update_output('Type "help revoke" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
-        user = self.world.get_user(player)
+        if self.user.location:
+            npc = self.user.location.get_npc_by_kw(player)
+        user = self.world.get_user(player) or npc
         permission = globals().get(perm.upper())
         if not user:
             self.user.update_output('That player isn\'t on right now.')
@@ -1146,9 +1169,10 @@ permissions and permission groups, see "help permissions".
         user.permissions = user.permissions ^ permission
         self.user.update_output('%s has had the privilige of %s revoked.' % (user.fancy_name(), perm))
         user.update_output('%s has revoked your %s priviliges.' % (self.user.fancy_name(), perm))
-        if user.get_mode() == 'BuildMode':
-            user.set_mode('normal')
-            user.update_output('You have been kicked from BuildMode.')
+        if not user.is_npc():
+            if user.get_mode() == 'BuildMode':
+                user.set_mode('normal')
+                user.update_output('You have been kicked from BuildMode.')
     
 
 command_list.register(Revoke, ['revoke'])

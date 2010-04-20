@@ -733,7 +733,7 @@ To remove an event from an npc:
   example: "remove event hears 0"
 \nFor a list of event triggers, see "help triggers".
 """
-), ['npc event', 'event', 'events'])
+), ['npc event', 'event', 'events', 'npc events'])
 
 command_help.register(("<title>Event Triggers (NPC Events)</title>"
 """The following are a list of event triggers that can be used to trigger
