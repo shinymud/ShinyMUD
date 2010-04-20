@@ -1,5 +1,3 @@
-
-
 def to_bool(val):
     """Take a string representation of true or false and convert it to a boolean
     value. Returns a boolean value or None, if no corresponding boolean value
@@ -11,7 +9,4 @@ def to_bool(val):
     if isinstance(val, bool):
         return val
     val = val.strip().lower()
-    if val in bool_states:
-        return bool_states.get(val)
-    else:
-        return None
+    return bool_states.get(val)

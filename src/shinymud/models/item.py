@@ -266,6 +266,11 @@ class Item(object):
 class InventoryItem(Item):
     def __init__(self, spawn_id=None, **args):
         Item.__init__(self, **args)
+        area_id = args.get('area')
+        if area_id:
+            area_names = self.world.db.select("name from area where dbid=?", [area_id])
+            if area_names and area_names[0]:
+                self.area = self.world.get_area(area_names[0]['name'])
         self.owner_id = args.get('owner')
         self.spawn_id = spawn_id
         self.container = args.get('container')        

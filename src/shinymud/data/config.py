@@ -21,6 +21,15 @@ STATS_PORT = 4112 # The port that StatSender should listen on
 
 # ************ COLOR THEMES ************
 
+# User Permissions
+PLAYER = 1
+BUILDER = 2
+DM = 4
+ADMIN = 8
+GOD = 16
+
+
+
 # Color constants:
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!
 clear_bcolor = COLOR_BG_RESET # DON'T CHANGE THIS ONE EITHER!
