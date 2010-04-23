@@ -277,6 +277,7 @@ class Look(BaseCommand):
     
 
 command_list.register(Look, ['look'])
+command_help.register(Look.help, ['look'])
 
 class Goto(BaseCommand):
     """Go to a location."""

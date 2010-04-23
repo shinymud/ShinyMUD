@@ -159,10 +159,15 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                     spawn.destruct()
                     del self.spawns[spawn.id]
     
-    def user_add(self, user):
+    def user_add(self, user, prev_room='void'):
+        """Adds a user to this room.
+        user -- user object to be added
+        prev_room -- the room the user was in before they transitioned to this room;
+            should be a string in the format '<room-id>_<area-name>'
+        """
         self.users[user.name] = user
         self.area.times_visited_since_reset += 1
-        self.fire_event('pc_enter', {'user': user})
+        self.fire_event('pc_enter', {'user': user, 'from': prev_room})
     
     def user_remove(self, user):
         if self.users.get(user.name):

@@ -141,12 +141,11 @@ class EventHandler(object):
             return True
         return False
     
-    def equal(self, args=None):
+    def equal(self, *args):
         """Check if two strings are equal."""
         bad_args = "Script %s Error: equal condition requires two string arguments to compare" % self.script.id
         if not args:
             raise ConditionError(bad_args)
-        args = args.split()
         if len(args) < 2:
             raise ConditionError(bad_args)
         if args[0] == args[1]:
@@ -176,8 +175,11 @@ EVENTS = CommandRegister()
 class PCEnter(EventHandler):
     def execute(self):
         user = self.args.get('user')
+        prev = self.args.get('from')
+        rep = {'#target_name': user.fancy_name(),
+               '#from_room': prev}
         # Set the user as the target in the script
-        self.script_text = self.script_text.replace('#target_name', user.fancy_name())
+        self.personalize(rep)
         self.execute_script()
     
 

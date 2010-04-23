@@ -196,9 +196,10 @@ class Character(object):
                 if self.location and self.location == room:
                     self.update_output('You\'re already there.\n')
                 else:
+                    prev = '%s_%s' % (self.location.id, self.location.area.name)
                     self.location = room
                     self.update_output(self.look_at_room())
-                    self.location.user_add(self)
+                    self.location.user_add(self, prev)
                     if tell_new:
                         self.location.tell_room(tell_new, [self.name])
             else:
