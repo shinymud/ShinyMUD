@@ -723,11 +723,11 @@ second item is of type container ("help container").
 ), ['nested spawn', 'nested spawns'])
 
 command_help.register(("<title>NPC Events (NPC Attribute)</title>"
-"""NPC events are what trigger an npc to perform a scripted action. 
+"""NPC events are what trigger an npc to perform a scripted action.
 \nUSAGE:
 To add an event to an npc:
   add event <event-trigger> '<condition>' call <script_id> [<probability>]
-  example: "add event hears 'I'll join your quest' call 2"
+  example: "add event hears 'I'll join your quest' call script 2"
 To remove an event from an npc:
   remove event <event-trigger> <event-id>
   example: "remove event hears 0"
@@ -739,12 +739,27 @@ command_help.register(("<title>Event Triggers (NPC Events)</title>"
 """The following are a list of event triggers that can be used to trigger
 an npc into executing a script. See "help npc event" for more information
 on events.
-pc_enter - call script when a player character enters the room.
-given_item - call script when the npc is given an item.
-hears 'condition' - call script when the npc hears 'condition' text in the 
-    room.
+\nNOTES:
+  *Each trigger exposes special information to the script it calls.*
+<b>You can call help for each trigger to get more details about it.</b>
+\n<b>pc_enter</b> - call script when a player character enters the room.
+<b>given_item</b> - call script when the npc is given an item.
+<b>hears</b> - call script when the npc hears a certain phrase in the room.
 """
 ), ['event list', 'triggers', 'event triggers'])
+
+command_help.register(("<title>Personalizers</title>"
+"""Personalizers are variables, or place-holders that will be personalized to
+fit a particular situation. For example, if you're writing emotes, the
+personalizer "#actor" gets replaced with the name of the player acting out the
+emote.
+Personalizers also show up often in ShinyScripts ("help shiny"). Each trigger in
+an npc event passes special information to the script called by the event, which
+can help personalize the script. See "help triggers" for a list of possible
+event triggers, then type "help <trigger-name>" to see what personalizers that
+trigger offers.
+"""
+), ['personalizers', 'personalize', 'variables', 'variable'])
 
 command_help.register(("<title>Scripts (BuildMode object)</title>"
 """Scripts are a BuildMode object like items, npcs and rooms. They are
@@ -824,7 +839,7 @@ command_help.register(("<title>ShinyScript Commands (Script Language)</title>"
 """The following commands are only available in ShinyScript (writing the body
 of scripts). Each command is followed by an example of how it should be used,
 in parenthesis, and then a short description of what it does.
-* record (record #target_name) - Record allows an npc to record a player's
+* <b>record (record #target_name)</b> - Record allows an npc to record a player's
   name in its memory so that it can act differently toward players that it has
   already interacted with. Names that are recorded can be remembered using the
   remember conditional (see "help script conditionals").
@@ -834,14 +849,14 @@ in parenthesis, and then a short description of what it does.
 command_help.register(("<title>ShinyScript Conditionals (Script Language)</title>"
 """Conditionals are how if-statements get evaluated in ShinyScript. The
 following are all of the conditionals you can test in a script:
-* remember (if remember #target_name) - Will be true if the npc has the name
+* <b>remember (if remember #target_name)</b> - Will be true if the npc has the name
   of the target player in its memory. Npcs can store names in their memory by
   using the script command Record (see help "script commands").
-* equal (if equal keyword1 keyword2) - Will be true if keyword1 is the same as
+* <b>equal (if equal keyword1 keyword2)</b> - Will be true if keyword1 is the same as
   keyword2, false if keyword1 is not the same as keyword2.
 
 """
-), ['script conditional', 'script conditionals'])
+), ['script conditional', 'script conditionals', 'conditional', 'conditionals'])
 
 command_help.register(("<title>Attributes (BuildMode Object)</title>"
 """Attributes are the individual characteristics of an object. For example,

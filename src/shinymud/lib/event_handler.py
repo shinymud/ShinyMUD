@@ -188,16 +188,57 @@ class PCEnter(EventHandler):
 EVENTS.register(PCEnter, ['pc_enter'])
 
 class GivenItem(EventHandler):
+    help = (
+    """<title>GivenItem (Script trigger)</title>
+This event is triggered when an npc is given an item.
+\nUSAGE:
+To add a 'GivenItem' event:
+  add event given_item 'condition' call script <script-id>
+\nCONDITIONS:
+You may specify a condition that the item given have a specific id number and
+area name in order for the script to be called. If the item given does not match
+the id number and area name in the trigger condition, then the script will not
+be called. 
+The condition syntax for specifying an item is:
+ 'item <item-id> from area <area-name>'
+\nEXAMPLE:
+  add event given_item 'item 8 from cubicle' call script 4
+\nPERSONALIZERS:
+When this event is triggered and calls a script, that script will replace the
+following personalizers with their corresponding values:
+<b>#target_name</b> Will be replaced with the name of the character giving the item
+<b>#item_name</b> Will be replaced with the name of the item given
+<b>#item_id</b> Will be replaced with the id of the item given
+<b>#item_area</b> Will be replaced with the area-name of the item given
+    """
+    )
     def execute(self):
+        condition = self.args.get('condition')
         giver = self.args.get('giver')
         item = self.args.get('item')
+        if condition:
+            exp = r'(item[ ]+)?(?P<id>\d+)[ ]+(from[ ]+)?(area[ ]+)?(?P<area>\w+)'
+            match = re.match(exp, condition, re.I)
+            if not match:
+                m = 'Error in given_item event condition: "' + condition +\
+                    '" is improper syntax.\nShould be "item <item-id> from area <area-name>". See "help triggers".'
+                self.obj.update_output(m)
+                return
+            item_id, area_name = match.group('id', 'area')
+            if not ((item_id == item.id) and \
+                    (area_name.lower() == item.area.name)):
+               return
+               
         rep = {'#target_name': giver.fancy_name(),
-               '#item_name': item.name}
+               '#item_name': item.name,
+               '#item_id': item.id,
+               '#item_area': item.area.name}
         self.personalize(rep)
         self.execute_script()
     
 
 EVENTS.register(GivenItem, ['given_item'])
+command_help.register(GivenItem.help, ['given_item', 'givenitem'])
 
 class Hears(EventHandler):
     def execute(self):
