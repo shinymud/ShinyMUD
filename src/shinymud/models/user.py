@@ -339,10 +339,10 @@ class User(Character):
         if effect.name in self.effects:
             del self.effects[effect.name]
     
-
     def death(self):
         # Send character to the default location, with 1 hp.
         self.hp = 1
         self.log.debug("%s has died." % self.fancy_name())
         self.update_output('You Died.')
         self.go(self.world.get_location(DEFAULT_LOCATION[0], DEFAULT_LOCATION[1]))
+    

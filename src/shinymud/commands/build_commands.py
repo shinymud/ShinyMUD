@@ -893,10 +893,11 @@ provide true interactivity to your areas.
 they interact with it (such as getting it, giving it, dropping it, etc.).
 This should include any necessary articles such as 'a', 'an', or 'the' (e.g.
 "a black-tinted dagger", or "an admiral's hat").
-<b>title - (set title <title-text>)</b> A short (sentence-long) description
-that a player sees when this item is in a room. If a title is not provided in
-sentence format (capital at the beginning, period at the end), then the title
-is automatically converted unless the builder prepends an @ to the title.
+<b>title - (set title <title-text>)</b> A short (sentence-long) description that
+a player sees when this item is in a room. If a title is not provided in
+sentence format (capital at the beginning, period at the end), then the title is
+automatically converted unless the builder prepends an @ to the title. If you
+wish to set the title to be blank, simply type 'set title'.
 <b>item types - (add type <item-type>, remove type <item-type)</b> Any special
 types this item has. See "help item types" for a list.
 <b>description - (set description, starts TextEditMode)</b> A long description

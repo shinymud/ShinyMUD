@@ -145,7 +145,7 @@ class Item(object):
             else:
                 if not title.endswith(('.', '?', '!')):
                     title = title + '.'
-                title = title.capitalize()
+                title = title[0].capitalize() + title[1:]
         self.title = title
         self.save({'title': self.title})
         return 'Item title set.\n'
@@ -155,7 +155,7 @@ class Item(object):
         self.save({'name': self.name})
         # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
-        
+    
     def set_weight(self, weight, user=None):
         """Set the weight for this object."""
         try:
