@@ -521,6 +521,14 @@ command_help.register(Load.help, ['load', 'spawn'])
 
 class Inventory(BaseCommand):
     """Show the user their inventory."""
+    help = (
+    """<title>Inventory (command)</title>
+The Inventory command shows a player to see a list of items in their inventory.
+\nALIASES: i, inv
+\nUSAGE:
+  inventory
+    """
+    )
     def execute(self):
         if not self.user.inventory:
             self.user.update_output('Your inventory is empty.\n')
@@ -530,8 +538,10 @@ class Inventory(BaseCommand):
                 if item not in self.user.isequipped:
                     i += item.name + '\n'
             self.user.update_output(i)
+    
 
-command_list.register(Inventory, ['i', 'inventory'])
+command_list.register(Inventory, ['i', 'inventory', 'inv'])
+command_help.register(Inventory.help, ['i', 'inv', 'inventory'])
 
 class Give(BaseCommand):
     """Give an item to another player or npc."""
@@ -579,6 +589,13 @@ command_help.register(Give.help, ['give'])
 
 class Drop(BaseCommand):
     """Drop an item from the user's inventory into the user's current room."""
+    help = (
+    """<title>Drop (Command)</title>
+The Drop command allows you to drop an item from your inventory onto the ground.
+\nUSAGE:
+  drop <item-name>
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('What do you want to drop?\n')
@@ -599,6 +616,7 @@ class Drop(BaseCommand):
     
 
 command_list.register(Drop, ['drop'])
+command_help.register(Drop.help, ['drop'])
 
 class Get(BaseCommand):
     """Get an item and store it in the user's inventory."""
@@ -631,7 +649,7 @@ take anything out of them. For help with opening containers, see "help open".
         if not self.args:
             self.user.update_output('What do you want to get?\n')
             return
-        exp = r'((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((?P<item_kw>(\w|[ ])+))'
+        exp = r'(up[ ]+)?((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((up[ ]+)?(?P<item_kw>(\w|[ ])+))'
         match = re.match(exp, self.args, re.I)
         if not match:
             self.user.update_output('Type "help get" for help with this command.')
@@ -685,19 +703,19 @@ take anything out of them. For help with opening containers, see "help open".
             return 'You can\'t take that.'
     
 
-command_list.register(Get, ['get', 'take'])
-command_help.register(Get.help, ['get', 'take'])
+command_list.register(Get, ['get', 'take', 'pick'])
+command_help.register(Get.help, ['get', 'take', 'pick'])
 
 class Put(BaseCommand):
     """Put an object inside a container."""
     help = (
-    """Put (Command)
+    """<title>Put (Command)</title>
 \nThe put command allows you to put an item inside a container. If you are
 just looking to get rid of an inventory item or leave an item in a room, try
 the Drop command.
 \nUSAGE:
 To put an item inside a container:
-  put <item> in <container>
+  put <item-name> in <container-name>
 \nThe preposition (the word "in") is required, but can also be replaced with
 "inside" or "on". To get an item out of a container, see "help get".
     """
@@ -719,18 +737,23 @@ To put an item inside a container:
             self.user.update_output('You don\'t have "%s".' % target_kw)
             return
         container = self.user.check_inv_for_keyword(cont_kw)
+        # Make sure the container object exists
         if not container:
             if self.user.location:
                 container = self.user.location.get_item_by_kw(cont_kw)
                 if not container:
                     self.user.update_output('%s isn\'t here.' % cont_kw)
                     return
-        # We should have a container by now!
+        # Make sure it's a container
         if not container.is_container():
             self.user.update_output('%s is not a container.' % 
                                     container.name.capitalize())
             return
-        if container.item_types['container'].item_add(target):
+        c_type = container.item_types['container']
+        if c_type.closed:
+            self.user.update_output('It\'s closed.')
+            return
+        if c_type.item_add(target):
             self.user.update_output('You put %s %s %s.' % (target.name,
                                                            preposition,
                                                            container.name))
@@ -738,6 +761,7 @@ To put an item inside a container:
                 tr = '%s puts %s %s %s.' % (self.user.fancy_name(), 
                                             target.name, preposition,
                                             container.name)
+                self.user.location.tell_room(tr, [self.user.name])
         else:
             self.user.update_output('%s won\'t fit %s %s.' % (target.name.capitalize(),
                                                               preposition,
@@ -870,20 +894,26 @@ command_help.register(Who.help, ['who'])
 
 class Enter(BaseCommand):
     """Enter a portal."""
+    help = (
+    """<title>Enter (Command)</title>
+The Enter Command allows a character to enter a portal object.
+\nUSAGE:
+  enter <portal-name>
+    """
+    )
     def execute(self):
         if not self.args:
             self.user.update_output('Enter what?\n')
-        # elif not self.user.location:
-        #     self.user.update_output('You are in a void, there is nowhere to go.\n')
-        else:
-            if self.user.location:
-                # Check the room for the portal object first
-                obj = self.user.location.get_item_by_kw(self.args)
-                if obj:
-                    if 'portal' in obj.item_types:
-                        self.go_portal(obj.item_types['portal'])
-                    else:
-                        self.user.update_output('That\'s not a portal...\n')
+            return
+        fail = 'You don\'t see "%s" here.' % self.args
+        if self.user.location:
+            # Check the room for the portal object first
+            obj = self.user.location.get_item_by_kw(self.args)
+            if obj:
+                if 'portal' in obj.item_types:
+                    self.go_portal(obj.item_types['portal'])
+                else:
+                    self.user.update_output('%s is not a portal.' % obj.name.capitalize())
             else:
                 # If the portal isn't in the room, check their inventory
                 obj = self.user.check_inv_for_keyword(self.args)
@@ -894,10 +924,10 @@ class Enter(BaseCommand):
                         Drop(self.user, self.args, 'drop').execute()
                         self.go_portal(obj.item_types['portal'])
                     else:
-                        self.user.update_output('That\'s not a portal...\n')
+                        self.user.update_output('%s is not a portal.' % obj.name.capitalize())
                 else:
                     # We've struck out an all counts -- the user doesn't have a portal
-                    self.user.update_output('You don\'t see that here.\n')
+                    self.user.update_output(fail)
     
     def go_portal(self, portal):
         """Go through a portal."""
@@ -910,9 +940,11 @@ class Enter(BaseCommand):
             self.user.location.tell_room(self.personalize(portal.emerge_message, self.user), 
                                          [self.user.name])
         else:
-            self.user.update_output('Nothing happened. It must be a dud.\n')
+            self.user.update_output('Nothing happened. It must be a dud.')
+    
 
 command_list.register(Enter, ['enter'])
+command_help.register(Enter.help, ['enter'])
 
 class Purge(BaseCommand):
     """Purge all of the items and npc's in the room."""
