@@ -14,7 +14,7 @@ AREAS_IMPORT_DIR = ROOT_DIR + '/areas' # directory for inmport areas
 AREAS_EXPORT_DIR = ROOT_DIR + '/areas' # directory for exported areas
 PREPACK = ROOT_DIR + '/areas/builtin' # directory for built-in areas
 RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an area resets
-DEFAULT_LOCATION = ('library', '1') # The area, room_id that newbies should start in
+DEFAULT_LOCATION = ('library', '4') # The area, room_id that newbies should start in
 
 STATS_ENABLED = False # Whether the StatSender thread should be enabled
 STATS_PORT = 4112 # The port that StatSender should listen on

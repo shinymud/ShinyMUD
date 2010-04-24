@@ -385,7 +385,6 @@ class Equippable(object):
         self.save()
         # world = World.get_world()
         # world.db.update_from_dict('equippable', self.to_dict())
-
         return 'damage ' + str(index) + ' set.\n'
     
     def set_equip(self, loc, user=None):
@@ -441,7 +440,6 @@ class Equippable(object):
         return 'item absorbs %s %s damage' % (str(self.absorb[absorb_type]), absorb_type)
     
     set_absorb = add_absorb # alias these to be the same
-    
     def parse_value(self, params):
         exp = r'(-(?P<penalty>)\d+)|(\+?(?P<bonus>\d+))'
         m = re.match(exp, params)
@@ -549,8 +547,6 @@ class Equippable(object):
         if self.dbid:
             d['dbid'] = self.dbid
         return d
-    
-
     
     def remove_damage(self, index):
         if len(self.dmg) == 0:
@@ -1035,11 +1031,15 @@ class Portal(object):
         d['entrance_message'] = self.entrance_message
         d['emerge_message'] = self.emerge_message
         if self.item:
-            d['item'] = self.item
+            d['item'] = self.item.dbid
         if self.inv_item:
             d['inv_item'] = self.inv_item.dbid
-        d['to_room'] = self.to_room
-        d['to_area'] = self.to_area
+        if self._location:
+            d['to_room'] = self.location.id
+            d['to_area'] = self.location.area.name
+        elif self.to_room and self.to_area:
+            d['to_room'] = self.to_room
+            d['to_area'] = self.to_area
         if self.dbid:
             d['dbid'] = self.dbid
         
@@ -1048,7 +1048,7 @@ class Portal(object):
     def load(self):
         """Return a new copy of this instance so it can be loaded for an inventory item."""
         newp = Portal()
-        newp.location = self.location
+        # newp.location = self.location
         newp.to_area = self.to_area
         newp.to_room = self.to_room
         newp.leave_message = self.leave_message

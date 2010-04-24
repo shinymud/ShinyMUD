@@ -277,7 +277,7 @@ class Look(BaseCommand):
     
 
 command_list.register(Look, ['look'])
-command_help.register(Look.help, ['look'])
+command_help.register(Look.help, ['look', 'read'])
 
 class Goto(BaseCommand):
     """Go to a location."""
@@ -2051,6 +2051,9 @@ Tutorial - try typing:
 The tell command will send a private message to a specific person. It only works
 if the person you're trying to Tell is online, or the npc you're trying to tell
 is in the same room as you.
+Try telling someone near you hello! (just replace <person> below with the name
+of the person you want to tell):
+  tell <person> Hello!
 """
 ), ['talking', 'talk', 'communication'])
 

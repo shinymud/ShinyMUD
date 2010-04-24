@@ -128,7 +128,9 @@ class EventHandler(object):
         """Record the name in this object's memory."""
         if not name:
             raise CommandError("Script %s Error: record command requires a name argument" % self.script.id)
-        self.obj.remember.append(name.lower().strip())
+        name = name.lower().strip()
+        if not name in self.obj.remember:
+            self.obj.remember.append(name.lower().strip())
     
     # *********** CONDITION FUNCTIONS ***********
     def remember_user(self, name=None):
