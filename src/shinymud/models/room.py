@@ -117,6 +117,11 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         """Reset (or respawn) all of the items and npc's that are on this 
         room's spawn lists.
         """
+        # reset exits back to default state
+        for exit in self.exits.values():
+            if exit:
+                exit.reset()
+        # reset spawns
         self.clean_spawns()
         room_id = '%s,%s' % (self.id, self.area.name)
         for item in self.items:

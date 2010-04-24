@@ -382,7 +382,7 @@ Or just give the direction you want to go:
         if self.user.location:
             go_exit = self.user.location.exits.get(direction)
             if go_exit:
-                if go_exit.closed:
+                if go_exit._closed:
                     self.user.update_output('The door is closed.\n')
                 else:
                     if go_exit.to_room:
