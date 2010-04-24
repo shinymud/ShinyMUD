@@ -77,7 +77,7 @@ class EventHandler(object):
             if nl[len(nl)-1].endswith('+'):
                 nl[len(nl)-1] = nl[len(nl)-1].rstrip('+') + lines[i]
             else:
-                nl.append(lines[i])
+                nl.append(lines[i].lstrip())
         # Now we should have a list where each command (followed by its
         # arguments) is on its own line.
         self.log.debug(nl)
@@ -91,6 +91,7 @@ class EventHandler(object):
                 i += 1
         # Finally we have a list of lines that are ready to be executed, line
         # by line
+        self.log.debug(str(final))
         return final
     
     def parse_if(self, pl, lines, index):
@@ -100,17 +101,20 @@ class EventHandler(object):
         state = T
         self.log.debug(index)
         condition = self.parse_condition(lines[index].lstrip('if '))
+        index += 1
         try:
-            while lines[index] != 'endif':
-                if lines[index] not in ['if', 'else']:
+            while not 'endif' in lines[index]:
+                if not (lines[index].startswith('if') or lines[index].startswith('else')):
                     state.append(lines[index])
-                elif lines[index] == 'if':
-                    index = self.parse_if(state, index)
-                elif lines[index] == 'else':
+                elif lines[index].startswith('if'):
+                    index = self.parse_if(state, lines, index)
+                    continue
+                elif lines[index].startswith('else'):
                     state = F
                 index += 1
         except IndexError, e:
             raise ParseError('Script %s Error: "if" block was not terminated by an "endif"' % self.script.id)
+        self.log.debug('Parse If status:\nTrue: %s\nFalse: %s\nCondition: %s\n' % (str(T), str(F), str(condition)))
         pl.extend({True: T, False: F}[condition])
         return index + 1
     

@@ -35,9 +35,12 @@ class RoomExit(object):
         d['closed'] = self.closed
         d['hidden'] = self.hidden
         d['locked'] = self.locked
-        if self.key:
+        if self._key:
             d['key_area'] = self.key.area.name
             d['key_id'] = self.key.id
+        elif self.key_id and self.key_area:
+            d['key_area'] = self.key_area
+            d['key_id'] = self.key_id
         if self.dbid:
             d['dbid'] = self.dbid
         return d
