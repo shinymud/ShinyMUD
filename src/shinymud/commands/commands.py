@@ -276,7 +276,7 @@ class Look(BaseCommand):
         return None
     
 
-command_list.register(Look, ['look'])
+command_list.register(Look, ['look', 'read'])
 command_help.register(Look.help, ['look', 'read'])
 
 class Goto(BaseCommand):
