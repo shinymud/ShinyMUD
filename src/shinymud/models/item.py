@@ -939,6 +939,16 @@ class Container(object):
         return 'Not implemented yet.'
     
 
+def validate(fn):
+        def test(self, *args):
+            if self.item and self.inv_item:
+                raise Exception('item and inv_item before: ' + str(fn))
+            ret = fn(self, *args)
+            if self.item and self.inv_item:
+                raise Exception('item and inv_item after: ' + str(fn))
+            return ret
+        return test
+                
 class Furniture(object):
     def __init__(self, **args):
         self.sit_effects = args.get('sit_effects', [])
@@ -949,7 +959,10 @@ class Furniture(object):
         self.dbid = args.get('dbid')
         self.item = args.get('item')
         self.inv_item = args.get('inv_item')
+        if self.item and self.inv_item:
+            raise Exception('item and inv_item set in init!')
     
+    @validate
     def __str__(self):
         if self.sit_effects:
             sit_effects = ', '.join(self.sit_effects)
@@ -966,6 +979,7 @@ class Furniture(object):
                  '  capacity: ' + str(self.capacity) + '\n'
         return string
     
+    @validate
     def to_dict(self):
         d = {}
         d['sit_effects'] = ','.join(self.sit_effects)
@@ -980,6 +994,7 @@ class Furniture(object):
             d['dbid'] = self.dbid
         return d
     
+    @validate
     def save(self, save_dict=None):
         world = World.get_world()
         if self.dbid:
@@ -991,12 +1006,14 @@ class Furniture(object):
         else:
             self.dbid = world.db.insert_from_dict('furniture', self.to_dict())
     
+    @validate
     def load(self):
         newf = Furniture(**self.to_dict())
         newf.dbid = None
         newf.item = None
         return newf
     
+    @validate
     def user_add(self, user):
         if self.capacity:
             pass
@@ -1004,6 +1021,7 @@ class Furniture(object):
             self.users.append(user)
             return True
     
+    @validate
     def user_remove(self, user):
         if user in self.users:
             self.users.remove(user)
