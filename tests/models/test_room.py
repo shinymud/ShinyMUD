@@ -119,7 +119,7 @@ class TestRoom(TestCase):
         
         self.assertEqual(len(self.room.items), 0)
         self.assertEqual(len(self.room.npcs), 0)
-        self.room.spawn()
+        self.room.reset()
         self.assertEqual(len(self.room.items), 1)
         self.assertEqual(self.room.npcs[0].id, proto_npc.id)
         self.assertEqual(self.room.npcs[0].area, proto_npc.area)
@@ -141,7 +141,7 @@ class TestRoom(TestCase):
         
         # Reset again, and make sure that we didn't add the objects that
         # we already had
-        self.room.spawn()
+        self.room.reset()
         self.assertEqual(len(self.room.items), 1)
         self.assertEqual(len(self.room.npcs), 1)
         c_flag = False
