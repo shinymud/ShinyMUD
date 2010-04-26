@@ -25,11 +25,11 @@
 [End Npc Events]
 
 [Rooms]
-[{"description": "This alley seems almost unnaturally dark.  Apartment buildings tower\nover you, shutting out any ambient light.  Either way in the alley\nreceeds into darkness. TThere is a dumpster to your right, which\nbarely contains all of the trash tlittered everywhere.  Larger pieces\nof broken furniture have been abandoned around the dumster.", "id": "1", "name": "Alley", "area": 2}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 2}]
+[{"description": "This alley seems almost unnaturally dark. Apartment buildings tower\nover you, shutting out any ambient light. Either way in the alley\nrecedes into darkness. There is a dumpster to your right, which barely\ncontains all of the trash littered everywhere. Larger pieces of broken\nfurniture have been abandoned around the dumpster.", "id": "1", "name": "Alley", "area": 2}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 2}]
 [End Rooms]
 
 [Room Exits]
-[]
+[{"direction": "north", "locked": false, "room": "1", "area": "foo", "to_area": "cubicle", "key_area": "None", "to_room": null, "to_id": "4", "room_id": "1", "closed": false, "to_room_id": "4", "openable": false, "key_id": "None", "hidden": false, "linked_exit": "south"}]
 [End Room Exits]
 
 [Room Spawns]

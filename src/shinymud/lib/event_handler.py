@@ -197,7 +197,7 @@ class GivenItem(EventHandler):
 This event is triggered when an npc is given an item.
 \nUSAGE:
 To add a 'GivenItem' event:
-  add event given_item 'condition' call script <script-id>
+  add event given_item ['condition'] call script <script-id>
 \nCONDITIONS:
 You may specify a condition that the item given have a specific id number and
 area name in order for the script to be called. If the item given does not match
@@ -242,9 +242,28 @@ following personalizers with their corresponding values:
     
 
 EVENTS.register(GivenItem, ['given_item'])
-command_help.register(GivenItem.help, ['given_item', 'givenitem'])
+command_help.register(GivenItem.help, ['given_item', 'givenitem', 'given item'])
 
 class Hears(EventHandler):
+    help = (
+    """<title>Hears (Event Trigger)</title>
+This event is triggered when an npc 'hears' a specific phrase echoed in the
+room.
+\nUSAGE:
+To add a "Hears" event:
+  add event hears 'condition' call script <script-id>
+\nCONDITIONS:
+You must supply the phrase that this npc should hear in order to call the
+specified script.
+\nEXAMPLE:
+  add event hears 'gives a blanket to sampson' call script 4
+\nPERSONALIZERS:
+When this event is triggered and calls a script, that script will replace the
+following personalizers with their corresponding values:
+<b>#target_name</b> Will be replaced with the name of the character who was the
+source of the phrase
+    """
+    )
     def execute(self):
         condition = self.args.get('condition')
         heard_string = self.args.get('string')
@@ -263,13 +282,33 @@ class Hears(EventHandler):
     
 
 EVENTS.register(Hears, ['hears'])
+command_help.register(Hears.help, ['hears', 'hears event'])
 
 class Emoted(EventHandler):
+    help = (
+    """<title>Emoted (Event Trigger)</title>
+This event is triggered when an npc receives an emote directed at them.
+\nUSAGE:
+To add a 'Emoted' event:
+  add event emoted ['condition'] call script <script-id>
+\nCONDITIONS:
+You may specify a condition for a specific emote (not required).
+\nEXAMPLE:
+  add event emoted 'slap' call script 4
+\nPERSONALIZERS:
+When this event is triggered and calls a script, that script will replace the
+following personalizers with their corresponding values:
+<b>#target_name</b> Will be replaced with the name of the character initiating
+the emote
+<b>#emote</b> Will be replaced with the emote that was used 
+    """
+    )
     def execute(self):
         emoter = self.args.get('emoter')
         condition = self.args.get('condition')
         emote = self.args.get('emote')
-        rep = {'#target_name': emoter.fancy_name()}
+        rep = {'#target_name': emoter.fancy_name(),
+               '#emote': emote}
         self.personalize(rep)
         if not condition:
             self.execute_script()
@@ -278,3 +317,4 @@ class Emoted(EventHandler):
     
 
 EVENTS.register(Emoted, ['emoted'])
+command_help.register(Emoted.help, ['emoted', 'emoted event'])

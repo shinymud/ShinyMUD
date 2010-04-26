@@ -227,6 +227,26 @@ command_help.register(Build.help, ['build', 'build mode', 'buildmode'])
 
 class Look(BaseCommand):
     """Look at a room, item, npc, or PC."""
+    help = (
+    """<title>Look (Command)</title>
+The Look command allows a player to examine a room, item, or npc in detail.
+\nUSAGE:
+To look at your current location:
+  look
+To look at something in your current location or inventory:
+  look [at] <npc/item-keyword> [in <room/inventory>]
+\nEXAMPLES:
+Most of the time it's enough just to use "look <npc/item>", which will look for
+the item (or npc) in your current location first, then in your inventory if an
+item can't be found in your surroundings:
+  look at dagger
+  look at bernie the shopkeeper
+If there happens to be a dagger in your current room and a dagger in your
+inventory, you might want to be more specific as to which place you look in:
+  look at dagger in inventory
+  look at dagger in room
+    """
+    )
     def execute(self):
         message = 'You don\'t see that here.\n'
         if not self.args:
@@ -239,12 +259,18 @@ class Look(BaseCommand):
             if match:
                 thing1, thing2, place = match.group('thing1', 'thing2', 'place')
                 thing = thing1 or thing2
-                if place:
-                    obj_desc = getattr(self, 'look_in_' + place)(thing)
+                thing = thing.strip()
+                # just in case someone thought they needed to be uber specific
+                # to look at their room...
+                if thing == 'room':
+                    message = self.look_at_room()
                 else:
-                    obj_desc = self.look_in_room(thing) or self.look_in_inventory(thing)
-                if obj_desc:
-                    message = obj_desc
+                    if place:
+                        obj_desc = getattr(self, 'look_in_' + place)(thing)
+                    else:
+                        obj_desc = self.look_in_room(thing) or self.look_in_inventory(thing)
+                    if obj_desc:
+                        message = obj_desc
         
         self.user.update_output(message)
     
@@ -1990,8 +2016,8 @@ they are in the world, provided they are online.
         target_char.update_output('%s tells you, "%s"' % (self.user.fancy_name(), message))
     
 
-command_list.register(Tell, ['tell'])
-command_help.register(Tell.help, ['tell'])
+command_list.register(Tell, ['tell', 'ask'])
+command_help.register(Tell.help, ['tell', 'ask'])
 
 class Commands(BaseCommand):
     """Spit out a list of basic commands."""

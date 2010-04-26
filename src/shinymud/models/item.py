@@ -44,9 +44,11 @@ class Item(object):
         self.title = str(args.get('title', 'A shiny new object sparkles happily.'))
         self.description = args.get('description', 'This is a shiny new object.')
         self.keywords = []
-        kw = str(args.get('keywords'))
+        kw = args.get('keywords')
         if kw:
-            self.keywords = kw.split(',')
+            self.keywords = [str(w) for w in kw.split(',')]
+        else:
+            self.keywords = self.name.lower().split()
         self.weight = int(args.get('weight', 0))
         self.base_value = int(args.get('base_value', 0))
         self.carryable = True
@@ -184,12 +186,15 @@ class Item(object):
         """Set the keywords for this item.
         The argument keywords should be a string of words separated by commas.
         """
-        word_list = keywords.split(',')
-        # Make sure to take out any accidental whitespace between the keywords passed
-        self.keywords = [word.strip() for word in word_list]
+        if keywords:
+            word_list = keywords.split(',')
+            self.keywords = [word.strip().lower() for word in word_list]
+        else:
+            self.keywords = [name.lower() for name in self.name.split()]
+            self.keywords.append(self.name.lower())
+            
         self.save({'keywords': ','.join(self.keywords)})
-        # self.world.db.update_from_dict('item', self.to_dict())
-        return 'Item keywords have been set.\n'
+        return 'Item keywords have been set.'
     
     def set_carryable(self, boolean, user=None):
         """Set the carryable status for this item."""
@@ -238,7 +243,7 @@ class Item(object):
         # to_dict will return the area as an integer -- make sure we reset it here
         # as the actual instance of the area
         item.area = self.area
-        for key,value in self.item_types.items():
+        for key, value in self.item_types.items():
             item.item_types[key] = value.load()
             item.item_types[key].inv_item = item
         return item

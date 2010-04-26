@@ -150,12 +150,12 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             word_list = keywords.split(',')
             self.keywords = [word.strip().lower() for word in word_list]
             self.save({'keywords': ','.join(self.keywords)})
-            return 'Npc keywords have been set.\n'
+            return 'Npc keywords have been set.'
         else:
             self.keywords = [name.lower() for name in self.name.split()]
             self.keywords.append(self.name.lower())
             self.save({'keywords': ','.join(self.keywords)})
-            return 'Npc keywords have been reset.\n'
+            return 'Npc keywords have been reset.'
     
     def set_gender(self, gender, user=None):
         """Set the gender of this npc."""
