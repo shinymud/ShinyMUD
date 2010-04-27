@@ -44,17 +44,12 @@ class InitMode(object):
         """
         self.user = user
         self.newbie = False
-        self.state = self.get_input
-        self.next_state = self.verify_username
+        self.state = self.intro
         self.active = True
         self.name = 'InitMode'
         self.world = World.get_world()
         self.log = logging.getLogger('InitMode')
         self.save = {}
-        
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your name.'
-        self.user.update_output(self.world.login_greeting + '\r\n', strip_nl=False)
-        self.user.update_output(intro_message)
     
     def get_input(self):
         """Get input from the user and pass it to the appropriate function.
@@ -70,12 +65,28 @@ class InitMode(object):
             del self.user.inq[0]
             self.next_state(arg)
     
+    def intro(self):
+        """Output the intro Message.
+        
+        PREV STATE: None (this should be the first state function in InitMode)
+        NEXT STATE: self.verify_username
+        """
+        if self.user.win_size[0] < 80:
+            self.user.update_output("Welcome to %s!\r\n" % GAME_NAME, strip_nl=False)
+        else:
+            self.user.update_output(self.world.login_greeting + '\r\n', strip_nl=False)
+        
+        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your name.'
+        self.user.update_output(intro_message)
+        self.state = self.get_input
+        self.next_state = self.verify_username
+    
     def verify_username(self, arg):
         """Get the name of the user logging in. If the user exists, grab their
         data and verify their password. Otherwise, start the character creation
         process.
         
-        PREV STATE: None (this should be the first state function in InitMode)
+        PREV STATE: self.intro
         NEXT STATE: self.verify_password, if the user logging in exists, OR
                     self.verify_new_character if the user logging in is new
         """

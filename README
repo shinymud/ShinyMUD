@@ -4,7 +4,7 @@ Incendiary Software.
 -- Software Requirements --
 
 To run ShinyMUD you'll need:
-* Python, version 2.5 or higher
+* Python, version 2.6 or higher
 * A Unix-based operating system (Linux, MacOSX)
 
 If you're developing ShinyMUD, you'll also want Nose for running unit tests.

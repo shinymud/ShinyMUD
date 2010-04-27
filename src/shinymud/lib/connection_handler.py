@@ -29,7 +29,7 @@ class ConnectionHandler(threading.Thread):
             except Exception, e:
                 self.log.debug(str(e))
             else:
-                self.negotiate_line_mode(new_user.conn)
+                self.set_telnet_options(new_user)
                 self.log.info("Client logging in from: %s" % str(new_user.addr))
                 new_user.conn.setblocking(0)
                 # The user_add function in the world requires access to the user_list,
@@ -39,24 +39,41 @@ class ConnectionHandler(threading.Thread):
                 self.world.user_add(new_user)
                 self.world.user_list_lock.release()
     
-    def negotiate_line_mode(self, con):
-        """Petition client to run in linemode.
+    def set_telnet_options(self, user):
+        """Petition client to run in linemode and to send window size change
+        notifications.
         Some telnet clients, such as putty, start in non-linemode by default
-        (they transmit each character as they receive it from the user). We
-        want them to switch to linemode in this case, where they tranmit each
-        line after it's been assembled.
+        (they transmit each character as they receive it from the user). We want
+        them to switch to linemode in this case, where they transmit each line
+        after it's been assembled. We also wan't the client to tell us their
+        screen size so we can display things appropriately.
         """
         # IAC + WILL + LINEMODE
-        con.send(chr(255) + chr(251) + chr(34) + '\r\n')
+        user.conn.send(chr(255) + chr(251) + chr(34) + '\r\n')
         # We should get a response from their client (immediately)
-        con.settimeout(1.0)
+        user.conn.settimeout(1.0)
         try:
-            result = list(con.recv(256))
+            result = list(user.conn.recv(256))
         except socket.timeout:
             # This just means that their telnet client didn't send us a timely
             # response to our initiating linemode... we should just move on
             result = 'Client response FAIL for linemode.'
         finally:
-            con.settimeout(None)
             self.log.debug(result)
+        
+        # IAC DO NAWS (Negotiate About Window Size)
+        user.conn.send(chr(255) + chr(253) + chr(31) + '\r\n')
+        try:
+            result = list(user.conn.recv(256))
+        except:
+            result = 'Client response FAIL for NAWS.'
+        else:
+            # IAC WILL NAWS
+            if result[0:3] == ['\xff', '\xfb', '\x1f']:
+                # win, they're willing to do NAWS! Parse their window info
+                stuff = ''.join(result[3:])
+                user.parse_winchange(stuff)
+        finally:
+            user.conn.settimeout(None)
+            self.log.debug(str(result))
     

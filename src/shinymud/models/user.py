@@ -14,8 +14,10 @@ import logging
 class User(Character):
     """Represents a player character (user)."""
     char_type = 'user'
+    win_change_regexp = re.compile(r"\xff\xfa\x1f(?P<size>.*?)\xff\xf0")
     def __init__(self, conn_info):
         self.conn, self.addr = conn_info
+        self.win_size = (None, None)
         self.name = self.conn
         self.inq = []
         self.outq = []
@@ -111,12 +113,24 @@ class User(Character):
             new_stuff = self.conn.recv(256)
             # Get rid of the \r \n line terminators
             new_stuff = new_stuff.replace('\n', '').replace('\r', '')
-            # Ignore any telnet negotiations
+            # See if the input is a notice of window size change
+            self.parse_winchange(new_stuff)
+            # Ignore any other telnet negotiations
             new_stuff = re.sub(r"\xff((\xfa.*?\xf0)|(..))", '', new_stuff)
             if new_stuff:
                 self.inq.append(new_stuff)
         except Exception, e:
             pass
+    
+    def parse_winchange(self, data):
+        """Parse and set the terminal size of the user."""
+        match = self.win_change_regexp.match(data)
+        if match:
+            size = match.group('size')
+            self.win_size = (ord(size[1]), ord(size[3]))
+            if not self.mode:
+                m = "You've changed the size of your terminal. It's now: %s by %s." % (str(self.win_size[0]), str(self.win_size[1]))
+                self.update_output(m)
     
     def send_output(self):
         """Sends all data from the user's output queue to the user."""
