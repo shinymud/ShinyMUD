@@ -40,7 +40,7 @@ class InitMode(object):
     """
     def __init__(self, user):
         """
-        user - a User object that has yet to be userized (initialized)
+        user - a User object that has yet to be userized (user-initialized)
         """
         self.user = user
         self.newbie = False
@@ -54,8 +54,8 @@ class InitMode(object):
     def get_input(self):
         """Get input from the user and pass it to the appropriate function.
         
-        This function waits until there is user input (we are not guaranteed
-        to get user-input on each turn), then cleans up any newlines or
+        This function waits until there is user input (we are not guaranteed to
+        get user-input on each world turn), then cleans up any newlines or
         whitespace and sends it to the next state-function stored in
         self.next_state.
         """

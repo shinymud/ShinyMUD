@@ -5,6 +5,7 @@ from shinymud.modes.init_mode import InitMode
 from shinymud.modes.build_mode import BuildMode
 from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
+from shinymud.modes.passchange_mode import PassChangeMode
 from shinymud.lib.world import World
 from shinymud.models.item import InventoryItem, SLOT_TYPES
 from shinymud.models.character import Character
@@ -170,6 +171,8 @@ class User(Character):
             return prompt
         elif self.mode.name == 'TextEditMode':
             return '>'
+        elif self.mode.name == 'PassChangeMode':
+            return '>'
         else:
             return default
     
@@ -230,6 +233,8 @@ class User(Character):
             self.mode.active = False
         elif mode == 'battle':
             self.mode = BattleMode(self)
+        elif mode == 'passwd':
+            self.mode = PassChangeMode(self)
     
     def get_mode(self):
         """Returns the name of the mode the user is in, or empty string if the

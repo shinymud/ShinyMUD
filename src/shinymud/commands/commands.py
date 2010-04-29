@@ -1901,17 +1901,21 @@ class Me(BaseCommand):
     help = (
     """<title>Me (Command)</title>
 The Me command returns a score-card of your player details.
-Some of your details are editable using the set command:
-\ntitle - (set title <title-text>)
-email - (set email <e-mail-address>) Your email address. It's never displayed
+\nNOTE:
+You can set your password via the "password" command. See "help password" for
+details.
+\nSome of your details are editable using the set command:
+<b>title - (set title <title-text>)</b> A title (or status) that's displayed
+next to your name in a Who listing.
+<b>email - (set email <e-mail-address>)</b> Your email address. It's never displayed
 publicly, and its only real purpose will be to help you to reset your password
 if you forget it.
-description - (set description, starts TextEditMode) The description that's
+<b>description - (set description, starts TextEditMode)</b> The description that's
 seen when people Look at you.
 \nIf you have authority to use the Goto command, you can also set the following:
-goto appear message - (set goto_appear <appear-message>) The message heard in
+<b>goto appear message - (set goto_appear <appear-message>)</b> The message heard in
 a room when you use the Goto command to enter it
-set goto_disappear - (set goto_disappear <disappear-message) The message heard
+<b>set goto_disappear - (set goto_disappear <disappear-message)</b> The message heard
 in a room when you use the Goto command to leave it
     """
     )
@@ -2018,6 +2022,24 @@ they are in the world, provided they are online.
 
 command_list.register(Tell, ['tell', 'ask'])
 command_help.register(Tell.help, ['tell', 'ask'])
+
+class ChangePassword(BaseCommand):
+    """Allow the player to change their password in-game."""
+    help = (
+    """Password (Command)
+The Password command lets you change your password.
+\nUSAGE:
+  passwd
+    """
+    )
+    def execute(self):
+        if self.user.mode:
+            self.user.last_mode = self.user.mode
+        self.user.set_mode('passwd')
+    
+
+command_list.register(ChangePassword, ['password', 'passwd'])
+command_help.register(ChangePassword.help, ['change password', 'passwd', 'password', 'set password'])
 
 class Commands(BaseCommand):
     """Spit out a list of basic commands."""
