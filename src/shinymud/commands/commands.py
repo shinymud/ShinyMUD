@@ -1694,7 +1694,7 @@ to award the item to.
 \nRequired Permissions: ADMIN, DM
 \nUSAGE:
 To award an item to a player:
-  award <item-keyword> to <player-name> ['<actor-message>':'<room-message>']
+  award <item-keyword> to <player-name> ["<actor-message>":"<room-message>"]
 \nThe actor-message is the message you want the player to see upon receipt of
 your item. The room-message is the message you want everyone else in the same
 room to hear upon the player's receipt of the item. Neither message is
@@ -1706,8 +1706,8 @@ celebrate the quest he just completed. First you would make sure the medal was
 in your inventory (easily done by using the Load command). Then you would type
 the following (which would normally be on one line -- in this case it is 
 linewrapped for readibility):
-  award medal to jameson 'You receive a medal for your fine work.':
-  '#actor receives a medal for his fine work.'
+  award medal to jameson "You receive a medal for your fine work.":
+  "#actor receives a medal for his fine work."
 \nJameson would have the medal added to his inventory and receive the message
 "You receive a medal for your fine work." Anyone else in the room would see
 the message "Jameson receives a medal for his fine work."
@@ -1717,7 +1717,7 @@ the message "Jameson receives a medal for his fine work."
         if not self.args:
             self.user.update_output('Award what to whom?')
             return
-        exp = r'(?P<item>(\w+|[ ])+)([ ]+to)([ ]+(?P<user>\w+))([ ]+(?P<actor>\'(.*?)\')(:(?P<room>\'(.*?)\'))?)?'
+        exp = r'(?P<item>(\w+|[ ])+)([ ]+to)([ ]+(?P<user>\w+))([ ]+(?P<actor>\"(.*?)\")(:(?P<room>\"(.*?)\"))?)?'
         match = re.match(exp, self.args, re.I)
         if not match:
             self.user.update_output('Type "help award" for help with this command.')
@@ -1736,10 +1736,10 @@ the message "Jameson receives a medal for his fine work."
         self.user.update_output('%s has been awarded %s.' % (user.fancy_name(),
                                                              item.name))
         if actor:
-            message = self.personalize(actor.strip("\'"), self.user)
+            message = self.personalize(actor.strip('\"'), self.user)
             user.update_output(message)
         if room:
-            message = self.personalize(room.strip("\'"), self.user, user)
+            message = self.personalize(room.strip('\"'), self.user, user)
             self.user.location.tell_room(message, [user.name], self.user)
     
 
