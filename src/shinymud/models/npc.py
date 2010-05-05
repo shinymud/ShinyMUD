@@ -125,24 +125,24 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             del self.actionq[0]
     
 # ***** BuildMode accessor functions *****
-    def set_description(self, description, user=None):
+    def set_description(self, description, player=None):
         """Set the description of this npc."""
-        user.last_mode = user.mode
-        user.mode = TextEditMode(user, self, 'description', self.description)
+        player.last_mode = player.mode
+        player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_name(self, name, user=None):
+    def set_name(self, name, player=None):
         """Set the name of this NPC."""
         self.name = name
         self.save({'name': self.name})
         return 'Npc name saved.\n'
     
-    def set_title(self, title, user=None):
+    def set_title(self, title, player=None):
         self.title = title
         self.save({'title': self.title})
         return 'Npc title saved.\n'
     
-    def set_keywords(self, keywords, user=None):
+    def set_keywords(self, keywords, player=None):
         """Set the keywords for this npc.
         The argument keywords should be a string of words separated by commas.
         """
@@ -157,7 +157,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             self.save({'keywords': ','.join(self.keywords)})
             return 'Npc keywords have been reset.'
     
-    def set_gender(self, gender, user=None):
+    def set_gender(self, gender, player=None):
         """Set the gender of this npc."""
         if not gender:
             return 'Try "set gender <gender>", or see "help npc".'

@@ -126,13 +126,13 @@ class Item(object):
                 self.world.db.delete('FROM item WHERE dbid=?', [self.dbid])
     
     #***************** Set Basic Attribute Functions *****************
-    def set_description(self, desc, user=None):
+    def set_description(self, desc, player=None):
         """Set the description of this item."""
-        user.last_mode = user.mode
-        user.mode = TextEditMode(user, self, 'description', self.description)
+        player.last_mode = player.mode
+        player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_title(self, title, user=None):
+    def set_title(self, title, player=None):
         """Set the title of this item."""
         if not title:
             title = ''
@@ -152,13 +152,13 @@ class Item(object):
         self.save({'title': self.title})
         return 'Item title set.\n'
     
-    def set_name(self, name, user=None):
+    def set_name(self, name, player=None):
         self.name = name
         self.save({'name': self.name})
         # self.world.db.update_from_dict('item', self.to_dict())
         return 'Item name set.\n'
     
-    def set_weight(self, weight, user=None):
+    def set_weight(self, weight, player=None):
         """Set the weight for this object."""
         try:
             weight = int(weight)
@@ -170,7 +170,7 @@ class Item(object):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
-    def set_basevalue(self, value, user=None):
+    def set_basevalue(self, value, player=None):
         """Set the base currency value for this item."""
         try:
             value = int(value)
@@ -182,7 +182,7 @@ class Item(object):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
-    def set_keywords(self, keywords, user=None):
+    def set_keywords(self, keywords, player=None):
         """Set the keywords for this item.
         The argument keywords should be a string of words separated by commas.
         """
@@ -196,7 +196,7 @@ class Item(object):
         self.save({'keywords': ','.join(self.keywords)})
         return 'Item keywords have been set.'
     
-    def set_carryable(self, boolean, user=None):
+    def set_carryable(self, boolean, player=None):
         """Set the carryable status for this item."""
         try:
             val = to_bool(boolean)
@@ -365,7 +365,7 @@ class Equippable(object):
         self.is_equipped = to_bool(args.get('is_equipped', False))
         self.dbid = args.get('dbid')
     
-    def set_damage(self, params, user=None):
+    def set_damage(self, params, player=None):
         if not params:
             return 'Sets a damage type of an equippable item.\nExample: set damage slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
@@ -392,7 +392,7 @@ class Equippable(object):
         # world.db.update_from_dict('equippable', self.to_dict())
         return 'damage ' + str(index) + ' set.\n'
     
-    def set_equip(self, loc, user=None):
+    def set_equip(self, loc, player=None):
         """Set the equip location for this item."""
         if loc in SLOT_TYPES.keys():
             self.equip_slot = loc
@@ -687,7 +687,7 @@ class Food(object):
     
     def add_effect(self, args):
         """Add an effect to this food item that will be transferred to the
-        user when the item is eaten.
+        player when the item is eaten.
         """
         # return 'Sorry, this functionality is not finished, yet.'
         # FINISH THIS FUNCTION LOL
@@ -740,7 +740,7 @@ class Food(object):
             m = '#actor drinks from %s.' % (item.name)
         return m
     
-    def set_food_type(self, use, user=None):
+    def set_food_type(self, use, player=None):
         """Set the verb used to consume the object."""
         if not use or (use.lower().strip() not in ['food', 'drink']):
             return 'Valid values for food_type are "food" or "drink".'
@@ -748,7 +748,7 @@ class Food(object):
         self.save({'food_type': self.food_type})
         return 'Food_type is now set to %s.' % use
     
-    def set_replace(self, replace, user=None):
+    def set_replace(self, replace, player=None):
         world = World.get_world()
         if not replace or (replace.strip().lower() == 'none'):
             self.replace_obj = None
@@ -763,8 +763,8 @@ class Food(object):
             area = world.get_area(area_name)
             if not area:
                 return 'Area %s doesn\'t exist.' % area_name
-        elif user:
-            area = user.mode.edit_area
+        elif player:
+            area = player.mode.edit_area
         else:
             return 'You need to specify the area that the item is from.'
         item = area.get_item(item_id)
@@ -919,7 +919,7 @@ class Container(object):
             return '%s is empty.\n' % self.inv_item.name.capitalize()
         return '%s contains:\n%s' % (self.inv_item.name.capitalize(), i)
     
-    def set_openable(self, args, user=None):
+    def set_openable(self, args, player=None):
         boolean = to_bool(args)
         if not boolean:
             return 'Acceptable values for this attribute are true or false.'
@@ -928,7 +928,7 @@ class Container(object):
             self.save({'openable': self.openable})
             return 'Openable has been set to %s.' % boolean
     
-    def set_closed(self, args, user=None):
+    def set_closed(self, args, player=None):
         boolean = to_bool(args)
         if not boolean:
             return 'Acceptable values for this attribute are true or false.'
@@ -937,10 +937,10 @@ class Container(object):
             self.save({'closed': self.closed})
             return 'Closed has been set to %s.' % boolean
     
-    def set_key(self, args, user=None):
+    def set_key(self, args, player=None):
         return 'Not implemented yet.'
     
-    def set_locked(self, args, user=None):
+    def set_locked(self, args, player=None):
         return 'Not implemented yet.'
     
 
@@ -958,8 +958,8 @@ class Furniture(object):
     def __init__(self, **args):
         self.sit_effects = args.get('sit_effects', [])
         self.sleep_effects = args.get('sleep_effects', [])
-        self.users = []
-        # of users that can use this piece of furniture at one time.
+        self.players = []
+        # of players that can use this piece of furniture at one time.
         self.capacity = args.get('capacity')
         self.dbid = args.get('dbid')
         self.item = args.get('item')
@@ -1019,17 +1019,17 @@ class Furniture(object):
         return newf
     
     @validate
-    def user_add(self, user):
+    def player_add(self, player):
         if self.capacity:
             pass
         else:
-            self.users.append(user)
+            self.players.append(player)
             return True
     
     @validate
-    def user_remove(self, user):
-        if user in self.users:
-            self.users.remove(user)
+    def player_remove(self, player):
+        if player in self.players:
+            self.players.remove(player)
     
 
 class Portal(object):
@@ -1114,7 +1114,7 @@ class Portal(object):
     
     location = property(_resolve_location, _set_location)
     
-    def set_portal(self, args, user=None):
+    def set_portal(self, args, player=None):
         """Set the location of the room this portal should go to."""
         if not args:
             return 'Usage: set portal to room <room-id> in area <area-name>\n'
@@ -1134,19 +1134,19 @@ class Portal(object):
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     
-    def set_leave(self, message, user=None):
+    def set_leave(self, message, player=None):
         """Set this portal's leave message."""
         self.leave_message = message
         self.save({'leave_message': self.leave_message})
         return 'Leave message set.\n'
     
-    def set_entrance(self, message, user=None):
+    def set_entrance(self, message, player=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
         self.save({'entrance_message': self.entrance_message})
         return 'Entrance message set.\n'
     
-    def set_emerge(self, message, user=None):
+    def set_emerge(self, message, player=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
         self.save({'emerge_message': self.emerge_message})

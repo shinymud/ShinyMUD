@@ -1,5 +1,5 @@
 from shinymud.lib.world import *
-from shinymud.models.user import *
+from shinymud.models.player import *
 from shinymud.modes.build_mode import *
 from shinymud.commands import *
 from shinymud.lib.db import DB
@@ -15,18 +15,18 @@ class TestReset(TestCase):
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
     
-    def test_tell_users(self):
-        bob = User(('bob', 'bar'))
-        alice = User(('alice', 'bar'))
-        self.world.user_add(bob)
-        self.world.user_add(alice)
+    def test_tell_players(self):
+        bob = Player(('bob', 'bar'))
+        alice = Player(('alice', 'bar'))
+        self.world.player_add(bob)
+        self.world.player_add(alice)
         
         bob.mode = None
         bob.outq = []
         alice.mode = None
         alice.outq = []
         
-        self.world.tell_users('hello world!')
+        self.world.tell_players('hello world!')
         echo = wecho_color + 'hello world!' + clear_fcolor + '\r\n'
         self.assertTrue(echo in bob.outq)
         self.assertTrue(echo in alice.outq)
@@ -35,7 +35,7 @@ class TestReset(TestCase):
         bob.outq = []
         alice.outq = []
         
-        self.world.tell_users('hello all!')
+        self.world.tell_players('hello all!')
         echo = wecho_color + 'hello all!' + clear_fcolor + '\r\n'
         self.assertTrue(echo not in bob.outq)
         self.assertTrue(echo in alice.outq)
@@ -44,7 +44,7 @@ class TestReset(TestCase):
         bob.outq = []
         alice.outq = []
         
-        self.world.tell_users('hello!', ['alice'])
+        self.world.tell_players('hello!', ['alice'])
         echo = wecho_color + 'hello!' + clear_fcolor + '\r\n'
         self.assertTrue(echo in bob.outq)
         self.assertTrue(echo not in alice.outq)

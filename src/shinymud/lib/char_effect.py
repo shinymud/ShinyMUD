@@ -102,7 +102,7 @@ class Drunk(CharacterEffect):
         return ' '.join(words)
     
     def disorder_filter(self, text):
-        """Some words appear in a different order than the user wrote them.
+        """Some words appear in a different order than the player wrote them.
         """
         words = text.split()
         if len(words) < 4:

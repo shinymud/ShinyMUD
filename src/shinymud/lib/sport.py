@@ -219,7 +219,7 @@ class SPort(object):
     def list_importable_areas(cls, import_dir=AREAS_IMPORT_DIR):
         if not os.path.exists(import_dir):
             return 'There are no area files in your import directory.'
-        # Give the user a list of names of all the area files in their import directory
+        # Give the player a list of names of all the area files in their import directory
         # and trim off the .txt extension for readibility. Ignore all files that aren't txt
         # files
         alist = [area.replace('.txt', '') for area in os.listdir(import_dir) if area.endswith('.txt')]

@@ -1,7 +1,7 @@
 from shinymud.lib.world import *
 from shinymud.models.area import *
 from shinymud.data.config import *
-from shinymud.models.user import *
+from shinymud.models.player import *
 from shinymud.commands import *
 from unittest import TestCase
 from shinymud.lib.db import DB
@@ -31,18 +31,18 @@ class TestGeneralCommands(TestCase):
                          "Registered aliases 'bob' and 'sam' did not return same function.")
     
     def test_chat_command(self):
-        bob = User(('bob', 'bar'))
-        alice = User(('alice', 'bar'))
-        sam = User(('sam', 'bar'))
+        bob = Player(('bob', 'bar'))
+        alice = Player(('alice', 'bar'))
+        sam = Player(('sam', 'bar'))
         bob.mode = None
-        bob.userize(name='bob')
+        bob.playerize(name='bob')
         bob.outq = []
         sam.mode = None
-        sam.userize(name='sam')
+        sam.playerize(name='sam')
         sam.outq = []
-        self.world.user_add(bob)
-        self.world.user_add(sam)
-        self.world.user_add(alice)
+        self.world.player_add(bob)
+        self.world.player_add(sam)
+        self.world.player_add(alice)
         
         Chat(bob, 'lol, hey guys!', 'chat').run()
         chat = chat_color + 'Bob chats, "lol, hey guys!"' + clear_fcolor + '\r\n'
@@ -63,17 +63,17 @@ class TestGeneralCommands(TestCase):
     def test_give_command(self):
         area = Area.create('blarg')
         room = area.new_room()
-        bob = User(('bob', 'bar'))
+        bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.userize(name='bob')
-        alice = User(('alice', 'bar'))
+        bob.playerize(name='bob')
+        alice = Player(('alice', 'bar'))
         alice.mode = None
-        alice.userize(name='alice')
-        self.world.user_add(bob)
-        self.world.user_add(alice)
+        alice.playerize(name='alice')
+        self.world.player_add(bob)
+        self.world.player_add(alice)
         
-        room.user_add(bob)
-        room.user_add(alice)
+        room.player_add(bob)
+        room.player_add(alice)
         alice.location = room
         bob.location = room
         proto_npc = area.new_npc()
@@ -104,9 +104,9 @@ class TestGeneralCommands(TestCase):
         self.assertTrue(to_shiny in npc.actionq)
     
     def test_set_command(self):
-        bob = User(('bob', 'bar'))
+        bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.userize(name='bob')
+        bob.playerize(name='bob')
         
         # Test setting e-mail
         Set(bob, 'email bob@bob.com', 'set').run()
@@ -117,7 +117,7 @@ class TestGeneralCommands(TestCase):
         self.assertEqual('is the best EVAR', bob.title)
         
         # Try to set goto_appear and goto_disappear (both should fail
-        # since this user shouldn't have permissions)
+        # since this player shouldn't have permissions)
         Set(bob, 'goto_appear Bob pops in from nowhere.', 'set').run()
         eresult = 'You don\'t have the permissions to set that.\r\n'
         self.assertTrue(eresult in bob.outq)
@@ -128,7 +128,7 @@ class TestGeneralCommands(TestCase):
         bob.permissions = bob.permissions | BUILDER
         
         # Try to set goto_appear and goto_disappear (both should now
-        # succeed now that the user has adequate permissions)
+        # succeed now that the player has adequate permissions)
         Set(bob, 'goto_appear Bob pops in from nowhere.', 'set').run()
         self.assertEqual('Bob pops in from nowhere.', bob.goto_appear)
         bob.outq = []
@@ -140,10 +140,10 @@ class TestGeneralCommands(TestCase):
         foo_area = Area.create('foo')
         blarg_room = blarg_area.new_room()
         foo_room = foo_area.new_room()
-        bob = User(('bob', 'bar'))
+        bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.userize(name='bob')
-        self.world.user_add(bob)
+        bob.playerize(name='bob')
+        self.world.player_add(bob)
         bob.permissions = bob.permissions | BUILDER
         generic_fail = 'Type "help goto" for help with this command.\r\n'
         

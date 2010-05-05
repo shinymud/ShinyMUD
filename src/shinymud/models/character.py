@@ -90,7 +90,7 @@ class DamageRegister(DictRegister):
         return [(t, mins[t], maxs[t]) for t in types.keys()]
     
 class Character(object):
-    """The basic functionality that both player characters (users) and 
+    """The basic functionality that both player characters (players) and 
     non-player characters share.
     """
     def characterize(self, **args):
@@ -193,7 +193,7 @@ class Character(object):
                     prev = '%s_%s' % (self.location.id, self.location.area.name)
                     if tell_old:
                         self.location.tell_room(tell_old, [self.name])
-                    self.location.user_remove(self)
+                    self.location.player_remove(self)
                 else:
                     prev = 'void'
                 if self.location and self.location == room:
@@ -201,7 +201,7 @@ class Character(object):
                 else:
                     self.location = room
                     self.update_output(self.look_at_room())
-                    self.location.user_add(self, prev)
+                    self.location.player_add(self, prev)
                     if tell_new:
                         self.location.tell_room(tell_new, [self.name])
             else:
@@ -210,12 +210,12 @@ class Character(object):
             self.update_output('You better stand up first.')
     
     def change_position(self, pos, furniture=None):
-        """Change the user's position."""
+        """Change the player's position."""
         
         if self.position[1]:
-            self.position[1].item_types['furniture'].user_remove(self)
+            self.position[1].item_types['furniture'].player_remove(self)
         if furniture:
-            furniture.item_types['furniture'].user_add(self)
+            furniture.item_types['furniture'].player_add(self)
         self.position = (pos, furniture)
         # self.log.debug(pos + ' ' + str(furniture))
     
@@ -286,7 +286,7 @@ class Character(object):
         return total
     
     def enter_battle(self):
-        if self.char_type == 'user':
+        if self.char_type == 'player':
             self.set_mode('battle')
             self.change_position('standing')
     

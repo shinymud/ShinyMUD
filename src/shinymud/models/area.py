@@ -135,19 +135,19 @@ Description: \n    %s""" % (self.name,
         world.new_area(new_area)
         return new_area
     
-    def set_description(self, desc, user=None):
+    def set_description(self, desc, player=None):
         """Set this area's description."""
-        user.last_mode = user.mode
-        user.mode = TextEditMode(user, self, 'description', self.description)
+        player.last_mode = player.mode
+        player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_levelrange(self, lvlrange, user=None):
+    def set_levelrange(self, lvlrange, player=None):
         """Set this area's level range."""
         self.level_range = lvlrange
         self.save({'level_range': self.level_range})
         return 'Area levelrange set.'
     
-    def set_title(self, title, user=None):
+    def set_title(self, title, player=None):
         """Set this area's title."""
         if not title:
             return 'Type "help areas" for help setting area attributes.'
@@ -155,20 +155,20 @@ Description: \n    %s""" % (self.name,
         self.save({'title': self.title})
         return 'Area title set.'
     
-    def add_builder(self, username):
-        """Add a user to the builder's list."""
-        self.builders.append(username)
+    def add_builder(self, playername):
+        """Add a player to the builder's list."""
+        self.builders.append(playername)
         self.save()
-        return '%s has been added to the builder\'s list for this area.\n' % username.capitalize()
+        return '%s has been added to the builder\'s list for this area.\n' % playername.capitalize()
     
-    def remove_builder(self, username):
-        """Remove a user from the builder's list."""
-        if username in self.builders:
-            self.builders.remove(username)
+    def remove_builder(self, playername):
+        """Remove a player from the builder's list."""
+        if playername in self.builders:
+            self.builders.remove(playername)
             self.save()
-            return '%s has been removed from the builder\'s list for this area.\n' % username.capitalize()
+            return '%s has been removed from the builder\'s list for this area.\n' % playername.capitalize()
         else:
-            return '%s is not on the builder\'s list for this area.\n' % username.capitalize()
+            return '%s is not on the builder\'s list for this area.\n' % playername.capitalize()
     
 # ************************ Room Functions ************************
 # Here exist all the function that an area uses to manage the rooms
@@ -204,7 +204,7 @@ Description: \n    %s""" % (self.name,
         """Destroy a specific room in this area."""
         room = self.get_room(room_id)
         if room:
-            if room.users:
+            if room.players:
                 return 'You can\'t destroy that room, there are people in there!.\n'
             doors = room.exits.keys()
             for door in doors:

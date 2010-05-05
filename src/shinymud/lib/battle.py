@@ -58,7 +58,7 @@ class Battle(object):
     def tell_all(self, message, exclude=[]):
         r = self.teamA[:]
         r.extend(self.teamB[:])
-        for user in r:
-            if user.name not in exclude:
-                user.update_output(message)
+        for player in r:
+            if player.name not in exclude:
+                player.update_output(message)
         

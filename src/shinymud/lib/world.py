@@ -14,11 +14,11 @@ class World(object):
         return cls._instance
     
     def __init__(self):
-        self.user_list = {}
-        self.user_delete = []
+        self.player_list = {}
+        self.player_delete = []
         self.battles = {}
         self.battles_delete = []
-        self.user_list_lock = threading.Lock()
+        self.player_list_lock = threading.Lock()
         self.shutdown_flag = False
         self.areas = {}
         self.log = logging.getLogger('World')
@@ -49,10 +49,10 @@ class World(object):
     
     def cleanup(self):
         """Do any cleanup that needs to be done after a turn. This includes
-        deleting users from the userlist if they have logged out."""
-        for user in self.user_delete:
-            del self.user_list[user]
-        self.user_delete = []
+        deleting players from the playerlist if they have logged out."""
+        for player in self.player_delete:
+            del self.player_list[player]
+        self.player_delete = []
         for battle in self.battles_delete:
             del self.battles[battle]
         self.battles_delete = []
@@ -60,16 +60,16 @@ class World(object):
     def start_turning(self):
         while not self.shutdown_flag:
             start = time.time()
-            # Manage user list
-            self.user_list_lock.acquire()
-            list_keys = self.user_list.keys()
+            # Manage player list
+            self.player_list_lock.acquire()
+            list_keys = self.player_list.keys()
             for key in list_keys:
-                self.user_list[key].do_tick()
+                self.player_list[key].do_tick()
             self.cleanup()
-            list_keys = self.user_list.keys()
+            list_keys = self.player_list.keys()
             for key in list_keys:
-                self.user_list[key].send_output()
-            self.user_list_lock.release()
+                self.player_list[key].send_output()
+            self.player_list_lock.release()
             
             # Perform round actions for active battles
             for key in self.battles.keys():
@@ -138,7 +138,7 @@ class World(object):
             return self.areas[area_name]
         return None
     
-    def destroy_area(self, area_name, username):
+    def destroy_area(self, area_name, playername):
         """Destroy an entire area! TODO: whoa nelly, they want to destroy a
         whole area! We should really make sure that's what they want by adding
         an extra game state that blocks all actions until they confirm. """
@@ -147,25 +147,25 @@ class World(object):
             return 'Area %s doesn\'t exist.\n' % area_name
         if self.default_location and self.default_location.area == area:
             self.default_location = None
-        for user in self.user_list.values():
-            if user.location and (user.location.area.name == area.name):
-                user.update_output('You are wisked to safety as the world collapses around you.\n')
-                user.location.user_remove(user)
-                user.location = self.default_location
-            if user.mode and (user.mode.name == 'BuildMode'):
-                if user.mode.edit_area and (user.mode.edit_area.name == area_name):
-                    user.mode.edit_area = None
-                    user.mode.edit_object = None
-                    if username != user.name:
-                        user.update_output('The area you were working on was just nuked by %s.\n' % 
-                                                                            username.capitalize())
-            if user.last_mode and (user.last_mode.name == 'BuildMode'):
-                if user.last_mode.edit_area and (user.last_mode.edit_area.name == area_name):
-                    user.last_mode.edit_area = None
-                    user.last_mode.edit_object = None
-                    if username != user.name:
-                        user.update_output('The area you were working on was just nuked by %s.\n' %
-                                                                            username.capitalize())
+        for player in self.player_list.values():
+            if player.location and (player.location.area.name == area.name):
+                player.update_output('You are wisked to safety as the world collapses around you.\n')
+                player.location.player_remove(player)
+                player.location = self.default_location
+            if player.mode and (player.mode.name == 'BuildMode'):
+                if player.mode.edit_area and (player.mode.edit_area.name == area_name):
+                    player.mode.edit_area = None
+                    player.mode.edit_object = None
+                    if playername != player.name:
+                        player.update_output('The area you were working on was just nuked by %s.\n' % 
+                                                                            playername.capitalize())
+            if player.last_mode and (player.last_mode.name == 'BuildMode'):
+                if player.last_mode.edit_area and (player.last_mode.edit_area.name == area_name):
+                    player.last_mode.edit_area = None
+                    player.last_mode.edit_object = None
+                    if playername != player.name:
+                        player.update_output('The area you were working on was just nuked by %s.\n' %
+                                                                            playername.capitalize())
         item_keys = area.items.keys()
         for item in item_keys:
             self.log.debug(area.destroy_item(item))
@@ -181,47 +181,47 @@ class World(object):
         area.destruct()
         del self.areas[area.name]
         area.name = None
-        self.log.info('%s desroyed area %s.' % (username, area_name))
+        self.log.info('%s desroyed area %s.' % (playername, area_name))
         return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
     
-# ************************ User Functions ************************
-# Here exist all the functions that the world uses to manage the users
+# ************************ Player Functions ************************
+# Here exist all the functions that the world uses to manage the players
 # it contains.
-    def tell_users(self, message, exclude_list=[], color=wecho_color):
-        """Tell all available users in the world a message.
-        A user is considered unavailable if the are on the exclude list,
+    def tell_players(self, message, exclude_list=[], color=wecho_color):
+        """Tell all available players in the world a message.
+        A player is considered unavailable if the are on the exclude list,
         or not in BuildMode or NormalMode."""
         message = color + message + clear_fcolor
-        for user in self.user_list.values():
-            if user.name in exclude_list:
+        for player in self.player_list.values():
+            if player.name in exclude_list:
                 pass
-            elif user.mode and user.mode.name != 'BuildMode':
+            elif player.mode and player.mode.name != 'BuildMode':
                 pass
             else:
-                user.update_output(message)
+                player.update_output(message)
     
-    def has_user(self, name):
-        """Return true if the world has this user's name in its user list."""
-        if name in self.user_list:
+    def has_player(self, name):
+        """Return true if the world has this player's name in its player list."""
+        if name in self.player_list:
             return True
         return False
     
-    def get_user(self, name):
-        """Return a user if that user's name exists in the user list."""
-        return self.user_list.get(name)
+    def get_player(self, name):
+        """Return a player if that player's name exists in the player list."""
+        return self.player_list.get(name)
     
-    def user_add(self, user):
-        key = user.name
+    def player_add(self, player):
+        key = player.name
         if isinstance(key, str):
             key = key.lower()
-        self.user_list[key] = user
+        self.player_list[key] = player
     
-    def user_remove(self, username):
-        """Add a user's name to the world's delete list so they get removed
-        from the userlist on the next turn."""
-        if isinstance(username, str):
-            username = username.lower()
-        self.user_delete.append(username)
+    def player_remove(self, playername):
+        """Add a player's name to the world's delete list so they get removed
+        from the playerlist on the next turn."""
+        if isinstance(playername, str):
+            playername = playername.lower()
+        self.player_delete.append(playername)
     
 # ********************** Battle Functions **********************
 # Here exist all the function that the world uses to manage battles

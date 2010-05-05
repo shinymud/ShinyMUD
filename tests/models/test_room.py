@@ -1,5 +1,5 @@
 from shinymud.lib.world import *
-from shinymud.models.user import *
+from shinymud.models.player import *
 from shinymud.models.room import *
 from shinymud.models.area import *
 from shinymud.commands import *

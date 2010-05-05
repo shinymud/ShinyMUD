@@ -21,7 +21,7 @@ STATS_PORT = 4112 # The port that StatSender should listen on
 
 # ************ COLOR THEMES ************
 
-# User Permissions
+# Player Permissions
 PLAYER = 1
 BUILDER = 2
 DM = 4
@@ -41,7 +41,7 @@ wecho_color = COLOR_FG_BLUE
 
 # Object colors
 npc_color = COLOR_FG_YELLOW
-user_color = COLOR_FG_YELLOW
+player_color = COLOR_FG_YELLOW
 room_title_color = COLOR_FG_GREEN
 room_body_color = COLOR_FG_GREEN
 room_exit_color = COLOR_FG_CYAN

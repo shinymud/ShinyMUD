@@ -25,7 +25,7 @@ class Room(object):
                       'down': None}
         self.npcs = []
         self.spawns = {}
-        self.users = {}
+        self.players = {}
         self.dbid = args.get('dbid')
         self.log = logging.getLogger('Room')
         self.world = World.get_world()
@@ -164,21 +164,21 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                     spawn.destruct()
                     del self.spawns[spawn.id]
     
-    def user_add(self, user, prev_room='void'):
-        """Adds a user to this room.
-        user -- user object to be added
-        prev_room -- the room the user was in before they transitioned to this room;
+    def player_add(self, player, prev_room='void'):
+        """Adds a player to this room.
+        player -- player object to be added
+        prev_room -- the room the player was in before they transitioned to this room;
             should be a string in the format '<room-id>_<area-name>'
         """
-        self.users[user.name] = user
+        self.players[player.name] = player
         self.area.times_visited_since_reset += 1
-        self.fire_event('pc_enter', {'user': user, 'from': prev_room})
+        self.fire_event('pc_enter', {'player': player, 'from': prev_room})
     
-    def user_remove(self, user):
-        if self.users.get(user.name):
-            del self.users[user.name]
+    def player_remove(self, player):
+        if self.players.get(player.name):
+            del self.players[player.name]
     
-    def set_name(self, name, user=None):
+    def set_name(self, name, player=None):
         """Set the name of a room."""
         if not name:
             return 'Set the name to what?'
@@ -187,10 +187,10 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.save({'name': self.name})
         return 'Room %s name set.' % self.id
     
-    def set_description(self, args, user=None):
+    def set_description(self, args, player=None):
         """Set the description of a room."""
-        user.last_mode = user.mode
-        user.mode = TextEditMode(user, self, 'description', self.description)
+        player.last_mode = player.mode
+        player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
     def new_exit(self, direction, to_room, **exit_dict):
@@ -201,7 +201,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         new_exit.save()
         self.exits[direction] = new_exit
     
-    def set_exit(self, args, user=None):
+    def set_exit(self, args, player=None):
         args = args.split()
         if len(args) < 3:
             return 'Usage: set exit <direction> <attribute> <value(s)>. Type "help exits" for more detail.\n'
@@ -383,7 +383,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
     
     def tell_room(self, message, exclude_list=[], teller=None):
         """Echo something to everyone in the room, except the people on the exclude list."""
-        for person in self.users.values():
+        for person in self.players.values():
             if (person.name not in exclude_list) and (person.position[0] != 'sleeping'):
                 person.update_output(message)
         self.fire_event('hears', {'string': message, 'teller': teller})
@@ -404,10 +404,10 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                 return item
         return None
     
-    def get_user(self, keyword):
-        """Get a user from this room if their name is equal to the keyword given."""
+    def get_player(self, keyword):
+        """Get a player from this room if their name is equal to the keyword given."""
         keyword = keyword.strip().lower()
-        return self.users.get(keyword)
+        return self.players.get(keyword)
     
     def check_for_keyword(self, keyword):
         """Return the first instance of an item, npc, or player that matches the keyword.
@@ -421,8 +421,8 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         if npc: return npc
         
         # then check the PCs in the room
-        user = self.get_user(keyword)
-        if user: return user
+        player = self.get_player(keyword)
+        if player: return player
         
         # If we didn't match any of the above, return None
         return None
@@ -457,7 +457,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         # When npcs are loaded into the room, they're not saved to the db
         # so we can just wipe the memory instances of them
         self.npcs = []
-        # The items in the room may have been dropped by a user (and would
+        # The items in the room may have been dropped by a player (and would
         # therefore have been in the item_inventory db table). We need
         # to make sure we delete the item from the db if it has an entry.
         for i in range(len(self.items)):

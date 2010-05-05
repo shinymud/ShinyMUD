@@ -7,7 +7,7 @@ from shinymud.data.config import DB_NAME
 
 def initialize_database(connection=None):
     queries = [\
-'''CREATE TABLE IF NOT EXISTS user (
+'''CREATE TABLE IF NOT EXISTS player (
     dbid INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
     channels TEXT,
@@ -82,7 +82,7 @@ def initialize_database(connection=None):
     weight INTEGER DEFAULT 0,
     base_value INTEGER DEFAULT 0,
     carryable TEXT,
-    owner INTEGER REFERENCES user(dbid),
+    owner INTEGER REFERENCES player(dbid),
     container INTEGER REFERENCES inventory(dbid)
 )''',\
 '''CREATE TABLE IF NOT EXISTS npc (
@@ -184,7 +184,7 @@ def initialize_database(connection=None):
     name TEXT,
     item INTEGER,
     item_type TEXT,
-    user INTEGER NULL REFERENCES user(dbid)
+    player INTEGER NULL REFERENCES player(dbid)
 )'''
 ]
     

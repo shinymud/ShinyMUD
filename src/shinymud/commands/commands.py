@@ -22,7 +22,7 @@ process.
     """
     )
     def execute(self):
-        self.user.quit_flag = True
+        self.pc.quit_flag = True
     
 
 command_list.register(Quit, ['quit', 'exit'])
@@ -31,17 +31,17 @@ command_help.register(Quit.help, ['quit', 'exit'])
 class WorldEcho(BaseCommand):
     """Echoes a message to everyone in the world.
     args:
-        args = message to be sent to every user in the world.
+        args = message to be sent to every player in the world.
     """
     required_permissions = ADMIN
     help = (
     """WorldEcho (Command)
-WorldEcho echoes a message to all users currently in the world.
+WorldEcho echoes a message to all players currently in the world.
 \nRequired Permissions: ADMIN
     """
     )
     def execute(self):
-        self.world.tell_users(self.args)
+        self.world.tell_players(self.args)
     
 
 command_list.register(WorldEcho, ['wecho', 'worldecho'])
@@ -62,20 +62,20 @@ current room location.
     """
     )
     def execute(self):
-        if not self.user.location:
-            self.user.update_output('Your message echoes faintly off into the void.')
+        if not self.pc.location:
+            self.pc.update_output('Your message echoes faintly off into the void.')
             return
         if not self.args:
-            self.user.update_output('Usage: recho <message>. See "help recho" for details.')
+            self.pc.update_output('Usage: recho <message>. See "help recho" for details.')
             return
-        self.user.location.tell_room(self.args)
+        self.pc.location.tell_room(self.args)
     
 
 command_list.register(RoomEcho, ['recho', 'room echo', 'roomecho'])
 command_help.register(RoomEcho.help, ['recho', 'room echo', 'roomecho'])
 
 class Chat(BaseCommand):
-    """Sends a message to every user on the chat channel."""
+    """Sends a message to every player on the chat channel."""
     help = (
     """Chat (command)
 The Chat command will let you send a message to everyone in the world whose
@@ -85,16 +85,16 @@ channel off.
     )
     def execute(self):
         if not self.args:
-            self.user.update_output("What do you want to chat?")
+            self.pc.update_output("What do you want to chat?")
             return
-        if not self.user.channels['chat']:
-            self.user.channels['chat'] = True
-            self.user.update_output('Your chat channel has been turned on.\n')
-        exclude = [user.name for user in self.world.user_list.values() if not user.channels['chat']]
-        if 'drunk' in self.user.effects:
-            self.args = self.user.effects['drunk'].filter_speech(self.args)
-        message = '%s chats, "%s"' % (self.user.fancy_name(), self.args)
-        self.world.tell_users(message, exclude, chat_color)
+        if not self.pc.channels['chat']:
+            self.pc.channels['chat'] = True
+            self.pc.update_output('Your chat channel has been turned on.\n')
+        exclude = [player.name for player in self.world.player_list.values() if not player.channels['chat']]
+        if 'drunk' in self.pc.effects:
+            self.args = self.pc.effects['drunk'].filter_speech(self.args)
+        message = '%s chats, "%s"' % (self.pc.fancy_name(), self.args)
+        self.world.tell_players(message, exclude, chat_color)
     
 
 command_list.register(Chat, ['chat', 'c'])
@@ -126,25 +126,25 @@ automatically be turned back on.
     def execute(self):
         if not self.args:
             chnls = 'Channels:'
-            for key, value in self.user.channels.items():
+            for key, value in self.pc.channels.items():
                 if value:
                     chnls += '\n  ' + key + ': ' + 'on'
                 else:
                     chnls += '\n  ' + key + ': ' + 'off'
-            self.user.update_output(chnls)
+            self.pc.update_output(chnls)
             return
         toggle = {'on': True, 'off': False}
         args = self.args.split()
         channel = args[0].lower()
         choice = args[1].lower()
-        if channel in self.user.channels.keys():
+        if channel in self.pc.channels.keys():
             if choice in toggle.keys():
-                self.user.channels[channel] = toggle[choice]
-                self.user.update_output('The %s channel has been turned %s.\n' % (channel, choice))
+                self.pc.channels[channel] = toggle[choice]
+                self.pc.update_output('The %s channel has been turned %s.\n' % (channel, choice))
             else:
-                self.user.update_output('You can only turn the %s channel on or off.\n' % channel)
+                self.pc.update_output('You can only turn the %s channel on or off.\n' % channel)
         else:
-            self.user.update_output('Which channel do you want to change?\n')
+            self.pc.update_output('Which channel do you want to change?\n')
     
 
 command_list.register(Channel, ['channel'])
@@ -170,56 +170,56 @@ To enter BuildMode and edit your current location:
     )
     def execute(self):
         if not self.args:
-            # User wants to enter BuildMode
+            # Player wants to enter BuildMode
             self.enter_build_mode()
         elif self.args == 'exit':
-            if self.user.get_mode() == 'BuildMode':
-                self.user.set_mode('normal')
-                self.user.update_output('Exiting BuildMode.')
+            if self.pc.get_mode() == 'BuildMode':
+                self.pc.set_mode('normal')
+                self.pc.update_output('Exiting BuildMode.')
             else:
-                self.user.update_output('You\'re not in BuildMode right now.')
+                self.pc.update_output('You\'re not in BuildMode right now.')
         elif self.args == 'here':
             # Builder wants to start building at her current location
-            if self.user.location:
-                self.edit(self.user.location.area, self.user.location)
+            if self.pc.location:
+                self.edit(self.pc.location.area, self.pc.location)
             else:
-                self.user.update_output('You\'re in the void; there\'s nothing to build.')
+                self.pc.update_output('You\'re in the void; there\'s nothing to build.')
         else:
             area = self.world.get_area(self.args)
             if not area:
-                self.user.update_output('Area "%s" doesn\'t exist.' % self.args)
-                self.user.update_output('See "help buildmode" for help with this command.')
+                self.pc.update_output('Area "%s" doesn\'t exist.' % self.args)
+                self.pc.update_output('See "help buildmode" for help with this command.')
             else:
                 self.edit(area)
     
     def enter_build_mode(self):
-        """The user should enter BuildMode."""
-        if self.user.get_mode() == 'BuildMode':
-            self.user.update_output('To exit BuildMode, type "build exit".')
+        """The player should enter BuildMode."""
+        if self.pc.get_mode() == 'BuildMode':
+            self.pc.update_output('To exit BuildMode, type "build exit".')
         else:
-            self.user.set_mode('build')
-            self.user.update_output('Entering BuildMode.')
+            self.pc.set_mode('build')
+            self.pc.update_output('Entering BuildMode.')
     
     def edit(self, area, room=None):
-        """Initialize the user's edit_area (and possible edit_object.). This
+        """Initialize the player's edit_area (and possible edit_object.). This
         is super hackish, as I'm reproducing code from the BuildCommand Edit.
         I just didn't want to create an import cycle for the sake of accessing
         one command and was too lazy to change things around to work better.
         Should probably clean this up in the future.
         """
-        if self.user.get_mode() != 'BuildMode':
+        if self.pc.get_mode() != 'BuildMode':
             self.enter_build_mode()
-        if (self.user.name in area.builders) or (self.user.permissions & GOD):
-            self.user.mode.edit_area = area
-            self.user.mode.edit_object = None
+        if (self.pc.name in area.builders) or (self.pc.permissions & GOD):
+            self.pc.mode.edit_area = area
+            self.pc.mode.edit_object = None
             if room:
-                self.user.mode.edit_object = room
-                self.user.update_output('Now editing room %s in area "%s".' %
+                self.pc.mode.edit_object = room
+                self.pc.update_output('Now editing room %s in area "%s".' %
                                         (room.id, area.name))
             else:
-                self.user.update_output('Now editing area "%s".' % area.name)
+                self.pc.update_output('Now editing area "%s".' % area.name)
         else:
-            self.user.update_output('You can\'t edit someone else\'s area.')
+            self.pc.update_output('You can\'t edit someone else\'s area.')
     
 
 command_list.register(Build, ['build'])
@@ -250,7 +250,7 @@ inventory, you might want to be more specific as to which place you look in:
     def execute(self):
         message = 'You don\'t see that here.\n'
         if not self.args:
-            # if the user didn't specify anything to look at, just show them the
+            # if the player didn't specify anything to look at, just show them the
             # room they're in.
             message = self.look_at_room()
         else:
@@ -272,17 +272,17 @@ inventory, you might want to be more specific as to which place you look in:
                     if obj_desc:
                         message = obj_desc
         
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
     def look_at_room(self):
-        if self.user.location:
-            return self.user.look_at_room()
+        if self.pc.location:
+            return self.pc.look_at_room()
         else:
             return 'You see a dark void.'
     
     def look_in_room(self, keyword):
-        if self.user.location:
-            obj = self.user.location.check_for_keyword(keyword)
+        if self.pc.location:
+            obj = self.pc.location.check_for_keyword(keyword)
             if obj:
                 if self.alias == 'read':
                     return obj.description
@@ -293,7 +293,7 @@ inventory, you might want to be more specific as to which place you look in:
         return None
     
     def look_in_inventory(self, keyword):
-        item = self.user.check_inv_for_keyword(keyword)
+        item = self.pc.check_inv_for_keyword(keyword)
         if item:
             message = "You look at %s:\n%s" % (item.name, item.description)
             if item.is_container():
@@ -322,48 +322,48 @@ To go to a room in a different area:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Where did you want to go to?')
+            self.pc.update_output('Where did you want to go to?')
             return
         exp = r'((room)?([ ]?(?P<room_id>\d+))(([ ]+in)?([ ]+area)?([ ]+(?P<area>\w+)))?)|(?P<name>\w+)'
         match = re.match(exp, self.args.strip())
         message = 'Type "help goto" for help with this command.'
         if not match:
-            self.user.update_output(message)
+            self.pc.update_output(message)
             return
         name, area_name, room_id = match.group('name', 'area', 'room_id')
-        # They're trying to go to the same room as another user
+        # They're trying to go to the same room as another player
         if name:
-            # go to the same room that user is in
-            per = self.world.get_user(name)
+            # go to the same room that player is in
+            per = self.world.get_player(name)
             if per:
                 if per.location:
-                    self.user.go(per.location, self.user.goto_appear, 
-                                 self.user.goto_disappear)
+                    self.pc.go(per.location, self.pc.goto_appear, 
+                                 self.pc.goto_disappear)
                 else:
-                    self.user.update_output('You can\'t reach %s.\n' % per.fancy_name())
+                    self.pc.update_output('You can\'t reach %s.\n' % per.fancy_name())
             else:
-                self.user.update_output('That person doesn\'t exist.\n')
+                self.pc.update_output('That person doesn\'t exist.\n')
         # They're trying to go to a specific room
         elif room_id:
             # See if they specified an area -- if they did, go there
             if area_name:
                 area = self.world.get_area(area_name)
                 if not area:
-                    self.user.update_output('Area "%s" doesn\'t exist.' % area_name)
+                    self.pc.update_output('Area "%s" doesn\'t exist.' % area_name)
                     return
             else:
-                if not self.user.location:
-                    self.user.update_output(message)
+                if not self.pc.location:
+                    self.pc.update_output(message)
                     return
-                area = self.user.location.area
+                area = self.pc.location.area
             room = area.get_room(room_id)
             if room:
-                self.user.go(room, self.user.goto_appear, 
-                             self.user.goto_disappear)
+                self.pc.go(room, self.pc.goto_appear, 
+                             self.pc.goto_disappear)
             else:
-                self.user.update_output('Room "%s" doesn\'t exist in area %s.' % (room_id, area.name))
+                self.pc.update_output('Room "%s" doesn\'t exist in area %s.' % (room_id, area.name))
         else:
-            self.user.update_output(message)
+            self.pc.update_output(message)
     
 
 command_list.register(Goto, ['goto'])
@@ -393,7 +393,7 @@ Or just give the direction you want to go:
                   }
         if self.alias == 'go':
             if not self.args:
-                self.user.update_output('Go in which direction?')
+                self.pc.update_output('Go in which direction?')
                 return
             if self.args in dir_map:
                 direction = dir_map[self.args]
@@ -405,23 +405,23 @@ Or just give the direction you want to go:
             else:
                 direction = self.alias
         
-        if self.user.location:
-            go_exit = self.user.location.exits.get(direction)
+        if self.pc.location:
+            go_exit = self.pc.location.exits.get(direction)
             if go_exit:
                 if go_exit._closed:
-                    self.user.update_output('The door is closed.\n')
+                    self.pc.update_output('The door is closed.\n')
                 else:
                     if go_exit.to_room:
                         if go_exit.linked_exit:
                             arrives = {'up': 'above', 'down': 'below', 'north': 'the north',
                                        'south': 'the south', 'east': 'the east', 'west': 'the west'}
-                            tell_new = '%s arrives from %s.' % (self.user.fancy_name(),
+                            tell_new = '%s arrives from %s.' % (self.pc.fancy_name(),
                                                                     arrives.get(go_exit.linked_exit))
                         else:
-                            tell_new = '%s suddenly appears in the room.' % self.user.fancy_name()
-                        tell_old = '%s leaves %s.' % (self.user.fancy_name(),
+                            tell_new = '%s suddenly appears in the room.' % self.pc.fancy_name()
+                        tell_old = '%s leaves %s.' % (self.pc.fancy_name(),
                                                              go_exit.direction)
-                        self.user.go(go_exit.to_room, tell_new, tell_old)
+                        self.pc.go(go_exit.to_room, tell_new, tell_old)
                     else:
                         # SOMETHING WENT BADLY WRONG IF WE GOT HERE!!!
                         # somehow the room that this exit pointed to got deleted without informing
@@ -430,14 +430,14 @@ Or just give the direction you want to go:
                         # Delete this exit in the database and the room - we don't want it 
                         # popping up again
                         go_exit.destruct()
-                        self.user.location.exits[go_exit.direction] = None
-                        # Tell the user to ignore the man behind the curtain
-                        self.user.location.tell_room('A disturbance was detected in the Matrix: Entity "%s exit" should not exist.\nThe anomaly has been repaired.\n' % self.args)
+                        self.pc.location.exits[go_exit.direction] = None
+                        # Tell the player to ignore the man behind the curtain
+                        self.pc.location.tell_room('A disturbance was detected in the Matrix: Entity "%s exit" should not exist.\nThe anomaly has been repaired.\n' % self.args)
                         
             else:
-                self.user.update_output('You can\'t go that way.\n')
+                self.pc.update_output('You can\'t go that way.\n')
         else:
-            self.user.update_output('You exist in a void; there is nowhere to go.\n')
+            self.pc.update_output('You exist in a void; there is nowhere to go.\n')
     
 
 command_list.register(Go, ['go', 'north', 'n', 'south', 's', 'east', 'e',
@@ -446,7 +446,7 @@ command_help.register(Go.help, ['go', 'north', 'east', 'south', 'west', 'up',
                                 'down', 'u', 'd', 'n', 'e', 's', 'w'])
 
 class Say(BaseCommand):
-    """Echo a message from the user to the room that user is in."""
+    """Echo a message from the player to the room that player is in."""
     help = (
     """Say (Command)
 The Say command sends a message to everyone in the same room (and only the
@@ -458,16 +458,16 @@ are said while they are sleeping.
     )
     def execute(self):
         if self.args:
-            if self.user.location:
-                if 'drunk' in self.user.effects:
-                    self.args = self.user.effects['drunk'].filter_speech(self.args)
-                message = '%s says, "%s"' % (self.user.fancy_name(), self.args)
+            if self.pc.location:
+                if 'drunk' in self.pc.effects:
+                    self.args = self.pc.effects['drunk'].filter_speech(self.args)
+                message = '%s says, "%s"' % (self.pc.fancy_name(), self.args)
                 message = say_color + message + clear_fcolor
-                self.user.location.tell_room(message, teller=self.user)
+                self.pc.location.tell_room(message, teller=self.pc)
             else:
-                self.user.update_output('Your words are sucked into the void.')
+                self.pc.update_output('Your words are sucked into the void.')
         else:
-            self.user.update_output('Say what?')
+            self.pc.update_output('Say what?')
     
 
 command_list.register(Say, ['say'])
@@ -492,7 +492,7 @@ To load an npc:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('What do you want to load?\n')
+            self.pc.update_output('What do you want to load?\n')
         else:
             help_message = 'Type "help load" for help on this command.\n'
             exp = r'(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))(([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+)))?'
@@ -500,55 +500,55 @@ To load an npc:
             if match:
                 obj_type, obj_id, area_name = match.group('obj_type', 'obj_id', 'area_name')
                 if not obj_type or not obj_id:
-                    self.user.update_output(help_message)
+                    self.pc.update_output(help_message)
                 else:
-                    if not area_name and self.user.location:
-                        getattr(self, 'load_' + obj_type)(obj_id, self.user.location.area)
-                    elif not area_name and self.user.mode.edit_area:
-                        getattr(self, 'load_' + obj_type)(obj_id, self.user.mode.edit_area)
+                    if not area_name and self.pc.location:
+                        getattr(self, 'load_' + obj_type)(obj_id, self.pc.location.area)
+                    elif not area_name and self.pc.mode.edit_area:
+                        getattr(self, 'load_' + obj_type)(obj_id, self.pc.mode.edit_area)
                     elif area_name and self.world.area_exists(area_name):
                         getattr(self, 'load_' + obj_type)(obj_id, self.world.get_area(area_name))
                     else:
-                        self.user.update_output('You need to specify an area to load from.\n')
+                        self.pc.update_output('You need to specify an area to load from.\n')
             else:
-                self.user.update_output(help_message)
+                self.pc.update_output(help_message)
     
     def load_npc(self, npc_id, npc_area):
-        """Load an npc into the same room as the user."""
-        if not self.user.location:
-            self.user.update_output('But you\'re in a void!')
+        """Load an npc into the same room as the player."""
+        if not self.pc.location:
+            self.pc.update_output('But you\'re in a void!')
             return
         prototype = npc_area.get_npc(npc_id)
         if prototype:
             npc = prototype.load()
-            npc.location = self.user.location
-            self.user.location.npc_add(npc)
-            self.user.update_output('You summon %s into the world.\n' % npc.name)
+            npc.location = self.pc.location
+            self.pc.location.npc_add(npc)
+            self.pc.update_output('You summon %s into the world.\n' % npc.name)
             if self.alias == 'spawn':
-                self.user.location.tell_room('%s summons %s.' % (self.user.fancy_name(), npc.name), 
-                                             [self.user.name], self.user)
+                self.pc.location.tell_room('%s summons %s.' % (self.pc.fancy_name(), npc.name), 
+                                             [self.pc.name], self.pc)
         else:
-            self.user.update_output('That npc doesn\'t exist.')
+            self.pc.update_output('That npc doesn\'t exist.')
     
     def load_item(self, item_id, item_area):
-        """Load an item into the user's inventory."""
+        """Load an item into the player's inventory."""
         prototype = item_area.get_item(item_id)
         if prototype:
             item = prototype.load()
-            self.user.item_add(item)
-            self.user.update_output('You summon %s into the world.\n' % item.name)
-            if self.user.location and (self.alias == 'spawn'):
-                self.user.location.tell_room('%s summons %s into the world.' % (self.user.fancy_name(), item.name), 
-                                                                                [self.user.name], self.user)
+            self.pc.item_add(item)
+            self.pc.update_output('You summon %s into the world.\n' % item.name)
+            if self.pc.location and (self.alias == 'spawn'):
+                self.pc.location.tell_room('%s summons %s into the world.' % (self.pc.fancy_name(), item.name), 
+                                                                                [self.pc.name], self.pc)
         else:
-            self.user.update_output('That item doesn\'t exist.\n')
+            self.pc.update_output('That item doesn\'t exist.\n')
     
 
 command_list.register(Load, ['load', 'spawn'])
 command_help.register(Load.help, ['load', 'spawn'])
 
 class Inventory(BaseCommand):
-    """Show the user their inventory."""
+    """Show the player their inventory."""
     help = (
     """<title>Inventory (command)</title>
 The Inventory command shows a player to see a list of items in their inventory.
@@ -558,14 +558,14 @@ The Inventory command shows a player to see a list of items in their inventory.
     """
     )
     def execute(self):
-        if not self.user.inventory:
-            self.user.update_output('Your inventory is empty.\n')
+        if not self.pc.inventory:
+            self.pc.update_output('Your inventory is empty.\n')
         else:
             i = 'Your inventory consists of:\n'
-            for item in self.user.inventory:
-                if item not in self.user.isequipped:
+            for item in self.pc.inventory:
+                if item not in self.pc.isequipped:
                     i += item.name + '\n'
-            self.user.update_output(i)
+            self.pc.update_output(i)
     
 
 command_list.register(Inventory, ['i', 'inventory', 'inv'])
@@ -584,31 +584,31 @@ give <item-keyword> to <npc/player-name>
         exp = r'(?P<thing>.*?)([ ]to[ ])(?P<givee>\w+)'
         match = re.match(exp, self.args, re.I)
         if not match:
-            self.user.update_output('Type "help give" for help on this command.\n')
-        elif not self.user.location:
-            self.user.update_output('You are alone in the void; there\'s no one to give anything to.\n')
+            self.pc.update_output('Type "help give" for help on this command.\n')
+        elif not self.pc.location:
+            self.pc.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
             thing, person = match.group('thing', 'givee')
-            givee = self.user.location.get_user(person)
+            givee = self.pc.location.get_player(person)
             if not givee:
-                givee = self.user.location.get_npc_by_kw(person)
+                givee = self.pc.location.get_npc_by_kw(person)
                 if not givee:
-                    self.user.update_output('%s isn\'t here.' % person.capitalize())
+                    self.pc.update_output('%s isn\'t here.' % person.capitalize())
                     return
-            item = self.user.check_inv_for_keyword(thing)
+            item = self.pc.check_inv_for_keyword(thing)
             if not item:
-                self.user.update_output('You don\'t have %s.' % thing)
+                self.pc.update_output('You don\'t have %s.' % thing)
             else:
-                self.user.item_remove(item)
+                self.pc.item_remove(item)
                 givee.item_add(item)
-                self.user.update_output('You give %s to %s.' % (item.name, givee.fancy_name()))
-                givee.update_output('%s gives you %s.' % (self.user.fancy_name(), item.name))
-                self.user.location.tell_room('%s gives %s to %s.' % (self.user.fancy_name(),
+                self.pc.update_output('You give %s to %s.' % (item.name, givee.fancy_name()))
+                givee.update_output('%s gives you %s.' % (self.pc.fancy_name(), item.name))
+                self.pc.location.tell_room('%s gives %s to %s.' % (self.pc.fancy_name(),
                                                                       item.name,
                                                                       givee.fancy_name()),
-                                            [self.user.name, givee.name])
+                                            [self.pc.name, givee.name])
                 if givee.is_npc():
-                    givee.notify('given_item', {'giver': self.user, 
+                    givee.notify('given_item', {'giver': self.pc, 
                                                 'item': item})
     
 
@@ -616,7 +616,7 @@ command_list.register(Give, ['give'])
 command_help.register(Give.help, ['give'])
 
 class Drop(BaseCommand):
-    """Drop an item from the user's inventory into the user's current room."""
+    """Drop an item from the player's inventory into the player's current room."""
     help = (
     """<title>Drop (Command)</title>
 The Drop command allows you to drop an item from your inventory onto the ground.
@@ -626,28 +626,28 @@ The Drop command allows you to drop an item from your inventory onto the ground.
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('What do you want to drop?\n')
+            self.pc.update_output('What do you want to drop?\n')
         else:
-            item = self.user.check_inv_for_keyword(self.args)
+            item = self.pc.check_inv_for_keyword(self.args)
             if item:
-                self.user.item_remove(item)
-                self.user.update_output('You drop %s.\n' % item.name)
-                if self.user.location:
-                    self.user.location.item_add(item)
-                    self.user.location.tell_room('%s drops %s.\n' % (self.user.fancy_name(), 
-                                                                     item.name), [self.user.name])
+                self.pc.item_remove(item)
+                self.pc.update_output('You drop %s.\n' % item.name)
+                if self.pc.location:
+                    self.pc.location.item_add(item)
+                    self.pc.location.tell_room('%s drops %s.\n' % (self.pc.fancy_name(), 
+                                                                     item.name), [self.pc.name])
                 else:
-                    self.user.update_output('%s disappears into the void.\n' % item.name)
+                    self.pc.update_output('%s disappears into the void.\n' % item.name)
                     item.destruct()
             else:
-                self.user.update_output('You don\'t have that.\n')
+                self.pc.update_output('You don\'t have that.\n')
     
 
 command_list.register(Drop, ['drop'])
 command_help.register(Drop.help, ['drop'])
 
 class Get(BaseCommand):
-    """Get an item and store it in the user's inventory."""
+    """Get an item and store it in the player's inventory."""
     help = (
     """Get (Command)
 The Get command is used to transfer an item from the room into your inventory,
@@ -675,12 +675,12 @@ take anything out of them. For help with opening containers, see "help open".
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('What do you want to get?\n')
+            self.pc.update_output('What do you want to get?\n')
             return
         exp = r'(up[ ]+)?((?P<target_kw>(\w|[ ])+)([ ]+from)([ ]+(?P<source_kw>(\w|[ ])+)))|((up[ ]+)?(?P<item_kw>(\w|[ ])+))'
         match = re.match(exp, self.args, re.I)
         if not match:
-            self.user.update_output('Type "help get" for help with this command.')
+            self.pc.update_output('Type "help get" for help with this command.')
             return
         target_kw, source_kw, item_kw = match.group('target_kw', 'source_kw', 
                                                     'item_kw')
@@ -688,11 +688,11 @@ take anything out of them. For help with opening containers, see "help open".
             message = self.get_item_from_container(source_kw, target_kw)
         else:
             message = self.get_item_from_room(item_kw)
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
     def get_item_from_container(self, source_kw, target_kw):
-        c_item = self.user.location.check_for_keyword(source_kw) or \
-                    self.user.check_inv_for_keyword(source_kw)
+        c_item = self.pc.location.check_for_keyword(source_kw) or \
+                    self.pc.check_inv_for_keyword(source_kw)
         if not c_item:
             return '"%s" doesn\'t exist.' % source_kw
         if not c_item.is_container():
@@ -703,29 +703,29 @@ take anything out of them. For help with opening containers, see "help open".
         item = container.get_item_by_kw(target_kw)
         if not item:
             return '%s doesn\'t exist.' % target_kw.capitalize()
-        if item.carryable or (self.user.permissions & GOD):
+        if item.carryable or (self.pc.permissions & GOD):
             container.item_remove(item)
-            self.user.item_add(item)
-            if self.user.location:
-                room_tell = '%s gets %s from %s.\n' % (self.user.fancy_name(),
+            self.pc.item_add(item)
+            if self.pc.location:
+                room_tell = '%s gets %s from %s.\n' % (self.pc.fancy_name(),
                                                        item.name, c_item.name)
-                self.user.location.tell_room(room_tell, [self.user.name])
+                self.pc.location.tell_room(room_tell, [self.pc.name])
             return 'You get %s.' % item.name
         else:
             return 'You can\'t take that.'
     
     def get_item_from_room(self, item_kw):
-        if not self.user.location:
+        if not self.pc.location:
             return 'Only cold blackness exists in the void. ' +\
                    'It\'s not the sort of thing you can take.'
-        item = self.user.location.get_item_by_kw(item_kw)
+        item = self.pc.location.get_item_by_kw(item_kw)
         if not item:
             return '%s doesn\'t exist.' % item_kw
-        if item.carryable or (self.user.permissions & GOD):
-            self.user.location.item_remove(item)
-            self.user.item_add(item)
-            room_tell = '%s gets %s.' % (self.user.fancy_name(), item.name)
-            self.user.location.tell_room(room_tell, [self.user.name])
+        if item.carryable or (self.pc.permissions & GOD):
+            self.pc.location.item_remove(item)
+            self.pc.item_add(item)
+            room_tell = '%s gets %s.' % (self.pc.fancy_name(), item.name)
+            self.pc.location.tell_room(room_tell, [self.pc.name])
             return 'You get %s.' % item.name
         else:
             return 'You can\'t take that.'
@@ -750,48 +750,48 @@ To put an item inside a container:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Put what where?')
+            self.pc.update_output('Put what where?')
             return
         exp = r'(?P<target_kw>(\w|[ ])+)([ ]+(?P<prep>(in)|(inside)|(on)))(?P<container>(\w|[ ])+)'
         match = re.match(exp, self.args.lower().strip())
         if not match:
-            self.user.update_output('Type "help put" for help with this command.')
+            self.pc.update_output('Type "help put" for help with this command.')
             return
         target_kw, preposition, cont_kw = match.group('target_kw', 
                                                       'prep', 
                                                       'container')
-        target = self.user.check_inv_for_keyword(target_kw)
+        target = self.pc.check_inv_for_keyword(target_kw)
         if not target:
-            self.user.update_output('You don\'t have "%s".' % target_kw)
+            self.pc.update_output('You don\'t have "%s".' % target_kw)
             return
-        container = self.user.check_inv_for_keyword(cont_kw)
+        container = self.pc.check_inv_for_keyword(cont_kw)
         # Make sure the container object exists
         if not container:
-            if self.user.location:
-                container = self.user.location.get_item_by_kw(cont_kw)
+            if self.pc.location:
+                container = self.pc.location.get_item_by_kw(cont_kw)
                 if not container:
-                    self.user.update_output('%s isn\'t here.' % cont_kw)
+                    self.pc.update_output('%s isn\'t here.' % cont_kw)
                     return
         # Make sure it's a container
         if not container.is_container():
-            self.user.update_output('%s is not a container.' % 
+            self.pc.update_output('%s is not a container.' % 
                                     container.name.capitalize())
             return
         c_type = container.item_types['container']
         if c_type.closed:
-            self.user.update_output('It\'s closed.')
+            self.pc.update_output('It\'s closed.')
             return
         if c_type.item_add(target):
-            self.user.update_output('You put %s %s %s.' % (target.name,
+            self.pc.update_output('You put %s %s %s.' % (target.name,
                                                            preposition,
                                                            container.name))
-            if self.user.location:
-                tr = '%s puts %s %s %s.' % (self.user.fancy_name(), 
+            if self.pc.location:
+                tr = '%s puts %s %s %s.' % (self.pc.fancy_name(), 
                                             target.name, preposition,
                                             container.name)
-                self.user.location.tell_room(tr, [self.user.name])
+                self.pc.location.tell_room(tr, [self.pc.name])
         else:
-            self.user.update_output('%s won\'t fit %s %s.' % (target.name.capitalize(),
+            self.pc.update_output('%s won\'t fit %s %s.' % (target.name.capitalize(),
                                                               preposition,
                                                               container.name))
     
@@ -800,7 +800,7 @@ command_list.register(Put, ['put'])
 command_help.register(Put.help, ['put'])
 
 class Equip(BaseCommand):
-    """Equip an item from the user's inventory."""
+    """Equip an item from the player's inventory."""
     help = (
     """<title>Equip (Command)</title>
 The equip command allows you to wear or hold an item that can be worn or held. 
@@ -819,7 +819,7 @@ To equip an item in your inventory, type
         if not self.args:
             #Note: Does not output slot types in any order.
             message = 'Equipped items:'
-            for i, j in self.user.equipped.iteritems():
+            for i, j in self.pc.equipped.iteritems():
                 message += '\n' + i + ': '
                 if j:
                     message += j.name
@@ -827,7 +827,7 @@ To equip an item in your inventory, type
                     message += 'None.'
             message += '\n'
         else:
-            item = self.user.check_inv_for_keyword(self.args)
+            item = self.pc.check_inv_for_keyword(self.args)
             if not item:
                 message = 'You don\'t have it.\n'
             else:
@@ -837,13 +837,13 @@ To equip an item in your inventory, type
                 elif equip_type.equip_slot not in SLOT_TYPES:
                     message = 'How do you equip that?'
                 else:
-                    if self.user.equipped.get(equip_type.equip_slot): #if slot not empty
-                        self.user.isequipped.remove(item)   #remove item in slot
-                    self.user.equipped[equip_type.equip_slot] = item
-                    self.user.isequipped += [item]
+                    if self.pc.equipped.get(equip_type.equip_slot): #if slot not empty
+                        self.pc.isequipped.remove(item)   #remove item in slot
+                    self.pc.equipped[equip_type.equip_slot] = item
+                    self.pc.isequipped += [item]
                     equip_type.on_equip()
                     message = SLOT_TYPES[equip_type.equip_slot].replace('#item', item.name) + '\n'
-        self.user.update_output(message)  
+        self.pc.update_output(message)  
     
 
 command_list.register(Equip, ['equip', 'wear', 'wield'])
@@ -862,7 +862,7 @@ see <b>help equip</b>
     """
     )
     def execute(self):
-        item = self.user.check_inv_for_keyword(self.args)
+        item = self.pc.check_inv_for_keyword(self.args)
         message = ''
         if not self.args:
             message = 'What do you want to unequip?\n'
@@ -871,21 +871,21 @@ see <b>help equip</b>
         equip_type = item.item_types.get('equippable')
         if not equip_type:
             message = 'That item is not equippable.\n'
-        elif not self.user.equipped[equip_type.equip_slot]:
+        elif not self.pc.equipped[equip_type.equip_slot]:
             message = 'You aren\'t using anything in that slot.\n'
         else:
-            self.user.equipped[equip_type.equip_slot] = ''
-            self.user.isequipped.remove(item)
+            self.pc.equipped[equip_type.equip_slot] = ''
+            self.pc.isequipped.remove(item)
             equip_type.on_unequip()
             message = 'You remove ' + item.name + '.\n'
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
 
 command_list.register(Unequip, ['unequip'])
 command_help.register(Unequip.help, ['unequip'])
 
 class Who(BaseCommand):
-    """Return a list of names comprised of users who are currently playing the game."""
+    """Return a list of names comprised of players who are currently playing the game."""
     help = (
     """Who (Command)
 The Who command returns a list of all the players currently in the game.
@@ -894,7 +894,7 @@ The Who command returns a list of all the players currently in the game.
     """
     )
     def execute(self):
-        persons = [per for per in self.world.user_list.values() if isinstance(per.name, str)]
+        persons = [per for per in self.world.player_list.values() if isinstance(per.name, str)]
         message = 'Currently Online'.center(50, '-') + '\n'
         for per in persons:
             if per.permissions > PLAYER:
@@ -914,7 +914,7 @@ The Who command returns a list of all the players currently in the game.
             else:
                 message += '%s - %s\n' % (per.fancy_name(), per.title)
         message += '-'.center(50, '-')
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
 
 command_list.register(Who, ['who'])
@@ -931,44 +931,44 @@ The Enter Command allows a character to enter a portal object.
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Enter what?\n')
+            self.pc.update_output('Enter what?\n')
             return
         fail = 'You don\'t see "%s" here.' % self.args
-        if self.user.location:
+        if self.pc.location:
             # Check the room for the portal object first
-            obj = self.user.location.get_item_by_kw(self.args)
+            obj = self.pc.location.get_item_by_kw(self.args)
             if obj:
                 if 'portal' in obj.item_types:
                     self.go_portal(obj.item_types['portal'])
                 else:
-                    self.user.update_output('%s is not a portal.' % obj.name.capitalize())
+                    self.pc.update_output('%s is not a portal.' % obj.name.capitalize())
             else:
                 # If the portal isn't in the room, check their inventory
-                obj = self.user.check_inv_for_keyword(self.args)
+                obj = self.pc.check_inv_for_keyword(self.args)
                 if obj:
                     if 'portal' in obj.item_types:
                         # If the portal is in their inventory, make them drop it first
                         # (a portal can't go through itself)
-                        Drop(self.user, self.args, 'drop').execute()
+                        Drop(self.pc, self.args, 'drop').execute()
                         self.go_portal(obj.item_types['portal'])
                     else:
-                        self.user.update_output('%s is not a portal.' % obj.name.capitalize())
+                        self.pc.update_output('%s is not a portal.' % obj.name.capitalize())
                 else:
-                    # We've struck out an all counts -- the user doesn't have a portal
-                    self.user.update_output(fail)
+                    # We've struck out an all counts -- the player doesn't have a portal
+                    self.pc.update_output(fail)
     
     def go_portal(self, portal):
         """Go through a portal."""
         if portal.location:
-            if self.user.location: 
-                self.user.location.tell_room(self.personalize(portal.leave_message, self.user), 
-                                             [self.user.name])
-            self.user.update_output(self.personalize(portal.entrance_message, self.user))
-            self.user.go(portal.location)
-            self.user.location.tell_room(self.personalize(portal.emerge_message, self.user), 
-                                         [self.user.name])
+            if self.pc.location: 
+                self.pc.location.tell_room(self.personalize(portal.leave_message, self.pc), 
+                                             [self.pc.name])
+            self.pc.update_output(self.personalize(portal.entrance_message, self.pc))
+            self.pc.go(portal.location)
+            self.pc.location.tell_room(self.personalize(portal.emerge_message, self.pc), 
+                                         [self.pc.name])
         else:
-            self.user.update_output('Nothing happened. It must be a dud.')
+            self.pc.update_output('Nothing happened. It must be a dud.')
     
 
 command_list.register(Enter, ['enter'])
@@ -991,21 +991,21 @@ To purge your inventory:
     def execute(self):
         if not self.args:
             # If they specified nothing, just purge the room
-            if self.user.location:
-                self.user.location.purge_room()
-                self.user.update_output('The room has been purged.\n')
+            if self.pc.location:
+                self.pc.location.purge_room()
+                self.pc.update_output('The room has been purged.\n')
             else:
-                self.user.update_output('You\'re in a void, there\'s nothing to purge.\n')
+                self.pc.update_output('You\'re in a void, there\'s nothing to purge.\n')
         elif self.args in ['i', 'inventory']:
             # Purge their inventory!
-            for i in range(len(self.user.inventory)):
-                item = self.user.inventory[0]
-                self.user.item_remove(item)
+            for i in range(len(self.pc.inventory)):
+                item = self.pc.inventory[0]
+                self.pc.item_remove(item)
                 item.destruct()
-            self.user.update_output('Your inventory has been purged.\n')
+            self.pc.update_output('Your inventory has been purged.\n')
         else:
             # Purge a specific npc or item based on keyword
-            self.user.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
+            self.pc.update_output('Someone didn\'t endow me with the functionality to purge that for you.\n')
     
 
 command_list.register(Purge, ['purge'])
@@ -1028,7 +1028,7 @@ suggested level range.
         else:
             message += '\n'.join(the_areas)
         message += '\n' + ('-' * 50)
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
 
 command_list.register(Areas, ['areas'])
@@ -1059,12 +1059,12 @@ Anyone in the same room would then see the following:
     aliases = ['emote']
     aliases.extend(EMOTES.keys())
     def execute(self):
-        if not self.user.location:
-            self.user.update_output('You try, but the action gets sucked into the void. The void apologizes.')
+        if not self.pc.location:
+            self.pc.update_output('You try, but the action gets sucked into the void. The void apologizes.')
         elif self.alias == 'emote':
-            self.user.location.tell_room('%s %s' % (self.user.fancy_name(),
+            self.pc.location.tell_room('%s %s' % (self.pc.fancy_name(),
                                                     self.args), 
-                                         teller=self.user)
+                                         teller=self.pc)
         else:
             emote_list = EMOTES[self.alias]
             # The person didn't specify a target -- they want to do the emote
@@ -1076,41 +1076,41 @@ Anyone in the same room would then see the following:
             elif self.args and not emote_list[1]:
                 self.single_person_emote(emote_list)
             else:
-                victim = self.user.location.get_user(self.args.lower()) or\
-                         self.user.location.get_npc_by_kw(self.args.lower()) or\
-                         self.world.get_user(self.args.lower())
+                victim = self.pc.location.get_player(self.args.lower()) or\
+                         self.pc.location.get_npc_by_kw(self.args.lower()) or\
+                         self.world.get_player(self.args.lower())
                 if not victim:
-                    # victim = self.world.get_user(self.args.lower())
+                    # victim = self.world.get_player(self.args.lower())
                     # if not victim:                        
-                    self.user.update_output('%s isn\'t here.' % 
+                    self.pc.update_output('%s isn\'t here.' % 
                                             self.args.capitalize())
-                elif victim == self.user:
+                elif victim == self.pc:
                     self.single_person_emote(emote_list)
                 else:
                     self.double_person_emote(emote_list, victim)
     
     def single_person_emote(self, emote_list):
         """A player wishes to emote an action alone."""
-        actor_m = self.personalize(emote_list[0][0], self.user)
-        room_m = self.personalize(emote_list[0][1], self.user)
-        self.user.update_output(actor_m)
-        self.user.location.tell_room(room_m, [self.user.name])
+        actor_m = self.personalize(emote_list[0][0], self.pc)
+        room_m = self.personalize(emote_list[0][1], self.pc)
+        self.pc.update_output(actor_m)
+        self.pc.location.tell_room(room_m, [self.pc.name])
     
     def double_person_emote(self, emote_list, victim):
         """A player wishes to emote an action on a target."""
         # We got this far, we know the victim exists in the world
-        actor = self.personalize(emote_list[1][0], self.user, victim)
-        victimm = self.personalize(emote_list[1][1], self.user, victim)
-        if victim.location == self.user.location:
-            room_m = self.personalize(emote_list[1][2], self.user, victim)
-            self.user.update_output(actor)
+        actor = self.personalize(emote_list[1][0], self.pc, victim)
+        victimm = self.personalize(emote_list[1][1], self.pc, victim)
+        if victim.location == self.pc.location:
+            room_m = self.personalize(emote_list[1][2], self.pc, victim)
+            self.pc.update_output(actor)
             victim.update_output(victimm)
-            self.user.location.tell_room(room_m, [self.user.name, victim.name])
+            self.pc.location.tell_room(room_m, [self.pc.name, victim.name])
         else:
-            self.user.update_output('From far away, ' + actor)
+            self.pc.update_output('From far away, ' + actor)
             victim.update_output('From far away, ' + victimm)
         if victim.is_npc():
-            victim.notify('emoted', {'emote': self.alias, 'emoter': self.user})
+            victim.notify('emoted', {'emote': self.alias, 'emoter': self.pc})
     
 
 command_list.register(Emote, Emote.aliases)
@@ -1148,39 +1148,39 @@ permissions and permission groups, see "help permissions".
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Bestow what authority upon whom?\n')
+            self.pc.update_output('Bestow what authority upon whom?\n')
             return
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(to)?(on)?(upon)?([ ]+(?P<npc>npc))?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help bestow" for help on this command.')
+            self.pc.update_output('Type "help bestow" for help on this command.')
             return
         perm, npc, player = match.group('permission', 'npc', 'player')
         if npc:
             error = 'Npc doesn\'t exist.'
-            if not self.user.location:
-                self.user.update_output(error)
+            if not self.pc.location:
+                self.pc.update_output(error)
                 return
-            user = self.user.location.get_npc_by_kw(player)
-            self.user.update_output('WARNING: giving npcs wider permissions can be dangerous. See "help bestow".')
+            player = self.pc.location.get_npc_by_kw(player)
+            self.pc.update_output('WARNING: giving npcs wider permissions can be dangerous. See "help bestow".')
         else:
-            user = self.world.get_user(player)
+            player = self.world.get_player(player)
         permission = globals().get(perm.upper())
-        if not user:
-            self.user.update_output('That player isn\'t on right now.')
+        if not player:
+            self.pc.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
+            self.pc.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
-        if user.permissions & permission:
-            self.user.update_output('%s already has that authority.' % user.fancy_name())
+        if player.permissions & permission:
+            self.pc.update_output('%s already has that authority.' % player.fancy_name())
             return
-        user.permissions = user.permissions | permission
-        self.user.update_output('%s now has the privilige of being %s.' % (user.fancy_name(), perm.upper()))
-        user.update_output('%s has bestowed the authority of %s upon you!' % (self.user.fancy_name(), perm.upper()))
-        self.world.tell_users('%s has bestowed the authority of %s upon %s!' %
-                              (self.user.fancy_name(), perm.upper(), user.fancy_name()),
-                              [self.user.name, user.name])
+        player.permissions = player.permissions | permission
+        self.pc.update_output('%s now has the privilige of being %s.' % (player.fancy_name(), perm.upper()))
+        player.update_output('%s has bestowed the authority of %s upon you!' % (self.pc.fancy_name(), perm.upper()))
+        self.world.tell_players('%s has bestowed the authority of %s upon %s!' %
+                              (self.pc.fancy_name(), perm.upper(), player.fancy_name()),
+                              [self.pc.name, player.name])
     
 
 command_list.register(Bestow, ['bestow'])
@@ -1191,7 +1191,7 @@ class Revoke(BaseCommand):
     required_permissions = GOD
     help = (
     """<title>Revoke (Command)</title>
-The revoke command allows you to revoke the priviliges of other users.
+The revoke command allows you to revoke the priviliges of other players.
 \nRequired Permissions: GOD
 \nUSAGE:
   revoke <permission-group> [from/for] <player-name>
@@ -1206,34 +1206,34 @@ permissions and permission groups, see "help permissions".
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Revoke whose authority over what?\n')
+            self.pc.update_output('Revoke whose authority over what?\n')
             return
         exp = r'(?P<permission>(god)|(dm)|(builder)|(admin))[ ]?(from)?(on)?(for)?([ ]+(?P<player>\w+))'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help revoke" for help on this command.')
+            self.pc.update_output('Type "help revoke" for help on this command.')
             return
         perm, player = match.group('permission', 'player')
-        if self.user.location:
-            npc = self.user.location.get_npc_by_kw(player)
-        user = self.world.get_user(player) or npc
+        if self.pc.location:
+            npc = self.pc.location.get_npc_by_kw(player)
+        player = self.world.get_player(player) or npc
         permission = globals().get(perm.upper())
-        if not user:
-            self.user.update_output('That player isn\'t on right now.')
+        if not player:
+            self.pc.update_output('That player isn\'t on right now.')
             return
         if not permission:
-            self.user.update_output('Valid permission types are: god, dm, builder, and admin.')
+            self.pc.update_output('Valid permission types are: god, dm, builder, and admin.')
             return
-        if not (user.permissions & permission):
-            self.user.update_output('%s doesn\'t have that authority anyway.' % user.fancy_name())
+        if not (player.permissions & permission):
+            self.pc.update_output('%s doesn\'t have that authority anyway.' % player.fancy_name())
             return
-        user.permissions = user.permissions ^ permission
-        self.user.update_output('%s has had the privilige of %s revoked.' % (user.fancy_name(), perm))
-        user.update_output('%s has revoked your %s priviliges.' % (self.user.fancy_name(), perm))
-        if not user.is_npc():
-            if user.get_mode() == 'BuildMode':
-                user.set_mode('normal')
-                user.update_output('You have been kicked from BuildMode.')
+        player.permissions = player.permissions ^ permission
+        self.pc.update_output('%s has had the privilige of %s revoked.' % (player.fancy_name(), perm))
+        player.update_output('%s has revoked your %s priviliges.' % (self.pc.fancy_name(), perm))
+        if not player.is_npc():
+            if player.get_mode() == 'BuildMode':
+                player.set_mode('normal')
+                player.update_output('You have been kicked from BuildMode.')
     
 
 command_list.register(Revoke, ['revoke'])
@@ -1262,17 +1262,17 @@ see "help spawns".""")
     
     def execute(self):
         if not self.args:
-            # Reset the room the user is in
-            if self.user.location:
-                self.user.location.reset()
-                self.user.update_output('Room %s has been reset.\n' % self.user.location.id)
+            # Reset the room the player is in
+            if self.pc.location:
+                self.pc.location.reset()
+                self.pc.update_output('Room %s has been reset.\n' % self.pc.location.id)
             else:
-                self.user.update_output('That\'s a pretty useless thing to do in the void.\n')
+                self.pc.update_output('That\'s a pretty useless thing to do in the void.\n')
         else:
             exp = r'(room[ ]+(?P<room_id>\d+)([ ]+in)?([ ]+area)?([ ]+(?P<room_area>\w+))?)|(area[ ]+(?P<area>\w+))'
             match = re.match(exp, self.args, re.I)
             if not match:
-                self.user.update_output('Type "help reset" to get help with this command.\n')
+                self.pc.update_output('Type "help reset" to get help with this command.\n')
                 return
             room_id, room_area, area = match.group('room_id', 'room_area', 'area')
             if area:
@@ -1280,29 +1280,29 @@ see "help spawns".""")
                 reset_area = self.world.get_area(area)
                 if reset_area:
                     reset_area.reset()
-                    self.user.update_output('Area %s has been reset.\n' % reset_area.name)
+                    self.pc.update_output('Area %s has been reset.\n' % reset_area.name)
                     return
                 else:
-                    self.user.update_output('That area doesn\'t exist.\n')
+                    self.pc.update_output('That area doesn\'t exist.\n')
                     return
             # Reset a single room
             if room_area:
                 area = self.world.get_area(room_area)
                 if not area:
-                    self.user.update_output('That area doesn\'t exist.\n')
+                    self.pc.update_output('That area doesn\'t exist.\n')
                     return
             else:
-                if self.user.location:
-                    area = self.user.location.area
+                if self.pc.location:
+                    area = self.pc.location.area
                 else:
-                    self.user.update_output('Type "help resets" to get help with this command.\n')
+                    self.pc.update_output('Type "help resets" to get help with this command.\n')
                     return
             room = area.get_room(room_id)
             if not room:
-                self.user.update_output('Room %s doesn\'t exist in area %s.\n' % (room_id, 
+                self.pc.update_output('Room %s doesn\'t exist in area %s.\n' % (room_id, 
                                                                                   area.name))
             room.reset()
-            self.user.update_output('Room %s in area %s has been reset.\n' % (room.id, area.name))
+            self.pc.update_output('Room %s in area %s has been reset.\n' % (room.id, area.name))
     
 
 command_list.register(Reset, ['reset'])
@@ -1314,15 +1314,15 @@ class Help(BaseCommand):
     )
     def execute(self):
         # get the help parameter and see if it matches a command_help alias
-        #     if so, send user the help string
+        #     if so, send player the help string
         #     return
         # else, look up in database
-        #     if there is a match, send the help string to the user
+        #     if there is a match, send the help string to the player
         #     return
-        # else, send "I can't help you with that" string to user
+        # else, send "I can't help you with that" string to player
         # return
         if not self.args:
-            self.user.update_output(self.help)
+            self.pc.update_output(self.help)
             return
         help = command_help[self.args]
         if help:
@@ -1333,16 +1333,16 @@ class Help(BaseCommand):
             help = help.replace('<title>', help_title).replace('</title>',
                                                                CLEAR + '\n')
             help = re.sub(r'</\w+>', CLEAR, help)
-            self.user.update_output(help)
+            self.pc.update_output(help)
         else:
-            self.user.update_output("Sorry, I can't help you with that.\n")
+            self.pc.update_output("Sorry, I can't help you with that.\n")
     
 
 command_list.register(Help, ['help', 'explain', 'describe'])
 command_help.register(Help.help, ['help', 'explain', 'describe'])
 
 class Clear(BaseCommand):
-    """Clear the user's screen and give them a new prompt."""
+    """Clear the player's screen and give them a new prompt."""
     help = (
     """Clear (command)
 Clears your screen of text and gives you a new prompt.
@@ -1352,7 +1352,7 @@ Clears your screen of text and gives you a new prompt.
         # First send the ANSI command to clear the entire screen, then
         # send the ANSI command to move the cursor to the "home" position 
         # (the upper left position in the terminal)
-        self.user.update_output('\x1b[2J' + '\x1b[H')
+        self.pc.update_output('\x1b[2J' + '\x1b[H')
     
 
 command_list.register(Clear, ['clear'])
@@ -1373,7 +1373,7 @@ Options you can set:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('What do you want to set?\n')
+            self.pc.update_output('What do you want to set?\n')
         else:
             match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
             if not match:
@@ -1381,9 +1381,9 @@ Options you can set:
             else:
                 func, _, arg = match.groups()
                 message = 'You can\'t set that.\n'
-                if hasattr(self.user, 'set_' + func):
-                    message = (getattr(self.user, 'set_' + func)(arg))
-                self.user.update_output(message)
+                if hasattr(self.pc, 'set_' + func):
+                    message = (getattr(self.pc, 'set_' + func)(arg))
+                self.pc.update_output(message)
     
 
 command_list.register(Set, ['set', 'cset'])
@@ -1405,36 +1405,36 @@ with "close."
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Open what?')
+            self.pc.update_output('Open what?')
             return
         exp = r'(?P<dir>(north)|(south)|(east)|(west)|(up)|(down))|(?P<kw>(\w|[ ])+)'
         match = re.match(exp, self.args.lower(), re.I)
         if not match:
-            self.user.update_output('Type "help open" for help with this command.')
+            self.pc.update_output('Type "help open" for help with this command.')
             return
         direction, kw = match.group('dir', 'kw')
         if direction:
             message = self.toggle_door(direction, self.alias)
         elif kw:
             message = self.toggle_container(kw, self.alias)
-        self.user.update_output(message)
+        self.pc.update_output(message)
     
     def toggle_door(self, direction, toggle):
-        if not self.user.location:
+        if not self.pc.location:
             return 'There aren\'t any doors in the void.'
-        exit = self.user.location.exits.get(direction)
+        exit = self.pc.location.exits.get(direction)
         if not exit:
             return 'There isn\'t a door there.'
         if toggle == 'open' or toggle == 'unlock':
-            return exit.open_me(self.user)
+            return exit.open_me(self.pc)
         else:
-            return exit.close_me(self.user)
+            return exit.close_me(self.pc)
     
     def toggle_container(self, kw, toggle):
-        obj = self.user.check_inv_for_keyword(kw)
+        obj = self.pc.check_inv_for_keyword(kw)
         # if nothing in inventory, check room
         if not obj:
-            obj = self.user.location.get_item_by_kw(kw)
+            obj = self.pc.location.get_item_by_kw(kw)
             if not obj:
                 return 'You don\'t see that here.'
         if not obj.is_container():
@@ -1472,13 +1472,13 @@ to lock (and close) a door, try
         dir_map = {'n':'north', 's':'south', 'e':'east', 'w':'west', 'u':'up', 'd':'down'}
         direction = dir_map.get(self.args[0].lower())
         if not direction:
-            self.user.update_output('Try "help lock" for help with this command')
+            self.pc.update_output('Try "help lock" for help with this command')
             return
-        if self.user.location.exits[direction]:
-            message = self.user.location.exits[direction].lock_me(self.user)
-            self.user.update_output(message)
+        if self.pc.location.exits[direction]:
+            message = self.pc.location.exits[direction].lock_me(self.pc)
+            self.pc.update_output(message)
             return
-        self.user.update_output("There is nothing to lock in that direction")
+        self.pc.update_output("There is nothing to lock in that direction")
         return
 
 command_list.register(Lock, ['lock'])
@@ -1495,7 +1495,7 @@ class Version(BaseCommand):
     )
     
     def execute(self):
-        self.user.update_output(self.help)
+        self.pc.update_output(self.help)
     
 
 command_list.register(Version, ['version', 'credit', 'credits'])
@@ -1514,45 +1514,45 @@ To sit on furniture:
     """
     )
     def execute(self):
-        if self.user.position[0].find(self.alias) != -1:
-            self.user.update_output('You are already sitting.')
+        if self.pc.position[0].find(self.alias) != -1:
+            self.pc.update_output('You are already sitting.')
             return
         if not self.args:
-            if self.user.position[0] == 'sleeping':
-                self.user.update_output('You wake and sit up.')
-                if self.user.location:
-                    self.user.location.tell_room('%s wakes and sits up.' % self.user.fancy_name(), [self.user.name], self.user)
-                self.user.change_position('sitting', self.user.position[1])
+            if self.pc.position[0] == 'sleeping':
+                self.pc.update_output('You wake and sit up.')
+                if self.pc.location:
+                    self.pc.location.tell_room('%s wakes and sits up.' % self.pc.fancy_name(), [self.pc.name], self.pc)
+                self.pc.change_position('sitting', self.pc.position[1])
             else:
-                self.user.update_output('You sit down.')
-                if self.user.location:
-                    self.user.location.tell_room('%s sits down.' % self.user.fancy_name(), [self.user.name], self.user)
-                self.user.change_position('sitting')
+                self.pc.update_output('You sit down.')
+                if self.pc.location:
+                    self.pc.location.tell_room('%s sits down.' % self.pc.fancy_name(), [self.pc.name], self.pc)
+                self.pc.change_position('sitting')
         else:
-            if not self.user.location:
-                self.user.update_output('The void is bereft of anything to sit on.')
+            if not self.pc.location:
+                self.pc.update_output('The void is bereft of anything to sit on.')
                 return
             exp = r'((on)|(in))?([ ]?)?(?P<furn>(\w|[ ])+)'
             furn_kw = re.match(exp, self.args.lower().strip()).group('furn')
-            furn = self.user.location.get_item_by_kw(furn_kw)
+            furn = self.pc.location.get_item_by_kw(furn_kw)
             if not furn:
-                self.user.update_output('You don\'t see that here.')
+                self.pc.update_output('You don\'t see that here.')
                 return
             f_obj = furn.item_types.get('furniture')
             if not f_obj:
-                self.user.update_output('That\'s not a type of furniture.')
+                self.pc.update_output('That\'s not a type of furniture.')
                 return
-            if not f_obj.user_add(self.user):
-                self.user.update_output('It\'s full right now.')
+            if not f_obj.player_add(self.pc):
+                self.pc.update_output('It\'s full right now.')
                 return
             else:
-                if self.user.position[1]:
-                    self.user.position[1].item_types['furniture'].user_remove(self.user)
-                f_obj.user_add(self.user)
-                self.user.position = ('sitting', furn)
-                self.user.update_output('You sit down on %s.' % furn.name)
-                self.user.location.tell_room('%s sits down on %s.' % (self.user.fancy_name(), furn.name), 
-                                             [self.user.name], self.user)
+                if self.pc.position[1]:
+                    self.pc.position[1].item_types['furniture'].player_remove(self.pc)
+                f_obj.player_add(self.pc)
+                self.pc.position = ('sitting', furn)
+                self.pc.update_output('You sit down on %s.' % furn.name)
+                self.pc.location.tell_room('%s sits down on %s.' % (self.pc.fancy_name(), furn.name), 
+                                             [self.pc.name], self.pc)
     
 
 command_list.register(Sit, ['sit'])
@@ -1566,18 +1566,18 @@ The Stand command changes your position from sitting or sleeping to standing.
     """
     )
     def execute(self):
-        if self.user.position[0].find(self.alias) != -1:
-            self.user.update_output('You are already standing.')
+        if self.pc.position[0].find(self.alias) != -1:
+            self.pc.update_output('You are already standing.')
             return
-        if self.user.position[0] == 'sleeping':
-            self.user.update_output('You wake and stand up.')
-            if self.user.location:
-                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name], self.user)
+        if self.pc.position[0] == 'sleeping':
+            self.pc.update_output('You wake and stand up.')
+            if self.pc.location:
+                self.pc.location.tell_room('%s wakes and stands up.' % self.pc.fancy_name(), [self.pc.name], self.pc)
         else:
-            self.user.update_output('You stand up.')
-            if self.user.location:
-                self.user.location.tell_room('%s stands up.' % self.user.fancy_name(), [self.user.name], self.user)
-        self.user.change_position('standing')
+            self.pc.update_output('You stand up.')
+            if self.pc.location:
+                self.pc.location.tell_room('%s stands up.' % self.pc.fancy_name(), [self.pc.name], self.pc)
+        self.pc.change_position('standing')
     
 
 command_list.register(Stand, ['stand'])
@@ -1599,40 +1599,40 @@ To sleep on a piece of furniture:
     """
     )
     def execute(self):
-        if self.user.position[0].find(self.alias) != -1:
-            self.user.update_output('You are already sleeping.')
+        if self.pc.position[0].find(self.alias) != -1:
+            self.pc.update_output('You are already sleeping.')
             return
         
         if not self.args:
-            self.user.update_output('You go to sleep.')
-            if self.user.location:
-                self.user.location.tell_room('%s goes to sleep.' % self.user.fancy_name(), [self.user.name], self.user)
+            self.pc.update_output('You go to sleep.')
+            if self.pc.location:
+                self.pc.location.tell_room('%s goes to sleep.' % self.pc.fancy_name(), [self.pc.name], self.pc)
             # If they were previously sitting on furniture before they went to
             # sleep, we might as well maintain their position on that 
             # furniture when they go to sleep
-            self.user.change_position('sleeping', self.user.position[1])
+            self.pc.change_position('sleeping', self.pc.position[1])
         else:
-            if not self.user.location:
-                self.user.update_output('The void is bereft of anything to sleep on.')
+            if not self.pc.location:
+                self.pc.update_output('The void is bereft of anything to sleep on.')
                 return
             exp = r'((on)|(in))?([ ]?)?(?P<furn>(\w|[ ])+)'
             furn_kw = re.match(exp, self.args.lower().strip()).group('furn')
-            furn = self.user.location.get_item_by_kw(furn_kw)
+            furn = self.pc.location.get_item_by_kw(furn_kw)
             if not furn:
-                self.user.update_output('You don\'t see that here.')
+                self.pc.update_output('You don\'t see that here.')
                 return
             f_obj = furn.item_types.get('furniture')
             if not f_obj:
-                self.user.update_output('That\'s not a type of furniture.')
+                self.pc.update_output('That\'s not a type of furniture.')
                 return
-            if not f_obj.user_add(self.user):
-                self.user.update_output('It\'s full right now.')
+            if not f_obj.player_add(self.pc):
+                self.pc.update_output('It\'s full right now.')
                 return
             else:
-                self.user.change_position('sleeping', furn)
-                self.user.update_output('You go to sleep on %s.' % furn.name)
-                self.user.location.tell_room('%s goes to sleep on %s.' % (self.user.fancy_name(), furn.name), 
-                                             [self.user.name], self.user)
+                self.pc.change_position('sleeping', furn)
+                self.pc.update_output('You go to sleep on %s.' % furn.name)
+                self.pc.location.tell_room('%s goes to sleep on %s.' % (self.pc.fancy_name(), furn.name), 
+                                             [self.pc.name], self.pc)
     
 
 command_list.register(Sleep, ['sleep'])
@@ -1653,39 +1653,39 @@ To wake someone else:
     def execute(self):
         if not self.args:
             # Wake up yourself
-            if self.user.position[0] != 'sleeping':
-                self.user.update_output('You are already awake.')
+            if self.pc.position[0] != 'sleeping':
+                self.pc.update_output('You are already awake.')
                 return
-            self.user.update_output('You wake and stand up.')
-            if self.user.location:
-                self.user.location.tell_room('%s wakes and stands up.' % self.user.fancy_name(), [self.user.name], self.user)
-            self.user.change_position('standing')
+            self.pc.update_output('You wake and stand up.')
+            if self.pc.location:
+                self.pc.location.tell_room('%s wakes and stands up.' % self.pc.fancy_name(), [self.pc.name], self.pc)
+            self.pc.change_position('standing')
         else:
             # Wake up someone else!
-            if not self.user.location:
-                self.user.update_output('You are alone in the void.')
+            if not self.pc.location:
+                self.pc.update_output('You are alone in the void.')
                 return
-            sleeper = self.user.location.get_user(self.args.lower().strip())
+            sleeper = self.pc.location.get_player(self.args.lower().strip())
             if not sleeper:
-                self.user.update_output('That person isn\'t here.')
+                self.pc.update_output('That person isn\'t here.')
                 return
             if sleeper.position[0] != 'sleeping':
-                self.user.update_output('%s isn\'t asleep.' % sleeper.fancy_name())
+                self.pc.update_output('%s isn\'t asleep.' % sleeper.fancy_name())
                 return
             sleeper.change_position('standing')
-            self.user.update_output('You wake up %s.' % sleeper.fancy_name())
-            sleeper.update_output('%s wakes you up.' % self.user.fancy_name())
-            troom = '%s wakes up %s.' % (self.user.fancy_name(),
+            self.pc.update_output('You wake up %s.' % sleeper.fancy_name())
+            sleeper.update_output('%s wakes you up.' % self.pc.fancy_name())
+            troom = '%s wakes up %s.' % (self.pc.fancy_name(),
                                          sleeper.fancy_name())
-            self.user.location.tell_room(troom, [self.user.name, sleeper.name],
-                                         self.user)
+            self.pc.location.tell_room(troom, [self.pc.name, sleeper.name],
+                                         self.pc)
     
 
 command_list.register(Wake, ['wake', 'awake'])
 command_help.register(Wake.help, ['wake'])
 
 class Award(BaseCommand):
-    """Award an item to a user."""
+    """Award an item to a player."""
     required_permissions = required_permissions = DM | ADMIN
     help = (
     """<title>Award (Command)</title>
@@ -1717,32 +1717,32 @@ the message "Jameson receives a medal for his fine work."
     )
     def execute(self):
         if not self.args:
-            self.user.update_output('Award what to whom?')
+            self.pc.update_output('Award what to whom?')
             return
-        exp = r'(?P<item>(\w+|[ ])+)([ ]+to)([ ]+(?P<user>\w+))([ ]+(?P<actor>\"(.*?)\")(:(?P<room>\"(.*?)\"))?)?'
+        exp = r'(?P<item>(\w+|[ ])+)([ ]+to)([ ]+(?P<player>\w+))([ ]+(?P<actor>\"(.*?)\")(:(?P<room>\"(.*?)\"))?)?'
         match = re.match(exp, self.args, re.I)
         if not match:
-            self.user.update_output('Type "help award" for help with this command.')
+            self.pc.update_output('Type "help award" for help with this command.')
             return
-        item_kw, user_kw, actor, room = match.group('item', 'user', 'actor', 'room')
-        user = self.user.location.get_user(user_kw.lower())
-        if not user:
-            self.user.update_output('Whom do you want to award %s to?' % item_kw)
+        item_kw, player_kw, actor, room = match.group('item', 'player', 'actor', 'room')
+        player = self.pc.location.get_player(player_kw.lower())
+        if not player:
+            self.pc.update_output('Whom do you want to award %s to?' % item_kw)
             return
-        item = self.user.check_inv_for_keyword(item_kw)
+        item = self.pc.check_inv_for_keyword(item_kw)
         if not item:
-            self.user.update_output('You don\'t have any %s.' % item_kw)
+            self.pc.update_output('You don\'t have any %s.' % item_kw)
             return
-        self.user.item_remove(item)
-        user.item_add(item)
-        self.user.update_output('%s has been awarded %s.' % (user.fancy_name(),
+        self.pc.item_remove(item)
+        player.item_add(item)
+        self.pc.update_output('%s has been awarded %s.' % (player.fancy_name(),
                                                              item.name))
         if actor:
-            message = self.personalize(actor.strip('\"'), self.user)
-            user.update_output(message)
+            message = self.personalize(actor.strip('\"'), self.pc)
+            player.update_output(message)
         if room:
-            message = self.personalize(room.strip('\"'), self.user, user)
-            self.user.location.tell_room(message, [user.name], self.user)
+            message = self.personalize(room.strip('\"'), self.pc, player)
+            self.pc.location.tell_room(message, [player.name], self.pc)
     
 
 command_list.register(Award, ['award'])
@@ -1763,48 +1763,48 @@ To consume an edible item:
     )
     def execute(self):
         if not self.args:
-            self.user.update_output("%s what?" % self.alias.capitalize())
+            self.pc.update_output("%s what?" % self.alias.capitalize())
             return
-        food = self.user.check_inv_for_keyword(self.args.lower().strip())
+        food = self.pc.check_inv_for_keyword(self.args.lower().strip())
         if not food:
-            self.user.update_output('You don\'t have any %s.' % self.args)
+            self.pc.update_output('You don\'t have any %s.' % self.args)
             return
         food_obj = food.item_types.get('food')
         if not food_obj:
             # Gods have a more robust digestive system -- they can afford to
             # eat objects that aren't edible to mere mortals
-            if self.user.permissions & GOD:
-                self.user.item_remove(food)
+            if self.pc.permissions & GOD:
+                self.pc.item_remove(food)
                 food.destruct()
-                self.user.update_output('You consume %s.' % food.name)
-                if self.user.location:
-                    self.user.location.tell_room('%s consumed %s.' %\
-                                                 (self.user.fancy_name(),
+                self.pc.update_output('You consume %s.' % food.name)
+                if self.pc.location:
+                    self.pc.location.tell_room('%s consumed %s.' %\
+                                                 (self.pc.fancy_name(),
                                                   food.name),
-                                                [self.user.name], self.user)
+                                                [self.pc.name], self.pc)
                 return
             else:
-                self.user.update_output('That\'s not edible!')
+                self.pc.update_output('That\'s not edible!')
                 return
-        if 'drunk' in self.user.effects:
-            self.user.update_output('You\'re too drunk to manage it.')
+        if 'drunk' in self.pc.effects:
+            self.pc.update_output('You\'re too drunk to manage it.')
             return
         # Remove the food object
         self.log.debug(food_obj)
-        self.user.item_remove(food)
+        self.pc.item_remove(food)
         food.destruct()
         # Replace it with another object, if applicable
         if food_obj.replace_obj:
-            self.user.item_add(food_obj.replace_obj.load())
-        # Tell the user and the room an "eat" message
-        u_tell = self.personalize(food_obj.get_actor_message(), self.user)
-        self.user.update_output(u_tell)
-        if self.user.location:
-            r_tell = self.personalize(food_obj.get_room_message(), self.user)
-            self.user.location.tell_room(r_tell, [self.user.name], self.user)
-        # Add this food's effects to the user
+            self.pc.item_add(food_obj.replace_obj.load())
+        # Tell the player and the room an "eat" message
+        u_tell = self.personalize(food_obj.get_actor_message(), self.pc)
+        self.pc.update_output(u_tell)
+        if self.pc.location:
+            r_tell = self.personalize(food_obj.get_room_message(), self.pc)
+            self.pc.location.tell_room(r_tell, [self.pc.name], self.pc)
+        # Add this food's effects to the player
         self.log.debug('Adding effects.')
-        self.user.effects_add(food_obj.load_effects())
+        self.pc.effects_add(food_obj.load_effects())
     
 
 command_list.register(Consume, ['eat', 'drink', 'use'])
@@ -1828,28 +1828,28 @@ character)
     )
     def execute(self):
         #find the target:
-        target = self.user.location.get_user(self.args)
+        target = self.pc.location.get_player(self.args)
         if not target:
-            target = self.user.location.get_npc_by_kw(self.args)
+            target = self.pc.location.get_npc_by_kw(self.args)
             if not target:
-                self.user.update_output("Attack whom?")
+                self.pc.update_output("Attack whom?")
                 return
-        # set the users default target.
-        self.user.battle_target = target
-        if not self.user.battle:
-            self.log.debug("Beginning battle between %s and %s" %(self.user.fancy_name(), target.fancy_name()))
+        # set the players default target.
+        self.pc.battle_target = target
+        if not self.pc.battle:
+            self.log.debug("Beginning battle between %s and %s" %(self.pc.fancy_name(), target.fancy_name()))
             # Start the battle if it doesn't exist yet.
-            self.user.enter_battle()
+            self.pc.enter_battle()
             b = Battle()
-            b.teamA.append(self.user)
-            self.user.battle = b
+            b.teamA.append(self.pc)
+            self.pc.battle = b
             b.teamB.append(target)
             target.battle = b
             target.enter_battle()
             self.world.battle_add(b)
-            target.battle_target = self.user
-            self.user.free_attack()
-        self.user.update_output("")
+            target.battle_target = self.pc
+            self.pc.free_attack()
+        self.pc.update_output("")
     
 
 command_list.register(Attack, ['attack', 'kill'])
@@ -1869,30 +1869,30 @@ If you want to escape in a specific direction, try
     """
     )
     def execute(self):
-        if self.user.battle:
+        if self.pc.battle:
             direction = self.args.lower()[0] if self.args else None
             if direction == 'e': 
-                room = self.user.location.exits.get('east')
+                room = self.pc.location.exits.get('east')
             elif direction == 'w':
-                room = self.user.location.exits.get('west')
+                room = self.pc.location.exits.get('west')
             elif direction == 'n':
-                room = self.user.location.exits.get('north')
+                room = self.pc.location.exits.get('north')
             elif direction == 's':
-                room = self.user.location.exits.get('south')
+                room = self.pc.location.exits.get('south')
             elif direction == 'u':
-                room = self.user.location.exits.get('up')
+                room = self.pc.location.exits.get('up')
             elif direction == 'd':
-                room = self.user.location.exits.get('down')
+                room = self.pc.location.exits.get('down')
             else:
                 room = None
             if not room:
                 # just grab one at random
-                room = [_ for _ in self.user.location.exits.values() if _ is not None][0]
+                room = [_ for _ in self.pc.location.exits.values() if _ is not None][0]
             if not room:
-                self.user.update_output('There\'s nowhere to run!')
+                self.pc.update_output('There\'s nowhere to run!')
                 return
-            action = Action_list['run'](self.user, (room.to_room.area.name, room.to_room.id), self.user.battle)
-            self.user.next_action = action
+            action = Action_list['run'](self.pc, (room.to_room.area.name, room.to_room.id), self.pc.battle)
+            self.pc.next_action = action
     
 
 battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
@@ -1922,44 +1922,44 @@ in a room when you use the Goto command to leave it
     """
     )
     def execute(self):
-        # We aught to be using the user's terminal width, but for now I'm just
+        # We aught to be using the player's terminal width, but for now I'm just
         # doing a boring static screen width
         width = 72
         empty_line = '|' + (' ' * (width - 2)) + '|\n'
         
-        effects = ', '.join([str(e) for e in self.user.effects.values()])
+        effects = ', '.join([str(e) for e in self.pc.effects.values()])
         if not effects:
             effects = 'You feel normal.'
-        me = '|' + (' %s ' % self.user.fancy_name()).center(width -2 , '-') + '|\n'
-        me += ('| title: ' + self.user.title).ljust(width - 1) + '|\n'
-        me += ('| position: ' + self.user.position[0]).ljust(width - 1) + '|\n'
+        me = '|' + (' %s ' % self.pc.fancy_name()).center(width -2 , '-') + '|\n'
+        me += ('| title: ' + self.pc.title).ljust(width - 1) + '|\n'
+        me += ('| position: ' + self.pc.position[0]).ljust(width - 1) + '|\n'
         me += ('| effects: ' + effects).ljust(width - 1) + '|\n'
-        if self.user.permissions > PLAYER:
+        if self.pc.permissions > PLAYER:
             me += '|' + (' Permission Details ').center(width - 2, '-') + '|\n'
             me += ('| permissions: ' +\
-                   ', '.join(get_permission_names(self.user.permissions))).ljust(width - 1) + '|\n'
-            me += ('| goto "appear": ' + self.user.goto_appear).ljust(width - 1) + '|\n'
-            me += ('| goto "disappear": ' + self.user.goto_disappear).ljust(width - 1) + '|\n'
+                   ', '.join(get_permission_names(self.pc.permissions))).ljust(width - 1) + '|\n'
+            me += ('| goto "appear": ' + self.pc.goto_appear).ljust(width - 1) + '|\n'
+            me += ('| goto "disappear": ' + self.pc.goto_disappear).ljust(width - 1) + '|\n'
             me += empty_line
         me += '|' + (' Private Details ').center(width - 2, '-') + '|\n'
-        me += ('| email: ' + str(self.user.email)).ljust(width - 1) + '|\n'
+        me += ('| email: ' + str(self.pc.email)).ljust(width - 1) + '|\n'
         me += '|' + (' Player Stats ').center(width - 2, '-') + '|\n'
-        me += ('| hit: ' + str(self.user.hit.calculate())).ljust(width-1) + '|\n'
-        me += ('| evade: ' + str(self.user.evade.calculate())).ljust(width-1) + '|\n' 
-        if self.user.absorb:
+        me += ('| hit: ' + str(self.pc.hit.calculate())).ljust(width-1) + '|\n'
+        me += ('| evade: ' + str(self.pc.evade.calculate())).ljust(width-1) + '|\n' 
+        if self.pc.absorb:
             me += '| absorb: '.ljust(width-1) + '|\n'
-            for key, val in self.user.absorb.calculate().items():
+            for key, val in self.pc.absorb.calculate().items():
                 me += ('|   %s: %s' % (key, val)).ljust(width-1) + '|\n'
         else:
             me += '| absorb: None'.ljust(width-1) + '|\n'
-        if self.user.damage:
+        if self.pc.damage:
             me += '| damage: '.ljust(width-1) + '|\n'
-            for t, mn, mx in self.user.damage.display():
+            for t, mn, mx in self.pc.damage.display():
                 me += ('|   %s: %s-%s' % (t, mn, mx)).ljust(width-1) + '|\n'
         else:
             me += '| damage: None'.ljust(width-1) + '|\n'
         me += '|' + ('-' * (width - 2)) + '|'         
-        self.user.update_output(me)
+        self.pc.update_output(me)
     
 
 command_list.register(Me, ['me', 'status', 'stats'])
@@ -1983,29 +1983,29 @@ they are in the world, provided they are online.
         #tell target_name message
         syntax_error = 'Try "tell <person> <message>", or see "help tell" for help.'
         if not self.args:
-            self.user.update_output(syntax_error)
+            self.pc.update_output(syntax_error)
             return
         exp = r'(?P<target>.*?)[ ](?P<message>.*)'
         match = re.match(exp, self.args, re.I)
         if not match:
-            self.user.update_output(syntax_error)
+            self.pc.update_output(syntax_error)
             return
         target_name, message = match.group('target', 'message')
         # first, check to see if there is a character in the same room by that keyword
         # if we were only to check the world's list of people, we wouldn't be able to tell npcs
         # anything! However, let's be prudent and only try to tell npcs in the same room...
-        if self.user.location:
-            r = self.user.location
+        if self.pc.location:
+            r = self.pc.location
             # prioritize players over npcs, if there are two characters in the same room with the
             # same name. Players only have one keyword in their name, while npcs may have many
-            target = r.get_user(target_name) or r.get_npc_by_kw(target_name)
+            target = r.get_player(target_name) or r.get_npc_by_kw(target_name)
             if target:
                 self.tell_msg(target, message)
                 return
-        # There was nobody in that room who matched the name (or the user is in the void)
-        pc = self.world.get_user(target_name)
+        # There was nobody in that room who matched the name (or the player is in the void)
+        pc = self.world.get_player(target_name)
         if not pc:
-            self.user.update_output('"%s" doesn\'t exist. You\'ll have to tell someone else.' % target_name)
+            self.pc.update_output('"%s" doesn\'t exist. You\'ll have to tell someone else.' % target_name)
         else:
             self.tell_msg(pc, message)
     
@@ -2018,8 +2018,8 @@ they are in the world, provided they are online.
             # TODO: dispatch a 'tell' notification to this npc (the 'tell'
             # npc event hasn't been written as of this comment)
             pass
-        self.user.update_output('You tell %s, "%s"' % (target_char.fancy_name(), message))
-        target_char.update_output('%s tells you, "%s"' % (self.user.fancy_name(), message))
+        self.pc.update_output('You tell %s, "%s"' % (target_char.fancy_name(), message))
+        target_char.update_output('%s tells you, "%s"' % (self.pc.fancy_name(), message))
     
 
 command_list.register(Tell, ['tell', 'ask'])
@@ -2035,9 +2035,9 @@ The Password command lets you change your password.
     """
     )
     def execute(self):
-        if self.user.mode:
-            self.user.last_mode = self.user.mode
-        self.user.set_mode('passwd')
+        if self.pc.mode:
+            self.pc.last_mode = self.pc.mode
+        self.pc.set_mode('passwd')
     
 
 command_list.register(ChangePassword, ['password', 'passwd'])
@@ -2082,7 +2082,7 @@ following and the Look command would work:
             if cmd.required_permissions & PLAYER:
                 coms.append(alias)
         l += '\n'.join(coms)
-        self.user.update_output(l)
+        self.pc.update_output(l)
     
 
 command_list.register(Commands, ['command', 'commands'])

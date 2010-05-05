@@ -4,16 +4,16 @@ import logging
 
 class BattleMode(object):
     
-    def __init__(self, user):
-        self.user = user
+    def __init__(self, player):
+        self.player = player
         self.log = logging.getLogger('BattleMode')
         self.state = self.parse_command
         self.active = True
         self.name = 'BattleMode'
     
     def parse_command(self):
-        while len(self.user.inq) > 0:
-            raw_string = self.user.inq.pop(0)
+        while len(self.player.inq) > 0:
+            raw_string = self.player.inq.pop(0)
             match = re.search(r'\s*(\w+)([ ](.+))?$', raw_string)
             if match:
                 cmd_name, _, args = match.groups()
@@ -21,7 +21,7 @@ class BattleMode(object):
                 if not cmd:
                     cmd = command_list[cmd_name]
                 if cmd:
-                    cmd(self.user, args, cmd_name).run()
+                    cmd(self.player, args, cmd_name).run()
                 else:
-                    # The command the user sent was invalid... tell them so
-                    self.user.update_output("I don't understand \"%s\"\n" % raw_string)
+                    # The command the player sent was invalid... tell them so
+                    self.player.update_output("I don't understand \"%s\"\n" % raw_string)

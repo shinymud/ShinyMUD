@@ -23,9 +23,9 @@ class EventHandler(object):
         self.probability = args.get('probability')
         self.args = args
         self.log = logging.getLogger('EventHandler')
-        self.script_cmds = {'record': self.record_user
+        self.script_cmds = {'record': self.record_player
                            }
-        self.conditions = {'remember': self.remember_user,
+        self.conditions = {'remember': self.remember_player,
                            'equal': self.equal
                           }
     
@@ -128,7 +128,7 @@ class EventHandler(object):
     
     # *********** SCRIPT COMMANDS ***********
     
-    def record_user(self, name=None):
+    def record_player(self, name=None):
         """Record the name in this object's memory."""
         if not name:
             raise CommandError("Script %s Error: record command requires a name argument" % self.script.id)
@@ -137,7 +137,7 @@ class EventHandler(object):
             self.obj.remember.append(name.lower().strip())
     
     # *********** CONDITION FUNCTIONS ***********
-    def remember_user(self, name=None):
+    def remember_player(self, name=None):
         """Return true if this name is in the object's memory, false if
         it isn't.
         """
@@ -180,11 +180,11 @@ EVENTS = CommandRegister()
 
 class PCEnter(EventHandler):
     def execute(self):
-        user = self.args.get('user')
+        player = self.args.get('player')
         prev = self.args.get('from')
-        rep = {'#target_name': user.fancy_name(),
+        rep = {'#target_name': player.fancy_name(),
                '#from_room': prev}
-        # Set the user as the target in the script
+        # Set the player as the target in the script
         self.personalize(rep)
         self.execute_script()
     
@@ -270,7 +270,7 @@ source of the phrase
         # The person who's responsible for saying/giving the message that the
         # npc heard (may be None)
         teller = self.args.get('teller')
-        # If the user never added a condition with this event, then oh well
+        # If the player never added a condition with this event, then oh well
         if not condition:
             return
         if heard_string.find(condition) != -1:

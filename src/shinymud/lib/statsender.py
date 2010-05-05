@@ -15,8 +15,8 @@ class StatSender(threading.Thread):
     
     def run(self):
         """Start the connection-handler thread running.
-        This thread will accept connections, create a User object for the
-        player logging in, and then add that User object to the world.
+        This thread will accept connections, create a Player object for the
+        player logging in, and then add that Player object to the world.
         """
         self.listener.listen(5)
         while 1:
@@ -26,7 +26,7 @@ class StatSender(threading.Thread):
                 self.log.debug(str(e))
             else:
                 # Send them the game-stats!
-                plist = ','.join([name for name in self.world.user_list if isinstance(name, str)])
+                plist = ','.join([name for name in self.world.player_list if isinstance(name, str)])
                 conn.send(plist + ':' + str(self.world.uptime))
                 # conn.send(str(self.world.uptime))
                 conn.close()

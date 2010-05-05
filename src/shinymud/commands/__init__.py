@@ -32,38 +32,38 @@ class BaseCommand(object):
     required_permissions = PLAYER
     help = ("We Don't have a help page for this command yet."
     )
-    def __init__(self, user, args, alias):
+    def __init__(self, player, args, alias):
         self.args = args
-        self.user = user
+        self.pc = player
         self.alias = alias
         self.world = World.get_world()
         self.log = logging.getLogger('Command')
         self.allowed = True
-        if not (self.user.permissions & GOD):
-            if not (self.user.permissions & self.required_permissions):
+        if not (self.pc.permissions & GOD):
+            if not (self.pc.permissions & self.required_permissions):
                 self.allowed = False
     
     def run(self):
         if self.allowed:
             self.execute()
         else:
-            self.user.update_output("You don't have the authority to do that!\n")
+            self.pc.update_output("You don't have the authority to do that!\n")
     
     def personalize(self, message, actor, target=None):
-        """Personalize an action message for a user.
+        """Personalize an action message for a player.
         
         This function replaces certain keywords in generic messages with 
-        user-specific data to make the message more personal. Below is a list
+        player-specific data to make the message more personal. Below is a list
         of the keywords that will be replaced if they are found in the message:
         
-        #actor - replaced with the name of the actor (user committing the action)
+        #actor - replaced with the name of the actor (player committing the action)
         #a_she/he - replaced with the gender-specific pronoun of the actor
         #a_her/him - replaced with the gender-specific pronoun of the actor (grammatical alternative)
         #a_hers/his - replace with the gender-specific possessive-pronoun of the actor
         #a_her/his - replace with the gender-specific possessive-pronoun of the actor (grammatical alternative)
         #a_self - replace with the gender-specific reflexive pronoun of the actor (himself/herself/itself)
         
-        #target - replace with the name of the target (user being acted upon)
+        #target - replace with the name of the target (player being acted upon)
         #t_she/he - replaced with the gender-specific pronoun of the target
         #t_her/him - replace with the gender-specific pronoun of the target (grammatical alternative)
         #t_hers/his - replace with a gender-specific possessive-pronoun of the target

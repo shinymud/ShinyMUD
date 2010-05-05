@@ -1,6 +1,6 @@
 from shinymud.lib.world import *
 from shinymud.data.config import *
-from shinymud.models.user import *
+from shinymud.models.player import *
 from shinymud.models.area import *
 from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
@@ -15,10 +15,10 @@ class TestBuildCommands(TestCase):
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
         # add a builder
-        self.bob = User(('bob', 'bar'))
+        self.bob = Player(('bob', 'bar'))
         self.bob.mode = None
-        self.bob.userize(name='bob')
-        self.world.user_add(self.bob)
+        self.bob.playerize(name='bob')
+        self.world.player_add(self.bob)
         self.bob.mode = BuildMode(self.bob)
         self.bob.permissions = self.bob.permissions | BUILDER
     

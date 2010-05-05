@@ -12,9 +12,9 @@ from shinymud.models.character import Character
 import re
 import logging
 
-class User(Character):
-    """Represents a player character (user)."""
-    char_type = 'user'
+class Player(Character):
+    """Represents a player character."""
+    char_type = 'player'
     win_change_regexp = re.compile(r"\xff\xfa\x1f(?P<size>.*?)\xff\xf0")
     def __init__(self, conn_info):
         self.conn, self.addr = conn_info
@@ -23,14 +23,14 @@ class User(Character):
         self.inq = []
         self.outq = []
         self.quit_flag = False
-        self.log = logging.getLogger('User')
+        self.log = logging.getLogger('Player')
         self.mode = InitMode(self)
         self.last_mode = None
         self.dbid = None
         self.world = World.get_world()
         self.channels = {'chat': False}
     
-    def userize(self, **args):
+    def playerize(self, **args):
         self.characterize(**args)
         self.name = str(args.get('name'))
         self.password = args.get('password', None)
@@ -91,7 +91,7 @@ class User(Character):
         return d
     
     def update_output(self, data, terminate_ln=True, strip_nl=True):
-        """Helpfully inserts data into the user's output queue."""
+        """Helpfully inserts data into the player's output queue."""
         if strip_nl:
             # Since we need to terminate with lf and cr for telnet anyway,
             # we might as well strip all extra newlines off the end of
@@ -102,14 +102,14 @@ class User(Character):
         # clients everywhere
         data = data.replace('\n', '\r\n')
         if terminate_ln:
-            # If you want the user to enter input on the same line as the
+            # If you want the player to enter input on the same line as the
             # last output, pass terminate_ln=False. Otherwise the line will
             # be terminated and a prompt will be added.
             data += '\r\n'
         self.outq.append(data)
     
     def get_input(self):
-        """Gets raw input from the user and queues it for later processing."""
+        """Gets raw input from the player and queues it for later processing."""
         try:
             new_stuff = self.conn.recv(256)
             # Get rid of the \r \n line terminators
@@ -124,7 +124,7 @@ class User(Character):
             pass
     
     def parse_winchange(self, data):
-        """Parse and set the terminal size of the user."""
+        """Parse and set the terminal size of the player."""
         match = self.win_change_regexp.match(data)
         if match:
             size = match.group('size')
@@ -134,7 +134,7 @@ class User(Character):
                 self.update_output(m)
     
     def send_output(self):
-        """Sends all data from the user's output queue to the user."""
+        """Sends all data from the player's output queue to the player."""
         try:
             sent_output = ''
             if len(self.outq) > 0:
@@ -150,9 +150,9 @@ class User(Character):
                 self.conn.send(self.get_prompt())
         except Exception, e:
             # If we die here, it's probably because we got a broken pipe.
-            # In this case, we should disconnect the user
+            # In this case, we should disconnect the player
             self.log.error(str(e))
-            self.user_logout(True)
+            self.player_logout(True)
     
     def get_prompt(self):
         if hasattr(self, 'hp'):
@@ -177,7 +177,7 @@ class User(Character):
             return default
     
     def parse_command(self):
-        """Parses the lines in the user's input buffer and then calls
+        """Parses the lines in the player's input buffer and then calls
         the appropriate commands (if they exist)"""
         
         while len(self.inq) > 0:
@@ -189,13 +189,13 @@ class User(Character):
                 if cmd:
                     cmd(self, args, cmd_name).run()
                 else:
-                    # The command the user sent was invalid... tell them so
+                    # The command the player sent was invalid... tell them so
                     self.update_output("I don't understand \"%s\"\n" % raw_string)
     
     def do_tick(self):
-        """What should happen to the user everytime the world ticks."""
+        """What should happen to the player everytime the world ticks."""
         if self.quit_flag:
-            self.user_logout()
+            self.player_logout()
         else:
             if self.dbid:
                 self.cycle_effects()
@@ -215,16 +215,16 @@ class User(Character):
                 # mode.
                 self.mode = None
     
-    def user_logout(self, broken_pipe=False):
+    def player_logout(self, broken_pipe=False):
         if self.dbid:
-            self.world.db.update_from_dict('user', self.to_dict())
+            self.world.db.update_from_dict('player', self.to_dict())
         if not broken_pipe:
             self.conn.send('Bye!\n')
         self.conn.close()
         if hasattr(self, 'location') and self.location:
-            self.location.user_remove(self)
-        self.world.user_remove(self.name)
-        self.world.tell_users("%s has left the world." % self.fancy_name())
+            self.location.player_remove(self)
+        self.world.player_remove(self.name)
+        self.world.tell_players("%s has left the world." % self.fancy_name())
     
     def set_mode(self, mode):
         if mode == 'build':
@@ -237,8 +237,8 @@ class User(Character):
             self.mode = PassChangeMode(self)
     
     def get_mode(self):
-        """Returns the name of the mode the user is in, or empty string if the
-        user isn't in a special mode.
+        """Returns the name of the mode the player is in, or empty string if the
+        player isn't in a special mode.
         """
         if not self.mode:
             return ''
@@ -253,7 +253,7 @@ class User(Character):
         return 'Your e-mail address is now "%s".' % email
     
     def set_description(self, description):
-        """Set the description for this user."""
+        """Set the description for this player."""
         self.last_mode = self.mode
         self.mode = TextEditMode(self, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.'
@@ -293,7 +293,7 @@ class User(Character):
         return self.name.capitalize()
     
     def look_at_room(self):
-        """Return this user's view of the room they are in."""
+        """Return this player's view of the room they are in."""
         title = room_title_color + self.location.name + clear_fcolor
         if self.mode and self.mode.name == 'BuildMode':
             title = '%s[id: %s, %s]%s %s%s%s' % (room_id_color, 
@@ -304,21 +304,21 @@ class User(Character):
         if exit_list:
             xits = 'exits: ' + ', '.join(exit_list)
         xits = room_exit_color + xits + clear_fcolor
-        users = ''
-        for user in self.location.users.values():
-            if user.name != self.name:
+        players = ''
+        for player in self.location.players.values():
+            if player.name != self.name:
                 position = ' is here.'
-                if user.position[0] == 'sleeping':
-                    if user.position[1]:
-                        position = ' is here, sleeping on %s.' % user.position[1].name
+                if player.position[0] == 'sleeping':
+                    if player.position[1]:
+                        position = ' is here, sleeping on %s.' % player.position[1].name
                     else:
                         position = ' is here, sleeping on the floor.'
-                elif user.position[0] == 'sitting':
-                    if user.position[1]:
-                        position = ' is here, sitting on %s.' % user.position[1].name
+                elif player.position[0] == 'sitting':
+                    if player.position[1]:
+                        position = ' is here, sitting on %s.' % player.position[1].name
                     else:
                         position = ' is here, sitting on the floor.'
-                users += user_color + user.fancy_name() + position +\
+                players += player_color + player.fancy_name() + position +\
                          clear_fcolor + '\n'
         npcs = ''
         for npc in self.location.npcs:
@@ -328,7 +328,7 @@ class User(Character):
             if item.title:
                 items += item_color + item.title + clear_fcolor + '\n'
         desc = room_body_color + '  ' + self.location.description + clear_fcolor
-        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, items, npcs, users)
+        look = """%s\n%s\n%s\n%s%s%s""" % (title, xits, desc, items, npcs, players)
         return look
     
     def cycle_effects(self):
@@ -340,7 +340,7 @@ class User(Character):
                 del self.effects[name]
     
     def effects_add(self, effect_list):
-        """Add a list of character effects to the user."""
+        """Add a list of character effects to the player."""
         self.log.debug(effect_list)
         for effect in effect_list:
             effect.char = self
@@ -354,7 +354,7 @@ class User(Character):
             self.effects[effect.name].begin()
     
     def effect_remove(self, effect):
-        """Remove an effect from this user."""
+        """Remove an effect from this player."""
         if effect.name in self.effects:
             del self.effects[effect.name]
     

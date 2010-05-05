@@ -17,7 +17,7 @@ sys.path.insert(0, path)
 from shinymud.data.config import GAME_NAME, DB_NAME, PORT
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
-from shinymud.models.user import *
+from shinymud.models.player import *
 from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
 from shinymud.lib.sport import SPort
@@ -81,24 +81,24 @@ def stop():
 def create_god(world):
     """Create a god character and save it to this MUD's db."""
     save = {'permissions': GOD | PLAYER}
-    user = User(('foo', 'bar'))
+    player = Player(('foo', 'bar'))
     
     save['name'] = ''
     print "Please choose a name for your character. It should contain \n" +\
           "alphanumeric characters (letters and numbers) ONLY."
     while not save['name']:
-        username = (raw_input("Name: ")).strip()
-        if not username.isalpha():
+        playername = (raw_input("Name: ")).strip()
+        if not playername.isalpha():
             print "That is not a valid name. Please choose another."
         else:
-            row = user.world.db.select('password,dbid FROM user WHERE name=?', [username])
+            row = player.world.db.select('password,dbid FROM player WHERE name=?', [playername])
             if row:
-                print "A user with that name already exists. Please choose Another."
+                print "A player with that name already exists. Please choose Another."
             else:
-                print "You're sure you want your name to be '%s'?" % username
+                print "You're sure you want your name to be '%s'?" % playername
                 choice = (raw_input("Yes/No: ")).strip()
                 if choice.lower().startswith('y'):
-                    save['name'] = username
+                    save['name'] = playername
                 else:
                     print "Ok, we'll start over. Which name do you REALLY want?"
     
@@ -122,9 +122,9 @@ def create_god(world):
         else:
             print "That's not a valid gender."
     
-    user.userize(**save)
-    user.save()
-    print 'Your character, %s, has been created.' % user.fancy_name()
+    player.playerize(**save)
+    player.save()
+    print 'Your character, %s, has been created.' % player.fancy_name()
 
 def setup():
     """Initialize the game!"""

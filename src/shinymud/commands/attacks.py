@@ -44,7 +44,7 @@ class BattleAction(object):
 Action_list = CommandRegister()
 class Attack(BattleAction):
     def hit(self):
-        """Calculates damage based on the user's damage object, (1-2 if none).
+        """Calculates damage based on the player's damage object, (1-2 if none).
         """
         damage = self.attacker.damage.calculate()
         if not damage:

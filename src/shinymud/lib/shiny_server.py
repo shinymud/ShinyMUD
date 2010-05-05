@@ -43,8 +43,8 @@ except:
         traceback.print_exc(file=fp)
         fp.write('\n' + ('*' * 50))
     logger.critical('OH NOES! The server died! More information in the death_errors.log.')
-    user_error = "Bloody hell, the game server crashed!\n" +\
+    player_error = "Bloody hell, the game server crashed!\n" +\
     "Don't worry, we've done our best to save your data.\n" +\
     "Try logging on again in a minute or two.\r\n"
-    for user in world.user_list.values():
-        user.conn.send(user_error)
+    for player in world.player_list.values():
+        player.conn.send(player_error)
