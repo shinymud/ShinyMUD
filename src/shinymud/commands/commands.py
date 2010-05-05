@@ -413,11 +413,13 @@ Or just give the direction you want to go:
                 else:
                     if go_exit.to_room:
                         if go_exit.linked_exit:
-                            tell_new = '%s arrives from the %s.' % (self.user.fancy_name(),
-                                                                    go_exit.linked_exit)
+                            arrives = {'up': 'above', 'down': 'below', 'north': 'the north',
+                                       'south': 'the south', 'east': 'the east', 'west': 'the west'}
+                            tell_new = '%s arrives from %s.' % (self.user.fancy_name(),
+                                                                    arrives.get(go_exit.linked_exit))
                         else:
                             tell_new = '%s suddenly appears in the room.' % self.user.fancy_name()
-                        tell_old = '%s leaves to the %s.' % (self.user.fancy_name(),
+                        tell_old = '%s leaves %s.' % (self.user.fancy_name(),
                                                              go_exit.direction)
                         self.user.go(go_exit.to_room, tell_new, tell_old)
                     else:
