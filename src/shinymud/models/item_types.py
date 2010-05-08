@@ -111,6 +111,7 @@ class ItemType(object):
         """
         raise ItemTypeInterfaceError('You need to implement the str function.')
     
+    
     # ****************************************************************************
     # THE FUNCTIONS BELOW THIS POINT ARE NOT MEANT TO BE IMPLEMENTED BY SUBCLASSES
     # ****************************************************************************
@@ -961,19 +962,19 @@ class Portal(ItemType):
         """Set this portal's leave message."""
         self.leave_message = message
         self.save({'leave_message': self.leave_message})
-        return 'Leave message set.\n'
+        return 'Leave message set.'
     
     def set_entrance(self, message, player=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
         self.save({'entrance_message': self.entrance_message})
-        return 'Entrance message set.\n'
+        return 'Entrance message set.'
     
     def set_emerge(self, message, player=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
         self.save({'emerge_message': self.emerge_message})
-        return 'Emerge message set.\n'
+        return 'Emerge message set.'
     
 
 

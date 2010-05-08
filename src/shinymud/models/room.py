@@ -375,8 +375,11 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             return 'The %s exit doesn\'t exist.' % direction
         if not exit.linked_exit:
             return 'The %s exit is not linked to anything.' % direction
-        exit.to_room.exits[exit.linked_exit].destruct()
-        exit.to_room.exits[exit.linked_exit] = None
+        # Just in case our linked exit got deleted and this room didn't 
+        # know about it:
+        if exit.to_room and exit.to_room.exits[exit.linked_exit]:
+            exit.to_room.exits[exit.linked_exit].destruct()
+            exit.to_room.exits[exit.linked_exit] = None
         exit.destruct()
         self.exits[direction] = None
         return 'The %s exit has been unlinked.' % direction
