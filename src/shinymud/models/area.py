@@ -1,6 +1,6 @@
 from shinymud.lib.world import World
 from shinymud.models.room import Room
-from shinymud.models.item import Item
+from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
 from shinymud.models.script import Script
 from shinymud.modes.text_edit_mode import TextEditMode
@@ -41,10 +41,10 @@ class Area(object):
     def load(self):
         """Load all of this area's objects from the database."""
         if self.dbid:
-            items = self.world.db.select("* from item where area=?", [self.dbid])
+            items = self.world.db.select("* from build_item where area=?", [self.dbid])
             for item in items:
                 item['area'] = self
-                self.items[str(item['id'])] = Item(**item)
+                self.items[str(item['id'])] = BuildItem(**item)
             scripts = self.world.db.select("* from script where area=?", [self.dbid])
             for script in scripts:
                 script['area'] = self
@@ -104,7 +104,7 @@ Description: \n    %s""" % (self.name,
     
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
-        if id_type in ['room', 'item', 'npc', 'script']:
+        if id_type in ['room', 'build_item', 'npc', 'script']:
             world = World.get_world()
             rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
             max_id = rows[0]['id']
@@ -275,9 +275,9 @@ Description: \n    %s""" % (self.name,
         """Add a new item to this area's item list."""
         if item_dict:
             item_dict['area'] = self
-            new_item = Item(**item_dict)
+            new_item = BuildItem(**item_dict)
         else:
-            new_item = Item.create(self, self.get_id('item'))
+            new_item = BuildItem.create(self, self.get_id('build_item'))
         new_item.save()
         self.items[str(new_item.id)] = new_item
         return new_item

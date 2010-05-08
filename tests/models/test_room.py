@@ -124,18 +124,18 @@ class TestRoom(TestCase):
         self.assertEqual(self.room.npcs[0].id, proto_npc.id)
         self.assertEqual(self.room.npcs[0].area, proto_npc.area)
         self.assertEqual(len(self.room.npcs), 1)
-        self.assertEqual(self.room.items[0].id, proto_container.id)
-        self.assertEqual(self.room.items[0].area, proto_container.area)
+        self.assertEqual(self.room.items[0].build_id, proto_container.id)
+        self.assertEqual(self.room.items[0].build_area, proto_container.area.name)
         
         c_flag = False
         for item in self.room.items:
-            if item.is_container():
+            if item.has_type('container'):
                 inventory = item.item_types.get('container').inventory
                 c_flag = True
                 # There should be 1 item inside the container item
                 self.assertEqual(len(inventory), 1)
-                self.assertEqual(inventory[0].id, proto_item.id)
-                self.assertEqual(inventory[0].area, proto_item.area)
+                self.assertEqual(inventory[0].build_id, proto_item.id)
+                self.assertEqual(inventory[0].build_area, proto_item.area.name)
         # We better have found a container in the room's items
         self.assertTrue(c_flag)
         
@@ -146,11 +146,11 @@ class TestRoom(TestCase):
         self.assertEqual(len(self.room.npcs), 1)
         c_flag = False
         for item in self.room.items:
-            if item.is_container():
+            if item.has_type('container'):
                 c_flag = True
                 inventory = item.item_types.get('container').inventory
-                self.assertEqual(inventory[0].id, proto_item.id)
-                self.assertEqual(inventory[0].area, proto_item.area)
+                self.assertEqual(inventory[0].build_id, proto_item.id)
+                self.assertEqual(inventory[0].build_area, proto_item.area.name)
                 # There should be 1 item inside the container item
                 self.assertEqual(len(inventory), 1)
         # We better have found a container in the room's items

@@ -1,5 +1,5 @@
 from shinymud.commands.attacks import *
-from shinymud.models.item import *
+from shinymud.data.config import EQUIP_SLOTS
 import logging 
 
 
@@ -103,8 +103,8 @@ class Character(object):
         self.battle = None
         self._battle_target = None
         self.inventory = []
-        self.equipped = {} #Stores current item in each slot from SLOT_TYPES
-        for i in SLOT_TYPES.keys():
+        self.equipped = {} #Stores current item in each slot from EQUIP_SLOTS
+        for i in EQUIP_SLOTS.keys():
             self.equipped[i] = ''
         self.isequipped = [] #Is a list of the currently equipped items
         self._attack_queue = []
@@ -167,10 +167,13 @@ class Character(object):
             item.save({'owner': item.owner})
             self.inventory.remove(item)
     
-    def has_item(self, item):
+    def has_item(self, build_item):
+        """Check if the player has a GameItem in their inventory that descended
+        from the given build_item prototype.
+        """
         found = False
         for i in self.inventory:
-            if i.id == item.id and i.area == item.area:
+            if i.build_id == build_item.id and i.build_area == build_item.area.name:
                 found = True
                 break
         return found

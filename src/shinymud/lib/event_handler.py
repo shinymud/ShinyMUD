@@ -229,14 +229,14 @@ following personalizers with their corresponding values:
                 self.obj.update_output(m)
                 return
             item_id, area_name = match.group('id', 'area')
-            if not ((item_id == item.id) and \
-                    (area_name.lower() == item.area.name)):
+            if not ((item_id == item.build_id) and \
+                    (area_name.lower() == item.build_area)):
                return
                
         rep = {'#target_name': giver.fancy_name(),
                '#item_name': item.name,
-               '#item_id': item.id,
-               '#item_area': item.area.name}
+               '#item_id': item.build_id,
+               '#item_area': item.build_area}
         self.personalize(rep)
         self.execute_script()
     

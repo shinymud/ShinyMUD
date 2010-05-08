@@ -7,7 +7,7 @@ from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.modes.passchange_mode import PassChangeMode
 from shinymud.lib.world import World
-from shinymud.models.item import InventoryItem, SLOT_TYPES
+from shinymud.models.item import GameItem
 from shinymud.models.character import Character
 import re
 import logging
@@ -56,20 +56,31 @@ class Player(Character):
             self.load_inventory()
     
     def load_inventory(self):
-        rows = self.world.db.select('* FROM inventory WHERE owner=?', [self.dbid])
+        rows = self.world.db.select('* FROM game_item WHERE owner=?', [self.dbid])
         if rows:
             for row in rows:
-                item = InventoryItem(**row)
+                item = GameItem(**row)
                 item.owner = self
-                if item.is_equippable():
+                if item.has_type('equippable'):
                     equip_type = item.item_types['equippable']
                     if equip_type.is_equipped:
                         self.equipped[equip_type.equip_slot] = item
                         self.isequipped.append(item)
                         equip_type.on_equip()
-                if item.is_container():
-                    item.item_types.get('container').load_contents()
+                if item.has_type('container'):
+                    self.load_contents(item)
                 self.inventory.append(item)
+                
+    def load_container_contents(self, container):
+        """Load this game_item's contents.
+        """
+        rows = World.get_world().db.select("* FROM game_item WHERE container=?", [container.dbid])
+        self.log.debug(rows)
+        for row in rows:
+            new_item = GameItem(**row)
+            if new_item.has_type('container'):
+                self.load_contents(new_item)
+            container.item_add(new_item)
     
     def to_dict(self):
         d = Character.to_dict(self)

@@ -129,6 +129,6 @@ class TestSpawn(TestCase):
                              'obj': self.item, 
                              'spawn_type': 'item'})
         item1 = spawn1.spawn()
-        self.assertTrue(isinstance(item1, Item))
+        self.assertTrue(isinstance(item1, GameItem))
         
         # Next test 

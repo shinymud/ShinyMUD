@@ -125,7 +125,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.clean_spawns()
         room_id = '%s,%s' % (self.id, self.area.name)
         for item in self.items:
-            if item.is_container():
+            if item.has_type('container'):
                 if item.spawn_id and (item.spawn_id.startswith(room_id)):
                     self.item_purge(item)
         present_obj = [item.spawn_id for item in self.items if item.spawn_id]
@@ -152,7 +152,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             # when they try to add other items to a container object that
             # doesn't exist.
             if spawn.nested_spawns:
-                if not spawn.spawn_object.is_container():
+                if not spawn.spawn_object.has_type('container'):
                     # Somehow the container item type was removed from this
                     # object (perhaps a builder edited it and forgot to
                     # remove this spawn). We should delete all spawns that
@@ -272,7 +272,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                     return 'Spawn %s doesn\'t exist.' % container
                 container_spawn = self.spawns.get(container)
                 c_obj = container_spawn.spawn_object
-                if container_spawn.spawn_object.is_container():
+                if container_spawn.spawn_object.has_type('container'):
                     spawn = self.new_spawn({'id': self.get_spawn_id(),
                                             'room':self,
                                             'obj':obj,
@@ -440,7 +440,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         """Delete this object from the room and the db, if it exists there."""
         if item in self.items:
             self.items.remove(item)
-            if item.is_container():
+            if item.has_type('container'):
                 container = item.item_types.get('container')
                 container.destroy_inventory()
             item.destruct()
@@ -458,7 +458,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         # so we can just wipe the memory instances of them
         self.npcs = []
         # The items in the room may have been dropped by a player (and would
-        # therefore have been in the item_inventory db table). We need
+        # therefore have been in the game_item db table). We need
         # to make sure we delete the item from the db if it has an entry.
         for i in range(len(self.items)):
             self.item_purge(self.items[0])

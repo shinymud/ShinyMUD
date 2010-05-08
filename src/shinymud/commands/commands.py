@@ -1,4 +1,3 @@
-from shinymud.models.item import  SLOT_TYPES
 from shinymud.lib.world import World
 from shinymud.data.config import *
 from shinymud.commands.emotes import *
@@ -287,7 +286,10 @@ inventory, you might want to be more specific as to which place you look in:
                 if self.alias == 'read':
                     return obj.description
                 message = "You look at %s:\n%s" % (obj.name, obj.description)
-                if hasattr(obj, 'is_container') and obj.is_container():
+                # This is a bit hackish -- npcs don't have a has_type attr, so we're making sure
+                # we have an item by process of elimination. If we have an item, and
+                # that item has a container type, we should display its contents.
+                if hasattr(obj, 'has_type') and obj.has_type('container'):
                     message += '\n' + obj.item_types.get('container').display_inventory()
                 return message
         return None
@@ -296,7 +298,7 @@ inventory, you might want to be more specific as to which place you look in:
         item = self.pc.check_inv_for_keyword(keyword)
         if item:
             message = "You look at %s:\n%s" % (item.name, item.description)
-            if item.is_container():
+            if item.has_type('container'):
                 message += '\n' + item.item_types.get('container').display_inventory()
             return message
         return None
@@ -581,10 +583,13 @@ give <item-keyword> to <npc/player-name>
     """
     )
     def execute(self):
+        if not self.args:
+            self.pc.update_output('Try: "give <item> to <person>", or type "help give".')
+            return
         exp = r'(?P<thing>.*?)([ ]to[ ])(?P<givee>\w+)'
         match = re.match(exp, self.args, re.I)
         if not match:
-            self.pc.update_output('Type "help give" for help on this command.\n')
+            self.pc.update_output('Try: "give <item> to <person>", or type "help give".')
         elif not self.pc.location:
             self.pc.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
@@ -695,7 +700,7 @@ take anything out of them. For help with opening containers, see "help open".
                     self.pc.check_inv_for_keyword(source_kw)
         if not c_item:
             return '"%s" doesn\'t exist.' % source_kw
-        if not c_item.is_container():
+        if not c_item.has_type('container'):
             return 'That\'s not a container.'
         container = c_item.item_types.get('container')
         if container.closed:
@@ -773,7 +778,7 @@ To put an item inside a container:
                     self.pc.update_output('%s isn\'t here.' % cont_kw)
                     return
         # Make sure it's a container
-        if not container.is_container():
+        if not container.has_type('container'):
             self.pc.update_output('%s is not a container.' % 
                                     container.name.capitalize())
             return
@@ -834,7 +839,7 @@ To equip an item in your inventory, type
                 equip_type = item.item_types.get('equippable')
                 if not equip_type:
                     message = 'You can\'t equip that!\n'
-                elif equip_type.equip_slot not in SLOT_TYPES:
+                elif equip_type.equip_slot not in EQUIP_SLOTS:
                     message = 'How do you equip that?'
                 else:
                     if self.pc.equipped.get(equip_type.equip_slot): #if slot not empty
@@ -842,7 +847,7 @@ To equip an item in your inventory, type
                     self.pc.equipped[equip_type.equip_slot] = item
                     self.pc.isequipped += [item]
                     equip_type.on_equip()
-                    message = SLOT_TYPES[equip_type.equip_slot].replace('#item', item.name) + '\n'
+                    message = EQUIP_SLOTS[equip_type.equip_slot].replace('#item', item.name) + '\n'
         self.pc.update_output(message)  
     
 
@@ -1437,7 +1442,7 @@ with "close."
             obj = self.pc.location.get_item_by_kw(kw)
             if not obj:
                 return 'You don\'t see that here.'
-        if not obj.is_container():
+        if not obj.has_type('container'):
             return 'That\'s not a container.'
         container = obj.item_types.get('container')
         if toggle == 'close':
@@ -2131,7 +2136,7 @@ Tutorial - try typing:
   say I'm testing out the say command!
 \n<b>Tell</b>
 The tell command will send a private message to a specific person. It only works
-if the person you're trying to Tell is online, or the npc you're trying to tell
+if the player you're trying to Tell is online, or the npc you're trying to tell
 is in the same room as you.
 Try telling someone near you hello! (just replace <person> below with the name
 of the person you want to tell):

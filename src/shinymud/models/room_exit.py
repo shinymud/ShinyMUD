@@ -142,20 +142,28 @@ class RoomExit(object):
     
     def open_me(self, player):
         if self.openable == False:
-            return 'You can\'t open that.\n'
+            return 'You can\'t open that.'
         if not self._closed:
-            return 'It\'s already open.\n'
+            return 'It\'s already open.'
+        r_msg = p_msg = ''
         if self.key and self._locked:
-            if (player.permissions & GOD or player.has_item(self.key)):
+            if player.permissions & GOD:
+                p_msg = 'The %s door unlocks itself at your divine bidding.\n' % (self.direction)
+                r_msg = 'The %s door unlocks itself at %s\'s divine bidding.\n' % (self.direction, player.fancy_name())
+            elif player.has_item(self.key):
                 self._locked = False
+                p_msg = 'You unlock the door with %s.\n' % self.key.name
+                r_msg = '%s unlocks the door with %s.\n' % (player.fancy_name(), self.key.name)
             else:
-                return "It's locked.\n"
+                return "It's locked."
         self._closed = False
-        self.room.tell_room('%s opened the %s door.\n' % (player.fancy_name(), self.direction), [player.name])
+        r_msg += '%s opens the %s door.' % (player.fancy_name(), self.direction)
+        self.room.tell_room(r_msg, [player.name])
         if self.linked_exit:
             self.to_room.exits[self.linked_exit]._closed = False
             self.to_room.tell_room('The %s door was opened from the other side.\n' % self.linked_exit)
-        return 'You open the %s door.\n' % self.direction
+        p_msg += 'You open the %s door.\n' % self.direction
+        return p_msg
     
     def lock_me(self, player):
         if self.key and (player.permissions & GOD or player.has_item(self.key)):

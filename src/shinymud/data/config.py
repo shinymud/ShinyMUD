@@ -28,7 +28,35 @@ DM = 4
 ADMIN = 8
 GOD = 16
 
+EQUIP_SLOTS =    {  'main-hand': 'You wield #item in your main-hand.',
+                    'off-hand': 'You wield #item in your off-hand.',
+                    'head': 'You place #item on your head.',
+                    'neck': 'You wear #item around your neck.',
+                    'ring': 'You wear #item on your finger.',
+                    'crown': 'You place #item upon your head.',
+                    'hands': 'You wear #item on your hands.',
+                    'wrist': "You wear #item on your wrist.",
+                    'earring': 'You slip #item into your ear.',
+                    'arms': 'You wear #item on your arms.',
+                    'legs': 'You wear #item on your legs.',
+                    'feet': 'You pull #item on to your feet.',
+                    'torso': 'You wear #item on your body.',
+                    'waist': 'You wear #item around your waist.',
+                    'back': 'you throw #item over your back.'
+                    #'face',
+                    #'eyes',
+                }
 
+DAMAGE_TYPES =  [   'slashing', 
+                    'piercing', 
+                    'impact', 
+                    'fire', 
+                    'ice', 
+                    'shock', 
+                    'sonic', 
+                    'poison',
+                    # 'holy'
+                ]
 
 # Color constants:
 clear_fcolor = COLOR_FG_RESET # DON'T CHANGE THIS ONE!

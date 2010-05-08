@@ -42,7 +42,7 @@ def initialize_database(connection=None):
     description TEXT,
     UNIQUE (area, id)
 )''',\
-'''CREATE TABLE IF NOT EXISTS  item (
+'''CREATE TABLE IF NOT EXISTS  build_item (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
     area INTEGER NOT NULL REFERENCES area(dbid),
@@ -71,10 +71,10 @@ def initialize_database(connection=None):
     key_area TEXT,
     UNIQUE (room_id, area, direction)
 )''',\
-'''CREATE TABLE IF NOT EXISTS inventory (
+'''CREATE TABLE IF NOT EXISTS game_item (
     dbid INTEGER PRIMARY KEY,
-    id INTEGER,
-    area INTEGER REFERENCES area(dbid),
+    build_id TEXT,
+    build_area TEXT,
     name TEXT,
     title TEXT,
     description TEXT,
@@ -83,7 +83,7 @@ def initialize_database(connection=None):
     base_value INTEGER DEFAULT 0,
     carryable TEXT,
     owner INTEGER REFERENCES player(dbid),
-    container INTEGER REFERENCES inventory(dbid)
+    container INTEGER REFERENCES game_item(dbid) ON DELETE CASCADE
 )''',\
 '''CREATE TABLE IF NOT EXISTS npc (
     dbid INTEGER PRIMARY KEY,
@@ -112,8 +112,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
+    game_item INTEGER NULL REFERENCES game_item(dbid) ON DELETE CASCADE,
     to_room TEXT,
     to_area TEXT,
     leave_message TEXT,
@@ -122,8 +122,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS food (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
+    game_item INTEGER NULL REFERENCES game_item(dbid) ON DELETE CASCADE,
     ro_area TEXT,
     ro_id TEXT,
     food_type TEXT,
@@ -132,8 +132,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS container (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
+    game_item INTEGER NULL REFERENCES game_item(dbid) ON DELETE CASCADE,
     weight_capacity NUMBER,
     weight_reduction INTEGER,
     item_capacity INTEGER,
@@ -145,8 +145,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS equippable (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
+    game_item INTEGER NULL REFERENCES game_item(dbid) ON DELETE CASCADE,
     equip_slot TEXT,
     is_equipped TEXT DEFAULT 'False',
     hit INTEGER DEFAULT 0,
@@ -156,8 +156,8 @@ def initialize_database(connection=None):
 )''',\
 '''CREATE TABLE IF NOT EXISTS furniture (
     dbid INTEGER PRIMARY KEY,
-    item INTEGER NULL REFERENCES item(dbid),
-    inv_item INTEGER NULL REFERENCES inventory(dbid),
+    build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
+    game_item INTEGER NULL REFERENCES game_item(dbid) ON DELETE CASCADE,
     capacity INTEGER,
     sit_effects TEXT,
     sleep_effects TEXT

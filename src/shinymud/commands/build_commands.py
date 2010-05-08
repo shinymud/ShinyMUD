@@ -1,10 +1,11 @@
 from shinymud.models.area import Area
 from shinymud.models.room import Room
-from shinymud.models.item import Item, SLOT_TYPES, DAMAGE_TYPES
+from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
 from shinymud.lib.sport import *
 from shinymud.commands import *
+from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
 
 import re
 import logging
@@ -261,9 +262,9 @@ class Set(BaseCommand):
                 if hasattr(obj, 'set_' + func):
                     message = (getattr(obj, 'set_' + func)(arg, self.pc))
                 
-                elif obj.__class__.__name__ == 'Item':
+                elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the set function in the object's native set functions,
-                    # but the object is of type Item, then we should search the set functions
+                    # but the object is of type BuildItem, then we should search the set functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'set_' + func):
@@ -399,9 +400,9 @@ object you're editing.
                 func, _, arg = match.groups()
                 if hasattr(obj, 'add_' + func):
                     self.pc.update_output(getattr(obj, 'add_' + func)(arg))
-                elif obj.__class__.__name__ == 'Item':
+                elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the add function in the object's native add functions,
-                    # but the object is of type Item, then we should search the add functions
+                    # but the object is of type BuildItem, then we should search the add functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'add_' + func):
@@ -439,9 +440,9 @@ help file for the object you're editing for more details.
                 func, _, args = match.groups()
                 if hasattr(obj, 'remove_' + func):
                     self.pc.update_output(getattr(obj, 'remove_' + func)(args))
-                elif obj.__class__.__name__ == 'Item':
+                elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the remove function in the object's native remove functions,
-                    # but the object is of type Item, then we should search the remove functions
+                    # but the object is of type BuildItem, then we should search the remove functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'remove_' + func):
@@ -986,7 +987,7 @@ if they are hit. Some cursed items may make characters very vulnerable to
 certain types of damage. see <b>help damage</b> for more info on damage types.
 <b>equip (set equip <equip-slot>)</b> Set the location this item is worn/held.
 The equip-slot may be one of the following:
-  """ + ",\n  ".join([key for key in SLOT_TYPES.keys()]) + '.'
+  """ + ",\n  ".join([key for key in EQUIP_SLOTS.keys()]) + '.'
 ), ['weapon', 'equippable', 'armor', ])
 
 command_help.register(("<title>Damage (Equippable Attribute)</title>"
