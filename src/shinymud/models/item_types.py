@@ -19,9 +19,13 @@ class ItemType(object):
         the saved values of your attributes loaded from the database.
         Your init function should look something like the following:
          
+        # You'll need to initialize these first three attributes
+        # regardless of what kind of ItemType you're creating:
         self.dbid = args.get('dbid')
-        self.game_item = args.get('game_item)
-        self.build_item = args.get('build_item)
+        self.game_item = args.get('game_item')
+        self.build_item = args.get('build_item')
+         
+        # Now we'll initialize our class-specific attributes:
         self.foo = args.get('foo', 'My default foo value.')
         self.bar = args.get('bar', 'My default bar value.')
         """
@@ -513,7 +517,7 @@ class Food(ItemType):
         if 'build_item' in d:
             del d['build_item']
         d['game_item'] = game_item
-        new_f = Food(self.to_dict())
+        new_f = Food(d)
         # FIXME: This code is super hacky, bloody fix it when 
         # character effects gets refactored
         effects = {}
