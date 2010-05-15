@@ -62,5 +62,12 @@ EMOTES = {  'slap': (['You stand around looking for someone to slap.',
                      '#actor pets you.',
                      '#actor pets #target.'
                     ]),
-            'purr': (['You purr contentedly.', '#actor purrs contentedly.'], [])
+            'purr': (['You purr contentedly.', '#actor purrs contentedly.'], []),
+            'grr': (['You growl in frustration.',
+                     '#actor growls in frustration.'
+                    ],
+                    ['You growl at #target.',
+                     '#actor growls at you.',
+                     '#actor growls at #target.'
+                    ])
          }
