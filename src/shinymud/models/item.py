@@ -103,7 +103,7 @@ class BuildItem(Item):
                   'keywords: ' + str(self.keywords) + '\n' + \
                   'weight: ' + str(self.weight) + '\n' + \
                   'carryable: ' + str(self.carryable) + '\n' + \
-                  'base value: ' + str(self.base_value) + '\n'
+                  'base value: ' + str(self.base_value) + self.world.currency_name + '\n'
         for itype in self.item_types.values():
             string += str(itype)
         string += ('-' * 50)

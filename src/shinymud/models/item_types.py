@@ -981,12 +981,16 @@ class Portal(ItemType):
         return 'Emerge message set.'
     
 
+class Book(ItemType):
+    pass
+
 
 ITEM_TYPES = {'equippable': Equippable,
               'food': Food,
               'container': Container,
               'furniture': Furniture,
               'portal': Portal
+              # 'book': Book
              }
 
 

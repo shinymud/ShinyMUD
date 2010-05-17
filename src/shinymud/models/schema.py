@@ -185,6 +185,14 @@ def initialize_database(connection=None):
     item INTEGER,
     item_type TEXT,
     player INTEGER NULL REFERENCES player(dbid)
+)''',\
+'''CREATE TABLE IF NOT EXISTS merchant (
+    dbid INTEGER PRIMARY KEY,
+    npc INTEGER NOT NULL REFERENCES npc(dbid),
+    buyer TEXT,
+    markup INTEGER,
+    buys_types TEXT,
+    sale_items TEXT
 )'''
 ]
     

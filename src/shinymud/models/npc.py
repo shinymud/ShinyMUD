@@ -4,6 +4,8 @@ from shinymud.lib.world import World
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
 from shinymud.models.npc_event import NPCEvent
+from shinymud.models.npc_ai_packs import NPC_AI_PACKS
+
 import logging
 import re
 
@@ -30,8 +32,10 @@ class Npc(Character):
         self.log = logging.getLogger('Npc')
         self.events = {}
         self.next_event_id = 1
+        self.ai_packs = {}
         if self.dbid:
             self.load_events()
+            self.load_ai_packs()
     
     def to_dict(self):
         d = Character.to_dict(self)
@@ -64,14 +68,18 @@ class Npc(Character):
                 i += 1
         if not events:
             events = 'None.'
+        ai_packs = ', '.join([p for p in self.ai_packs]) or 'None.'
         string += """name: %s
 title: %s
 gender: %s
 keywords: %s
+ai packs: %s
 description:
-    %s
-Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords), 
-                 self.description, events)
+    %s\n""" % (self.name, self.title, self.gender, str(self.keywords), 
+                     ai_packs, self.description)
+        for ai in self.ai_packs.values():
+            string += str(ai)
+        string += 'NPC EVENTS:\n' + events
         string += '\n' + ('-' * 50)
         return string
     
@@ -115,6 +123,14 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             else:
                 self.log.error('The script this event points to is gone! '
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
+    
+    def load_ai_packs(self):
+        for key, value in NPC_AI_PACKS.items():
+            row = self.world.db.select('* FROM %s WHERE npc=?' % key,
+                                       [self.dbid])
+            if row:
+                row[0]['npc'] = self
+                self.ai_packs[key] = value(row[0])
     
     def update_output(self, message):
         """Append any updates to this npc's action queue.
@@ -244,3 +260,28 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
                 args.update(e.get_args())
                 EVENTS[event_name](**args).run()
     
+# ***** ai pack functions *****
+    def has_ai(self, ai):
+        """Return true if this npc has this ai pack, False if it does not."""
+        return ai in self.ai_packs
+    
+    def add_ai(self, args):
+        """Add an ai pack to this npc."""
+        if not args:
+            return 'Try: "add ai <ai-pack-name>", or type "help ai packs".'
+        if args in self.ai_packs:
+            return 'This npc (%s) already has that ai pack.' % self.name
+        if args in NPC_AI_PACKS:
+            self.new_ai(args)
+            return "This npc (%s) is now a %s." % (self.name, args)
+        else:
+            return '"%s" is not a valid ai pack. See "help ai packs".' % args
+    
+    def new_ai(self, ai_pack, args={}):
+        """Add an ai pack to this npc."""
+        args['npc'] = self
+        pack = NPC_AI_PACKS[ai_pack](args)
+        pack.save()
+        self.ai_packs[ai_pack] = pack
+    
+

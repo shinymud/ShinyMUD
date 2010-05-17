@@ -14,7 +14,7 @@ format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d| %(message)
 logging.basicConfig(filename=LOG_FILE, level=LOG_LEVEL, format=format)
 logger = logging.getLogger('shiny_server')
 world = World()
-world.db.delete('from game_item where owner=null and container=null')
+world.db.delete('from game_item where (owner is null or owner=\'None\') and container is null')
 
 # load the entities in the world from the database
 for area in world.db.select("* from area"):

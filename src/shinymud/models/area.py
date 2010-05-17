@@ -255,7 +255,11 @@ Description: \n    %s""" % (self.name,
         for elist in npc.events.values():
             for event in elist:
                 event.destruct()
-        npc.events = {}
+        for ai in npc.ai_packs.values():
+            ai.destruct()
+        
+        npc.ai_packs.clear()
+        npc.events.clear()
         npc.id = None
         del self.npcs[npc_id]
         return '"%s" has been successfully destroyed.' % npc.name

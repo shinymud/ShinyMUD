@@ -24,6 +24,7 @@ class World(object):
         self.log = logging.getLogger('World')
         self.db = DB()
         self.default_location = None
+        self.currency_name = CURRENCY
         self.login_greeting = ''
         self.uptime = time.time()
         
@@ -237,3 +238,4 @@ class World(object):
     def battle_remove(self, battle_id):
         if battle_id in self.battles:
             self.battles_delete.append(battle_id)
+    

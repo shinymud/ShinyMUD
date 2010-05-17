@@ -270,6 +270,11 @@ class Set(BaseCommand):
                         if hasattr(iType, 'set_' + func):
                             message = getattr(iType, 'set_' + func)(arg)
                             break
+                elif obj.__class__.__name__ == 'Npc':
+                    for ai in obj.ai_packs.values():
+                        if hasattr(ai, 'set_' + func):
+                            message = getattr(ai, 'set_' + func)(arg)
+                            break
                 self.pc.update_output(message)
     
 
@@ -408,6 +413,11 @@ object you're editing.
                         if hasattr(iType, 'add_' + func):
                             message = getattr(iType, 'add_' + func)(arg)
                             break
+                elif obj.__class__.__name__ == 'Npc':
+                    for ai in obj.ai_packs.values():
+                        if hasattr(ai, 'add_' + func):
+                            message = getattr(ai, 'add_' + func)(arg)
+                            break
                     self.pc.update_output(message)
     
 
@@ -447,6 +457,11 @@ help file for the object you're editing for more details.
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'remove_' + func):
                             message = getattr(iType, 'remove_' + func)(args)
+                            break
+                elif obj.__class__.__name__ == 'Npc':
+                    for ai in obj.ai_packs.values():
+                        if hasattr(ai, 'remove_' + func):
+                            message = getattr(ai, 'remove_' + func)(args)
                             break
                     self.pc.update_output(message)
     

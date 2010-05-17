@@ -442,9 +442,9 @@ Or just give the direction you want to go:
             self.pc.update_output('You exist in a void; there is nowhere to go.\n')
     
 
-command_list.register(Go, ['go', 'north', 'n', 'south', 's', 'east', 'e',
+command_list.register(Go, ['go', 'move', 'north', 'n', 'south', 's', 'east', 'e',
                            'west', 'w', 'up', 'down', 'u', 'd'])
-command_help.register(Go.help, ['go', 'north', 'east', 'south', 'west', 'up',
+command_help.register(Go.help, ['go', 'move', 'north', 'east', 'south', 'west', 'up',
                                 'down', 'u', 'd', 'n', 'e', 's', 'w'])
 
 class Say(BaseCommand):
