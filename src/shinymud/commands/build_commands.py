@@ -622,7 +622,7 @@ command_help.register(Import.help, ['import'])
 class Log(BaseCommand):
     help = (
     """<title>Log (BuildCommand)</title>
-Npc's receive the same feedback for preforming actions (commands) as a player
+Npcs receive the same feedback for preforming actions (commands) as a player
 character, but since they can't read, their feedback gets accumulated in an
 action log rather than being output to a screen. The Log command allows you to
 read the action log (and memory) of an npc to help you debug scripting errors.

@@ -94,6 +94,7 @@ description:
         new_npc.location = None
         new_npc.inventory = []
         new_npc.actionq = []
+        new_npc.cmdq = []
         new_npc.remember = []
         return new_npc
     
@@ -139,6 +140,31 @@ description:
         self.actionq.append(message)
         if len(self.actionq) > self.LOG_LINES:
             del self.actionq[0]
+    
+    def do_tick(self):
+        """Cycle through this npc's commands, if it has any."""
+        if not self.cmdq:
+            return False
+        self.cmdq.pop(0).run()
+        return True
+        # else:
+        #     if self.dbid:
+        #         self.cycle_effects()
+        #     self.get_input()
+        #     if not self.mode:
+        #         self.parse_command()
+        #     elif self.mode.active:
+        #         self.mode.state()
+        #         if not self.mode.active:
+        #             if self.last_mode:
+        #                 self.mode = self.last_mode
+        #             else:
+        #                 self.mode = None
+        #     else:
+        #         # If we get here somehow (where the state of this mode is not
+        #         # active, but the mode has not been cleared), just clear the
+        #         # mode.
+        #         self.mode = None
     
 # ***** BuildMode accessor functions *****
     def set_description(self, description, player=None):
@@ -259,6 +285,7 @@ description:
             for e in self.events[event_name]:
                 args.update(e.get_args())
                 EVENTS[event_name](**args).run()
+            self.world.npc_subscribe(self)
     
 # ***** ai pack functions *****
     def has_ai(self, ai):
@@ -266,7 +293,7 @@ description:
         return ai in self.ai_packs
     
     def add_ai(self, args):
-        """Add an ai pack to this npc."""
+        """Add an ai pack to this npc via BuildMode."""
         if not args:
             return 'Try: "add ai <ai-pack-name>", or type "help ai packs".'
         if args in self.ai_packs:
@@ -278,7 +305,7 @@ description:
             return '"%s" is not a valid ai pack. See "help ai packs".' % args
     
     def new_ai(self, ai_pack, args={}):
-        """Add an ai pack to this npc."""
+        """Add a new ai pack to this npc."""
         args['npc'] = self
         pack = NPC_AI_PACKS[ai_pack](args)
         pack.save()

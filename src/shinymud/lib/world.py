@@ -27,6 +27,7 @@ class World(object):
         self.currency_name = CURRENCY
         self.login_greeting = ''
         self.uptime = time.time()
+        self.active_npcs = []
         
         try:
             greet_file = open(ROOT_DIR + '/login_greeting.txt', 'r')
@@ -61,6 +62,10 @@ class World(object):
     def start_turning(self):
         while not self.shutdown_flag:
             start = time.time()
+            # Go through active npcs
+            for i in reversed(xrange(len(self.active_npcs))):
+                if not self.active_npcs[i].do_tick():
+                    del self.active_npcs[i]
             # Manage player list
             self.player_list_lock.acquire()
             list_keys = self.player_list.keys()
@@ -238,4 +243,10 @@ class World(object):
     def battle_remove(self, battle_id):
         if battle_id in self.battles:
             self.battles_delete.append(battle_id)
+    
+# ********************** NPC Functions **********************
+# Here exist all the function that the world uses to manage active npcs
+    def npc_subscribe(self, npc):
+        """Add an npc to the world's active_npcs list."""
+        self.active_npcs.append(npc)
     
