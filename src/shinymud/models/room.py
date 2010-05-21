@@ -413,8 +413,9 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         return self.players.get(keyword)
     
     def check_for_keyword(self, keyword):
-        """Return the first instance of an item, npc, or player that matches the keyword.
-        If nothing in the room matches the keyword, return None."""
+        """Return the first instance of an item, npc, or player that matches the
+        keyword. If nothing in the room matches the keyword, return None.
+        """
         # check the items in the room first
         item = self.get_item_by_kw(keyword)
         if item: return item
