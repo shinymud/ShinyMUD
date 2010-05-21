@@ -81,8 +81,8 @@ class TestGeneralCommands(TestCase):
         room.npc_add(npc)
         
         item = area.new_item()
-        item.set_keywords('bauble', bob)
-        item.set_name('a bauble', bob)
+        item.build_set_keywords('bauble', bob)
+        item.build_set_name('a bauble', bob)
         bob.item_add(item.load())
         
         self.assertEqual(len(bob.inventory), 1)

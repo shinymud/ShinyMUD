@@ -259,21 +259,21 @@ class Set(BaseCommand):
             else:
                 func, _, arg = match.groups()
                 message = 'You can\'t set that.\n'
-                if hasattr(obj, 'set_' + func):
-                    message = (getattr(obj, 'set_' + func)(arg, self.pc))
+                if hasattr(obj, 'build_set_' + func):
+                    message = (getattr(obj, 'build_set_' + func)(arg, self.pc))
                 
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the set function in the object's native set functions,
                     # but the object is of type BuildItem, then we should search the set functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
-                        if hasattr(iType, 'set_' + func):
-                            message = getattr(iType, 'set_' + func)(arg)
+                        if hasattr(iType, 'build_set_' + func):
+                            message = getattr(iType, 'build_set_' + func)(arg)
                             break
                 elif obj.__class__.__name__ == 'Npc':
                     for ai in obj.ai_packs.values():
-                        if hasattr(ai, 'set_' + func):
-                            message = getattr(ai, 'set_' + func)(arg)
+                        if hasattr(ai, 'build_set_' + func):
+                            message = getattr(ai, 'build_set_' + func)(arg)
                             break
                 self.pc.update_output(message)
     
@@ -403,20 +403,20 @@ object you're editing.
                 self.pc.update_output('Type "help add" for help with this command.\n')
             else:
                 func, _, arg = match.groups()
-                if hasattr(obj, 'add_' + func):
-                    self.pc.update_output(getattr(obj, 'add_' + func)(arg))
+                if hasattr(obj, 'build_add_' + func):
+                    self.pc.update_output(getattr(obj, 'build_add_' + func)(arg))
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the add function in the object's native add functions,
                     # but the object is of type BuildItem, then we should search the add functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
-                        if hasattr(iType, 'add_' + func):
-                            message = getattr(iType, 'add_' + func)(arg)
+                        if hasattr(iType, 'build_add_' + func):
+                            message = getattr(iType, 'build_add_' + func)(arg)
                             break
                 elif obj.__class__.__name__ == 'Npc':
                     for ai in obj.ai_packs.values():
-                        if hasattr(ai, 'add_' + func):
-                            message = getattr(ai, 'add_' + func)(arg)
+                        if hasattr(ai, 'build_add_' + func):
+                            message = getattr(ai, 'build_add_' + func)(arg)
                             break
                     self.pc.update_output(message)
     
@@ -448,20 +448,20 @@ help file for the object you're editing for more details.
                 self.pc.update_ouput('Type "help remove" for help with this command.')
             else:
                 func, _, args = match.groups()
-                if hasattr(obj, 'remove_' + func):
-                    self.pc.update_output(getattr(obj, 'remove_' + func)(args))
+                if hasattr(obj, 'build_remove_' + func):
+                    self.pc.update_output(getattr(obj, 'build_remove_' + func)(args))
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the remove function in the object's native remove functions,
                     # but the object is of type BuildItem, then we should search the remove functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
-                        if hasattr(iType, 'remove_' + func):
-                            message = getattr(iType, 'remove_' + func)(args)
+                        if hasattr(iType, 'build_remove_' + func):
+                            message = getattr(iType, 'build_remove_' + func)(args)
                             break
                 elif obj.__class__.__name__ == 'Npc':
                     for ai in obj.ai_packs.values():
-                        if hasattr(ai, 'remove_' + func):
-                            message = getattr(ai, 'remove_' + func)(args)
+                        if hasattr(ai, 'build_remove_' + func):
+                            message = getattr(ai, 'build_remove_' + func)(args)
                             break
                     self.pc.update_output(message)
     

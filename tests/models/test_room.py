@@ -21,7 +21,7 @@ class TestRoom(TestCase):
     def test_add_spawn_item_inroom(self):
         """Test adding a spawn for an item, with a spawn point 'in room'."""
         item = self.area.new_item()
-        message = self.room.add_spawn('for item %s' % item.id)
+        message = self.room.build_add_spawn('for item %s' % item.id)
         exp_message = ('A room spawn has been added for '
                        '%s number %s.' % ('item', item.id)
                       )
@@ -39,15 +39,15 @@ class TestRoom(TestCase):
     def test_add_spawn_item_nested_in_item(self):
         item = self.area.new_item()
         container = self.area.new_item()
-        container.add_type('container')
+        container.build_add_type('container')
         
-        message1 = self.room.add_spawn('for item %s' % container.id)
+        message1 = self.room.build_add_spawn('for item %s' % container.id)
         exp_message1 = ('A room spawn has been added for '
                         '%s number %s.' % ('item', container.id)
                        )
         self.room.log.debug(self.room.spawns)
         self.assertEqual(message1, exp_message1)
-        message2 = self.room.add_spawn('for item %s in spawn %s' % (item.id, 
+        message2 = self.room.build_add_spawn('for item %s in spawn %s' % (item.id, 
                                                                     '1'))
         exp_message2 = ('A room spawn has been added for '
                         '%s number %s.' % ('item', item.id)
@@ -69,11 +69,11 @@ class TestRoom(TestCase):
     
     def test_remove_spawn(self):
         item = self.area.new_item()
-        self.room.add_spawn('for item %s' % item.id)
+        self.room.build_add_spawn('for item %s' % item.id)
         self.assertEqual(len(self.room.spawns.items()), 1)
         db_spawn = self.world.db.select('* FROM room_spawns WHERE dbid=?', [1])
         self.assertEqual(len(db_spawn), 1)
-        self.room.remove_spawn('1')
+        self.room.build_remove_spawn('1')
         # The room should now have an empty spawns list
         self.assertEqual(len(self.room.spawns.items()), 0)
         # The spawn should no longer be in the database
@@ -84,10 +84,10 @@ class TestRoom(TestCase):
         item1 = self.area.new_item()
         item2 = self.area.new_item()
         container = self.area.new_item()
-        container.add_type('container')
-        self.room.add_spawn('for item %s' % container.id)
-        self.room.add_spawn('for item %s inside %s' % (item1.id, '1'))
-        self.room.add_spawn('for item %s inside %s' % (item2.id, '1'))
+        container.build_add_type('container')
+        self.room.build_add_spawn('for item %s' % container.id)
+        self.room.build_add_spawn('for item %s inside %s' % (item1.id, '1'))
+        self.room.build_add_spawn('for item %s inside %s' % (item2.id, '1'))
         self.assertEqual(len(self.room.spawns.items()), 3)
         c_spawn = self.room.spawns.get('1')
         spawn1 = self.room.spawns.get('2')
@@ -96,8 +96,8 @@ class TestRoom(TestCase):
         self.assertEqual(c_spawn, spawn2.container)
         self.assertEqual(len(c_spawn.nested_spawns), 2)
         
-        message1 = self.room.remove_spawn('2')
-        message2 = self.room.remove_spawn('3')
+        message1 = self.room.build_remove_spawn('2')
+        message2 = self.room.build_remove_spawn('3')
         self.assertEqual('Room spawn 2 has been removed.\n', message1)
         self.assertEqual('Room spawn 3 has been removed.\n', message2)
         self.assertTrue(c_spawn in self.room.spawns.values())
@@ -110,12 +110,12 @@ class TestRoom(TestCase):
     def test_spawn(self):
         proto_item = self.area.new_item()
         proto_container = self.area.new_item()
-        proto_container.add_type('container')
+        proto_container.build_add_type('container')
         proto_npc = self.area.new_npc()
         
-        self.room.add_spawn('for item %s' % proto_container.id)
-        self.room.add_spawn('for item %s in %s' % (proto_item.id, '1'))
-        self.room.add_spawn('for npc %s' % proto_npc.id)
+        self.room.build_add_spawn('for item %s' % proto_container.id)
+        self.room.build_add_spawn('for item %s in %s' % (proto_item.id, '1'))
+        self.room.build_add_spawn('for npc %s' % proto_npc.id)
         
         self.assertEqual(len(self.room.items), 0)
         self.assertEqual(len(self.room.npcs), 0)

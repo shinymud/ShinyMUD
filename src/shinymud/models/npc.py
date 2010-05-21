@@ -167,24 +167,24 @@ description:
         #         self.mode = None
     
 # ***** BuildMode accessor functions *****
-    def set_description(self, description, player=None):
+    def build_set_description(self, description, player=None):
         """Set the description of this npc."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_name(self, name, player=None):
+    def build_set_name(self, name, player=None):
         """Set the name of this NPC."""
         self.name = name
         self.save({'name': self.name})
         return 'Npc name saved.\n'
     
-    def set_title(self, title, player=None):
+    def build_set_title(self, title, player=None):
         self.title = title
         self.save({'title': self.title})
         return 'Npc title saved.\n'
     
-    def set_keywords(self, keywords, player=None):
+    def build_set_keywords(self, keywords, player=None):
         """Set the keywords for this npc.
         The argument keywords should be a string of words separated by commas.
         """
@@ -199,7 +199,7 @@ description:
             self.save({'keywords': ','.join(self.keywords)})
             return 'Npc keywords have been reset.'
     
-    def set_gender(self, gender, player=None):
+    def build_set_gender(self, gender, player=None):
         """Set the gender of this npc."""
         if not gender:
             return 'Try "set gender <gender>", or see "help npc".'
@@ -210,7 +210,7 @@ description:
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
 # ***** Event functions *****
-    def add_event(self, args):
+    def build_add_event(self, args):
         """Add an event to an npc."""
         # add event on_enter call script 1
         # add event listen_for 'stuff' call script 1
@@ -257,7 +257,7 @@ description:
         else:
             self.events[new_event.event_trigger] = [new_event]
     
-    def remove_event(self, event):
+    def build_remove_event(self, event):
         """Remove an event from an npc.
         event -- a string containing the id and trigger type of the event to be removed.
         """
@@ -292,7 +292,7 @@ description:
         """Return true if this npc has this ai pack, False if it does not."""
         return ai in self.ai_packs
     
-    def add_ai(self, args):
+    def build_add_ai(self, args):
         """Add an ai pack to this npc via BuildMode."""
         if not args:
             return 'Try: "add ai <ai-pack-name>", or type "help ai packs".'

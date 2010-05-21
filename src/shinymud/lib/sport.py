@@ -141,7 +141,7 @@ class SPort(object):
             for itype in itypes:
                 # Get this itype's item by that item's id
                 my_item = new_area.get_item(itype['item'])
-                my_item.add_type(itype['item_type'], itype)
+                my_item.build_add_type(itype['item_type'], itype)
             for npc in npcs:
                 new_area.new_npc(npc)
             for event in npc_events:

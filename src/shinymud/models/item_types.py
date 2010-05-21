@@ -207,7 +207,7 @@ class Equippable(ItemType):
         self.is_equipped = to_bool(args.get('is_equipped', False))
         self.dbid = args.get('dbid')
     
-    def set_damage(self, params, player=None):
+    def build_set_damage(self, params, player=None):
         if not params:
             return 'Sets a damage type of an equippable item.\nExample: set damage slashing 1-4 100%\n'
         exp = r'((?P<index>\d+)[ ]+)?(?P<params>.+)'
@@ -234,7 +234,7 @@ class Equippable(ItemType):
         # world.db.update_from_dict('equippable', self.to_dict())
         return 'damage ' + str(index) + ' set.\n'
     
-    def set_equip(self, loc, player=None):
+    def build_set_equip(self, loc, player=None):
         """Set the equip location for this item."""
         if loc in EQUIP_SLOTS.keys():
             self.equip_slot = loc
@@ -244,7 +244,7 @@ class Equippable(ItemType):
         else:
             return 'That equip location doesn\'t exist.\n'
     
-    def add_damage(self, params):
+    def build_add_damage(self, params):
         #Currently broken will be fixed when the add class in commands is updated.
         if not params:
             return 'What damage would you like to add?\n'
@@ -257,17 +257,17 @@ class Equippable(ItemType):
         except Exception, e:
             return str(e)
     
-    def set_hit(self, params):
+    def build_set_hit(self, params):
         self.hit = self.parse_value(params) or 0
         self.save({'hit': self.hit})
         return "set hit to " + str(self.hit)
     
-    def set_evade(self, params):
+    def build_set_evade(self, params):
         self.evade = self.parse_value(params) or 0
         self.save({'evade': self.evade})
         return "set evade to " + str(self.evade)
     
-    def add_absorb(self, params):
+    def build_add_absorb(self, params):
         # params should be of the form "absorb_type amount"
         exp = r'(?P<absorb_type>\w+)[ ]+(?P<amount>[^ ]+)'
         m = re.match(exp, params)
@@ -286,7 +286,7 @@ class Equippable(ItemType):
         self.save()
         return 'item absorbs %s %s damage' % (str(self.absorb[absorb_type]), absorb_type)
     
-    set_absorb = add_absorb # alias these to be the same
+    build_set_absorb = build_add_absorb # alias these to be the same
     def parse_value(self, params):
         exp = r'(-(?P<penalty>)\d+)|(\+?(?P<bonus>\d+))'
         m = re.match(exp, params)
@@ -331,7 +331,7 @@ class Equippable(ItemType):
         if a:
             e.absorb = a
         for d in self.dmg:
-            e.add_damage(str(d))
+            e.build_add_damage(str(d))
         return e
     
     def on_equip(self):
@@ -396,7 +396,7 @@ class Equippable(ItemType):
             d['dbid'] = self.dbid
         return d
     
-    def remove_damage(self, index):
+    def build_remove_damage(self, index):
         if len(self.dmg) == 0:
             return "this item does not do any damage"
         elif not index and len(self.dmg) > 1:
@@ -532,7 +532,7 @@ class Food(ItemType):
         e = [effect.copy() for effect in self.effects.values()]
         return e
     
-    def add_effect(self, args):
+    def build_add_effect(self, args):
         """Add an effect to this food item that will be transferred to the
         player when the item is eaten.
         """
@@ -557,7 +557,7 @@ class Food(ItemType):
         self.effects[e] = eff
         return '%s effect added.' % e.capitalize()
     
-    def remove_effect(self, args):
+    def build_remove_effect(self, args):
         """Remove an effect from this item."""
         if not args:
             return 'Which effect did you want to remove?'
@@ -587,7 +587,7 @@ class Food(ItemType):
             m = '#actor drinks from %s.' % (item.name)
         return m
     
-    def set_food_type(self, use, player=None):
+    def build_set_food_type(self, use, player=None):
         """Set the verb used to consume the object."""
         if not use or (use.lower().strip() not in ['food', 'drink']):
             return 'Valid values for food_type are "food" or "drink".'
@@ -595,7 +595,7 @@ class Food(ItemType):
         self.save({'food_type': self.food_type})
         return 'Food_type is now set to %s.' % use
     
-    def set_replace(self, replace, player=None):
+    def build_set_replace(self, replace, player=None):
         world = World.get_world()
         if not replace or (replace.strip().lower() == 'none'):
             self.replace_obj = None
@@ -622,14 +622,14 @@ class Food(ItemType):
         return '%s will be replaced with %s when consumed.' %\
                 (self.build_item.name.capitalize(), item.name)
     
-    def set_actor_message(self, message, player=None):
+    def build_set_actor_message(self, message, player=None):
         self.actor_use_message = message or ''
         self.save({'actor_use_message': self.actor_use_message})
         if not message:
             return 'Use message (actor) has been reset to the default.'
         return 'Use message (actor) has been set.'
     
-    def set_room_message(self, message, player=None):
+    def build_set_room_message(self, message, player=None):
         self.room_use_message = message or ''
         self.save({'room_use_message': self.room_use_message})
         if not message:
@@ -760,7 +760,7 @@ class Container(ItemType):
             return '%s is empty.\n' % self.game_item.name.capitalize()
         return '%s contains:\n%s' % (self.game_item.name.capitalize(), i)
     
-    def set_openable(self, args, player=None):
+    def build_set_openable(self, args, player=None):
         boolean = to_bool(args)
         if not boolean:
             return 'Acceptable values for this attribute are true or false.'
@@ -769,7 +769,7 @@ class Container(ItemType):
             self.save({'openable': self.openable})
             return 'Openable has been set to %s.' % boolean
     
-    def set_closed(self, args, player=None):
+    def build_set_closed(self, args, player=None):
         boolean = to_bool(args)
         if not boolean:
             return 'Acceptable values for this attribute are true or false.'
@@ -778,10 +778,10 @@ class Container(ItemType):
             self.save({'closed': self.closed})
             return 'Closed has been set to %s.' % boolean
     
-    def set_key(self, args, player=None):
+    def build_set_key(self, args, player=None):
         return 'Not implemented yet.'
     
-    def set_locked(self, args, player=None):
+    def build_set_locked(self, args, player=None):
         return 'Not implemented yet.'
     
 
@@ -942,7 +942,7 @@ class Portal(ItemType):
     
     location = property(_resolve_location, _set_location)
     
-    def set_portal(self, args, player=None):
+    def build_set_portal(self, args, player=None):
         """Set the location of the room this portal should go to."""
         if not args:
             return 'Usage: set portal to room <room-id> in area <area-name>\n'
@@ -962,19 +962,19 @@ class Portal(ItemType):
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     
-    def set_leave(self, message, player=None):
+    def build_set_leave(self, message, player=None):
         """Set this portal's leave message."""
         self.leave_message = message
         self.save({'leave_message': self.leave_message})
         return 'Leave message set.'
     
-    def set_entrance(self, message, player=None):
+    def build_set_entrance(self, message, player=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
         self.save({'entrance_message': self.entrance_message})
         return 'Entrance message set.'
     
-    def set_emerge(self, message, player=None):
+    def build_set_emerge(self, message, player=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
         self.save({'emerge_message': self.emerge_message})

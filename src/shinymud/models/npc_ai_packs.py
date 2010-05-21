@@ -207,7 +207,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             self.assemble_sale_list()
         return item in self.sale_items
     
-    def set_markup(self, markup, player=None):
+    def build_set_markup(self, markup, player=None):
         """Set the markup percentage for this merchant."""
         if not markup.strip():
             return 'Try: "set markup <mark-up>", or see "help merchant".'
@@ -220,7 +220,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save({'markup': self.markup})
         return 'Markup is now set to %s%%.' % (markup)
     
-    def set_buys(self, buyer, player=None):
+    def build_set_buys(self, buyer, player=None):
         """Set whether or not this merchant is a buyer."""
         if not buyer.strip():
             return 'Try "set buys <true/false>", or see "help merchant".'
@@ -231,7 +231,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save({'buyer': self.buyer})
         return 'Buys items has been set to %s.' % str(self.buyer)
     
-    def add_type(self, itype):
+    def build_add_type(self, itype):
         """Add an item type that this merchant should specialize in buying."""
         if not self.buyer:
             return 'This merchant is not a buyer.\n' +\
@@ -249,7 +249,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Merchant will now buy items of type %s from players.' % itype
     
-    def remove_type(self, itype):
+    def build_remove_type(self, itype):
         """Remove an item type that this merchant should specialize in buying."""
         if not self.buyer:
             return 'This merchant is not a buyer.\n' +\
@@ -267,7 +267,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             return 'Merchant no longer buys items of type %s.' % itype
         return 'Merchant already doesn\'t buy items of type %s.' % itype
     
-    def add_item(self, args):
+    def build_add_item(self, args):
         """Add an item for this merchant to sell."""
         if self.sale_items is None:
             self.assemble_sale_list()
@@ -301,7 +301,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Merchant now sells %s.' % item.name
     
-    def remove_item(self, item):
+    def build_remove_item(self, item):
         """Remove one of this merchant's sale items."""
         if not item:
             return 'Try "remove item <item-id>", or see "help merchant".'
