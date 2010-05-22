@@ -1,4 +1,5 @@
 from shinymud.lib.ansi_codes import *
+from logging import DEBUG, INFO, WARN, ERROR, CRITICAL
 import os
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -7,8 +8,22 @@ GAME_NAME = 'ShinyMUD' # Replace this with the name of your game!
 
 HOST = ''
 PORT = 4111
-LOG_FILE = ROOT_DIR + '/logs/shinymud.log' # path for the logfile
-LOG_LEVEL = 10 # 10 is the equivalent of "DEBUG"
+
+# *********** LOGGING CONFIGURATION *************** #
+
+SHINYMUD_LOGFILE = ROOT_DIR + '/logs/shinymud.log'
+SHINYMUD_LOGLEVEL = DEBUG
+SHINYMUD_MAXBYTES = 1024 * 1024
+SHINYMUD_NUMFILES = 5
+
+SOCIAL_LOGFILE = ROOT_DIR + '/logs/social.log'
+SOCIAL_LOGLEVEL = DEBUG
+SOCIAL_MAXBYTES = 1024 * 1024
+SOCIAL_NUMFILES = 2
+
+
+
+
 DB_NAME = ROOT_DIR + '/shinymud.db' # path/name of the sqlite3 database
 AREAS_IMPORT_DIR = ROOT_DIR + '/areas' # directory for inmport areas
 AREAS_EXPORT_DIR = ROOT_DIR + '/areas' # directory for exported areas

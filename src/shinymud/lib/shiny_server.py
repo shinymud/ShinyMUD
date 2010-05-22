@@ -11,9 +11,21 @@ import datetime
 import logging
 initialize_database()
 format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d| %(message)s"
-logging.basicConfig(filename=LOG_FILE, level=LOG_LEVEL, format=format)
-logger = logging.getLogger('shiny_server')
+shiny_log = logging.getLogger('SHINYMUD')
+shiny_log.addHandler(logging.handlers.RotatingFileHandler(
+        SHINYMUD_LOGFILE, SHINYMUD_MAXBYTES, SHINYMUD_NUMFILES))
+shiny_log.setFormatter(logging.Formatter(format))
+shiny_log.setLevel(SHINYMUD_LOGLEVEL)
+
+social_log = logging.getLogger('SOCIAL')
+social_log.addHandler(logging.handlers.RotatingFileHandler(
+        SOCIAL_LOGFILE, SOCIAL_MAXBYTES, SOCIAL_NUMFILES))
+social_log.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+social_log.setLevel(SOCIAL_LOGLEVEL)
+
 world = World()
+world.log = shiny_log
+world.play_log = social_log
 world.db.delete('from game_item where owner=null and container=null')
 
 # load the entities in the world from the database
