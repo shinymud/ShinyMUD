@@ -7,6 +7,8 @@ import hashlib
 import re
 import logging
 
+BAD_PASSWORDS = ['cancel', '@cancel']
+
 # choose_class_string = """Choose a class, or pick custom:
 # Fighter    Thief      Wizard     Custom
 # STR:  3    STR:  1    STR:  1    STR: ?
@@ -180,7 +182,7 @@ class InitMode(object):
         """
         if arg.strip().lower().startswith('y'):
             if self.playername.isalpha():
-                self.save['name'] = self.playername
+                self.save['name'] = self.playername.lower()
                 self.player.update_output('Please choose a password: ' + CONCEAL, False)
                 self.password = None
                 self.next_state = self.create_password
@@ -205,7 +207,7 @@ class InitMode(object):
                 self.player.update_output('Please choose a playername. It should be a single word, using only letters.')
             else:
                 #verify here!
-                self.save['name'] = arg
+                self.save['name'] = arg.lower()
                 self.player.update_output('Please choose a password: ' + CONCEAL, False)
                 self.password = None
                 self.next_state = self.create_password
@@ -221,11 +223,14 @@ class InitMode(object):
                     confirmed, then will change to self.choose_gender
         """
         if not self.password:
-            self.password = arg
-            self.player.update_output(CLEAR + '\r\nRe-enter your password to confirm: ' + CONCEAL, False)
+            if arg in BAD_PASSWORDS:
+                self.player.update_output(CLEAR + '\r\nThat\'s a reserved word. Pick a different password: ' + CONCEAL, False)
+            else:    
+                self.password = hashlib.sha1(arg).hexdigest()
+                self.player.update_output(CLEAR + '\r\nRe-enter your password to confirm: ' + CONCEAL, False)
         else:
-            if self.password == arg:
-                self.save['password'] = hashlib.sha1(arg).hexdigest()
+            if self.password == hashlib.sha1(arg).hexdigest():
+                self.save['password'] = self.password
                 self.next_state = self.choose_gender
                 self.player.update_output(CLEAR + "\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
             else:

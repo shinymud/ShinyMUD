@@ -4,6 +4,8 @@ from shinymud.lib.world import World
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
 from shinymud.models.npc_event import NPCEvent
+from shinymud.models.npc_ai_packs import NPC_AI_PACKS
+
 import logging
 import re
 
@@ -30,8 +32,10 @@ class Npc(Character):
         self.log = logging.getLogger('Npc')
         self.events = {}
         self.next_event_id = 1
+        self.ai_packs = {}
         if self.dbid:
             self.load_events()
+            self.load_ai_packs()
     
     def to_dict(self):
         d = Character.to_dict(self)
@@ -64,14 +68,18 @@ class Npc(Character):
                 i += 1
         if not events:
             events = 'None.'
+        ai_packs = ', '.join([p for p in self.ai_packs]) or 'None.'
         string += """name: %s
 title: %s
 gender: %s
 keywords: %s
+ai packs: %s
 description:
-    %s
-Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords), 
-                 self.description, events)
+    %s\n""" % (self.name, self.title, self.gender, str(self.keywords), 
+                     ai_packs, self.description)
+        for ai in self.ai_packs.values():
+            string += str(ai)
+        string += 'NPC EVENTS:\n' + events
         string += '\n' + ('-' * 50)
         return string
     
@@ -86,6 +94,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         new_npc.location = None
         new_npc.inventory = []
         new_npc.actionq = []
+        new_npc.cmdq = []
         new_npc.remember = []
         return new_npc
     
@@ -116,6 +125,14 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
                 self.log.error('The script this event points to is gone! '
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
     
+    def load_ai_packs(self):
+        for key, value in NPC_AI_PACKS.items():
+            row = self.world.db.select('* FROM %s WHERE npc=?' % key,
+                                       [self.dbid])
+            if row:
+                row[0]['npc'] = self
+                self.ai_packs[key] = value(row[0])
+    
     def update_output(self, message):
         """Append any updates to this npc's action queue.
         Only log up to LOG_LINES worth of updates - once the limit is
@@ -124,25 +141,50 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         if len(self.actionq) > self.LOG_LINES:
             del self.actionq[0]
     
+    def do_tick(self):
+        """Cycle through this npc's commands, if it has any."""
+        if not self.cmdq:
+            return False
+        self.cmdq.pop(0).run()
+        return True
+        # else:
+        #     if self.dbid:
+        #         self.cycle_effects()
+        #     self.get_input()
+        #     if not self.mode:
+        #         self.parse_command()
+        #     elif self.mode.active:
+        #         self.mode.state()
+        #         if not self.mode.active:
+        #             if self.last_mode:
+        #                 self.mode = self.last_mode
+        #             else:
+        #                 self.mode = None
+        #     else:
+        #         # If we get here somehow (where the state of this mode is not
+        #         # active, but the mode has not been cleared), just clear the
+        #         # mode.
+        #         self.mode = None
+    
 # ***** BuildMode accessor functions *****
-    def set_description(self, description, player=None):
+    def build_set_description(self, description, player=None):
         """Set the description of this npc."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_name(self, name, player=None):
+    def build_set_name(self, name, player=None):
         """Set the name of this NPC."""
         self.name = name
         self.save({'name': self.name})
         return 'Npc name saved.\n'
     
-    def set_title(self, title, player=None):
+    def build_set_title(self, title, player=None):
         self.title = title
         self.save({'title': self.title})
         return 'Npc title saved.\n'
     
-    def set_keywords(self, keywords, player=None):
+    def build_set_keywords(self, keywords, player=None):
         """Set the keywords for this npc.
         The argument keywords should be a string of words separated by commas.
         """
@@ -157,7 +199,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             self.save({'keywords': ','.join(self.keywords)})
             return 'Npc keywords have been reset.'
     
-    def set_gender(self, gender, player=None):
+    def build_set_gender(self, gender, player=None):
         """Set the gender of this npc."""
         if not gender:
             return 'Try "set gender <gender>", or see "help npc".'
@@ -168,7 +210,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
 # ***** Event functions *****
-    def add_event(self, args):
+    def build_add_event(self, args):
         """Add an event to an npc."""
         # add event on_enter call script 1
         # add event listen_for 'stuff' call script 1
@@ -215,7 +257,7 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
         else:
             self.events[new_event.event_trigger] = [new_event]
     
-    def remove_event(self, event):
+    def build_remove_event(self, event):
         """Remove an event from an npc.
         event -- a string containing the id and trigger type of the event to be removed.
         """
@@ -243,4 +285,30 @@ Npc events: %s""" % (self.name, self.title, self.gender, str(self.keywords),
             for e in self.events[event_name]:
                 args.update(e.get_args())
                 EVENTS[event_name](**args).run()
+            self.world.npc_subscribe(self)
     
+# ***** ai pack functions *****
+    def has_ai(self, ai):
+        """Return true if this npc has this ai pack, False if it does not."""
+        return ai in self.ai_packs
+    
+    def build_add_ai(self, args):
+        """Add an ai pack to this npc via BuildMode."""
+        if not args:
+            return 'Try: "add ai <ai-pack-name>", or type "help ai packs".'
+        if args in self.ai_packs:
+            return 'This npc (%s) already has that ai pack.' % self.name
+        if args in NPC_AI_PACKS:
+            self.new_ai(args)
+            return "This npc (%s) is now a %s." % (self.name, args)
+        else:
+            return '"%s" is not a valid ai pack. See "help ai packs".' % args
+    
+    def new_ai(self, ai_pack, args={}):
+        """Add a new ai pack to this npc."""
+        args['npc'] = self
+        pack = NPC_AI_PACKS[ai_pack](args)
+        pack.save()
+        self.ai_packs[ai_pack] = pack
+    
+

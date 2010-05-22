@@ -46,7 +46,7 @@ class Script(object):
             self.dbid = world.db.insert_from_dict('script', 
                                                        self.to_dict())
     
-    def set_name(self, name, player=None):
+    def build_set_name(self, name, player=None):
         """Set the name of this script item."""
         if not name:
             return 'Set the name of the the script to what?'
@@ -54,7 +54,7 @@ class Script(object):
         self.save({'name': self.name})
         return 'Script %s\'s name has been set to "%s".' % (self.id, self.name)
     
-    def set_body(self, body, player=None):
+    def build_set_body(self, body, player=None):
         """Set the body of this script item."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'body', self.body, 'script')

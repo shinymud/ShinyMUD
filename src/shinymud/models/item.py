@@ -103,7 +103,7 @@ class BuildItem(Item):
                   'keywords: ' + str(self.keywords) + '\n' + \
                   'weight: ' + str(self.weight) + '\n' + \
                   'carryable: ' + str(self.carryable) + '\n' + \
-                  'base value: ' + str(self.base_value) + '\n'
+                  'base value: ' + str(self.base_value) + self.world.currency_name + '\n'
         for itype in self.item_types.values():
             string += str(itype)
         string += ('-' * 50)
@@ -127,13 +127,13 @@ class BuildItem(Item):
                 value.save()
     
     #***************** Set Basic Attribute (VIA BuildMode) Functions *****************
-    def set_description(self, desc, player=None):
+    def build_set_description(self, desc, player=None):
         """Set the description of this item."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_title(self, title, player=None):
+    def build_set_title(self, title, player=None):
         """Set the title of this item."""
         if not title:
             title = ''
@@ -153,12 +153,12 @@ class BuildItem(Item):
         self.save({'title': self.title})
         return 'Item title set.'
     
-    def set_name(self, name, player=None):
+    def build_set_name(self, name, player=None):
         self.name = name
         self.save({'name': self.name})
         return 'Item name set.\n'
     
-    def set_weight(self, weight, player=None):
+    def build_set_weight(self, weight, player=None):
         """Set the weight for this object."""
         try:
             weight = int(weight)
@@ -170,7 +170,7 @@ class BuildItem(Item):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
-    def set_basevalue(self, value, player=None):
+    def build_set_basevalue(self, value, player=None):
         """Set the base currency value for this item."""
         try:
             value = int(value)
@@ -182,7 +182,7 @@ class BuildItem(Item):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
-    def set_keywords(self, keywords, player=None):
+    def build_set_keywords(self, keywords, player=None):
         """Set the keywords for this item.
         The argument keywords should be a string of words separated by commas.
         """
@@ -196,7 +196,7 @@ class BuildItem(Item):
         self.save({'keywords': ','.join(self.keywords)})
         return 'Item keywords have been set.'
     
-    def set_carryable(self, boolean, player=None):
+    def build_set_carryable(self, boolean, player=None):
         """Set the carryable status for this item."""
         try:
             val = to_bool(boolean)
@@ -208,7 +208,7 @@ class BuildItem(Item):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
-    def add_type(self, item_type, item_dict=None):
+    def build_add_type(self, item_type, item_dict=None):
         """Add a new item type to this item."""
         if not item_type in ITEM_TYPES:
             return 'That\'s not a valid item type.'
@@ -223,7 +223,7 @@ class BuildItem(Item):
         self.item_types[item_type] = new_type
         return 'This item is now of type %s.' % item_type
     
-    def remove_type(self, item_type):
+    def build_remove_type(self, item_type):
         if not item_type in ITEM_TYPES:
             return 'That\'s not a valid item type.'
         if not item_type in self.item_types:

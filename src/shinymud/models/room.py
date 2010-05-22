@@ -178,7 +178,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         if self.players.get(player.name):
             del self.players[player.name]
     
-    def set_name(self, name, player=None):
+    def build_set_name(self, name, player=None):
         """Set the name of a room."""
         if not name:
             return 'Set the name to what?'
@@ -187,7 +187,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.save({'name': self.name})
         return 'Room %s name set.' % self.id
     
-    def set_description(self, args, player=None):
+    def build_set_description(self, args, player=None):
         """Set the description of a room."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'description', self.description)
@@ -201,20 +201,20 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         new_exit.save()
         self.exits[direction] = new_exit
     
-    def set_exit(self, args, player=None):
+    def build_set_exit(self, args, player=None):
         args = args.split()
         if len(args) < 3:
             return 'Usage: set exit <direction> <attribute> <value(s)>. Type "help exits" for more detail.\n'
         my_exit = self.exits.get(args[0])
         if my_exit:
-            if hasattr(my_exit, 'set_' + args[1]):
-                return getattr(my_exit, 'set_' + args[1])(args[2:])
+            if hasattr(my_exit, 'build_set_' + args[1]):
+                return getattr(my_exit, 'build_set_' + args[1])(args[2:])
             else:
-                return 'You can\'t set that.\n'
+                return 'You can\'t set that.'
         else:
-            return 'That exit doesn\'t exist.\n'
+            return 'That exit doesn\'t exist.'
     
-    def add_exit(self, args):
+    def build_add_exit(self, args):
         exp = r'(?P<direction>(north)|(south)|(east)|(west)|(up)|(down))([ ]+to)?([ ]+(?P<room_id>\d+))([ ]+(?P<area_name>\w+))?'
         match = re.match(exp, args, re.I)
         message = 'Type "help exits" to get help using this command.\n'
@@ -249,7 +249,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.spawns[spawn.id] = spawn
         return spawn
     
-    def add_spawn(self, args):
+    def build_add_spawn(self, args):
         if not args:
             return 'Type "help room spawns" to get help using this command.'
         exp = r'((for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))' +\
@@ -286,7 +286,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             return 'A room spawn has been added for %s number %s.' % (obj_type, obj_id)
         return 'Type "help room spawns" to get help using this command.'
     
-    def remove_spawn(self, args):
+    def build_remove_spawn(self, args):
         exp = r'(?P<spawn_num>\d+)'
         match = re.match(exp, args, re.I)
         if not match:
@@ -314,7 +314,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             return message
         return 'Room spawn #%s doesn\'t exist.\n' % spawn_id
     
-    def remove_exit(self, args):
+    def build_remove_exit(self, args):
         if not args:
             return 'Which exit do you want to remove?\n'
         if not (args in self.exits and self.exits[args]):
@@ -413,8 +413,9 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         return self.players.get(keyword)
     
     def check_for_keyword(self, keyword):
-        """Return the first instance of an item, npc, or player that matches the keyword.
-        If nothing in the room matches the keyword, return None."""
+        """Return the first instance of an item, npc, or player that matches the
+        keyword. If nothing in the room matches the keyword, return None.
+        """
         # check the items in the room first
         item = self.get_item_by_kw(keyword)
         if item: return item

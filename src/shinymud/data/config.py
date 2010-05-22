@@ -3,8 +3,9 @@ from logging import DEBUG, INFO, WARN, ERROR, CRITICAL
 import os
 
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-VERSION = '0.5' # The codebase version
+VERSION = '0.6' # The codebase version (don't change this)
 GAME_NAME = 'ShinyMUD' # Replace this with the name of your game!
+CURRENCY = 'bottlecaps' # The units for the in-game currency
 
 HOST = ''
 PORT = 4111

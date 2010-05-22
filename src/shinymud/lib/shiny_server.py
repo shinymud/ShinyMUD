@@ -26,7 +26,7 @@ social_log.setLevel(SOCIAL_LOGLEVEL)
 world = World()
 world.log = shiny_log
 world.play_log = social_log
-world.db.delete('from game_item where owner=null and container=null')
+world.db.delete('from game_item where (owner is null or owner=\'None\') and container is null')
 
 # load the entities in the world from the database
 for area in world.db.select("* from area"):

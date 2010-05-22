@@ -37,7 +37,7 @@ class TestSpawn(TestCase):
     
     def test_add_nested_spawn_with_item_container(self):
         item2 = self.area.new_item()
-        item2.add_type('container')
+        item2.build_add_type('container')
         spawn1 = self.room.new_spawn({'id': self.room.get_spawn_id(), 
                              'room':self.room, 
                              'obj': item2, 

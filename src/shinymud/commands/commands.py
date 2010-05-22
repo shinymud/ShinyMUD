@@ -442,9 +442,9 @@ Or just give the direction you want to go:
             self.pc.update_output('You exist in a void; there is nowhere to go.\n')
     
 
-command_list.register(Go, ['go', 'north', 'n', 'south', 's', 'east', 'e',
+command_list.register(Go, ['go', 'move', 'north', 'n', 'south', 's', 'east', 'e',
                            'west', 'w', 'up', 'down', 'u', 'd'])
-command_help.register(Go.help, ['go', 'north', 'east', 'south', 'west', 'up',
+command_help.register(Go.help, ['go', 'move', 'north', 'east', 'south', 'west', 'up',
                                 'down', 'u', 'd', 'n', 'e', 's', 'w'])
 
 class Say(BaseCommand):
@@ -696,10 +696,10 @@ take anything out of them. For help with opening containers, see "help open".
         self.pc.update_output(message)
     
     def get_item_from_container(self, source_kw, target_kw):
-        c_item = self.pc.location.check_for_keyword(source_kw) or \
+        c_item = self.pc.location.get_item_by_kw(source_kw) or \
                     self.pc.check_inv_for_keyword(source_kw)
         if not c_item:
-            return '"%s" doesn\'t exist.' % source_kw
+            return 'There\'s no "%s" containers here.' % source_kw
         if not c_item.has_type('container'):
             return 'That\'s not a container.'
         container = c_item.item_types.get('container')
@@ -712,7 +712,7 @@ take anything out of them. For help with opening containers, see "help open".
             container.item_remove(item)
             self.pc.item_add(item)
             if self.pc.location:
-                room_tell = '%s gets %s from %s.\n' % (self.pc.fancy_name(),
+                room_tell = '%s gets %s from %s.' % (self.pc.fancy_name(),
                                                        item.name, c_item.name)
                 self.pc.location.tell_room(room_tell, [self.pc.name])
             return 'You get %s.' % item.name

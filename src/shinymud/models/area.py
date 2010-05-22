@@ -135,19 +135,19 @@ Description: \n    %s""" % (self.name,
         world.new_area(new_area)
         return new_area
     
-    def set_description(self, desc, player=None):
+    def build_set_description(self, desc, player=None):
         """Set this area's description."""
         player.last_mode = player.mode
         player.mode = TextEditMode(player, self, 'description', self.description)
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def set_levelrange(self, lvlrange, player=None):
+    def build_set_levelrange(self, lvlrange, player=None):
         """Set this area's level range."""
         self.level_range = lvlrange
         self.save({'level_range': self.level_range})
         return 'Area levelrange set.'
     
-    def set_title(self, title, player=None):
+    def build_set_title(self, title, player=None):
         """Set this area's title."""
         if not title:
             return 'Type "help areas" for help setting area attributes.'
@@ -155,13 +155,13 @@ Description: \n    %s""" % (self.name,
         self.save({'title': self.title})
         return 'Area title set.'
     
-    def add_builder(self, playername):
+    def build_add_builder(self, playername):
         """Add a player to the builder's list."""
         self.builders.append(playername)
         self.save()
         return '%s has been added to the builder\'s list for this area.\n' % playername.capitalize()
     
-    def remove_builder(self, playername):
+    def build_remove_builder(self, playername):
         """Remove a player from the builder's list."""
         if playername in self.builders:
             self.builders.remove(playername)
@@ -208,7 +208,7 @@ Description: \n    %s""" % (self.name,
                 return 'You can\'t destroy that room, there are people in there!.\n'
             doors = room.exits.keys()
             for door in doors:
-                room.remove_exit(door)
+                room.build_remove_exit(door)
             for spawn in room.spawns.values():
                 spawn.destruct()
             room.spawns = {}
@@ -255,7 +255,11 @@ Description: \n    %s""" % (self.name,
         for elist in npc.events.values():
             for event in elist:
                 event.destruct()
-        npc.events = {}
+        for ai in npc.ai_packs.values():
+            ai.destruct()
+        
+        npc.ai_packs.clear()
+        npc.events.clear()
         npc.id = None
         del self.npcs[npc_id]
         return '"%s" has been successfully destroyed.' % npc.name

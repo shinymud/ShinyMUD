@@ -34,7 +34,7 @@ class EventHandler(object):
         if result <= self.probability:
             self.execute()
     
-    def execute_script(self):
+    def compile_script(self):
         """Execute each command in a parsed script."""
         # Execute each line in 
         self.log.debug('About to execute script %s.' % self.script.id)
@@ -59,7 +59,7 @@ class EventHandler(object):
                     else:
                         cmd = command_list[cmd_name]
                         if cmd:
-                            cmd(self.obj, args, cmd_name).run()
+                            self.obj.cmdq.append(cmd(self.obj, args, cmd_name))
     
     def personalize(self, replace_dict):
         """Replace a set of word place-holders with their real counterparts."""
@@ -186,7 +186,7 @@ class PCEnter(EventHandler):
                '#from_room': prev}
         # Set the player as the target in the script
         self.personalize(rep)
-        self.execute_script()
+        self.compile_script()
     
 
 EVENTS.register(PCEnter, ['pc_enter'])
@@ -238,7 +238,7 @@ following personalizers with their corresponding values:
                '#item_id': item.build_id,
                '#item_area': item.build_area}
         self.personalize(rep)
-        self.execute_script()
+        self.compile_script()
     
 
 EVENTS.register(GivenItem, ['given_item'])
@@ -278,7 +278,7 @@ source of the phrase
             if teller:
                 rep = {'#target_name': teller.fancy_name()}
                 self.personalize(rep)
-            self.execute_script()
+            self.compile_script()
     
 
 EVENTS.register(Hears, ['hears'])
@@ -311,9 +311,9 @@ the emote
                '#emote': emote}
         self.personalize(rep)
         if not condition:
-            self.execute_script()
+            self.compile_script()
         elif condition == emote:
-            self.execute_script()
+            self.compile_script()
     
 
 EVENTS.register(Emoted, ['emoted'])
