@@ -18,7 +18,8 @@ sys.path.insert(0, path)
 try:
     from shinymud.data.config import GAME_NAME, DB_NAME, PORT
 except ImportError:
-    shutil.copy(path + 'shinymud/data/config.py-sample', path + 'shinymud/data/config.py')
+    shutil.copy(os.path.join(path,'shinymud/data/config.py-sample'),
+                os.path.join(path,'shinymud/data/config.py'))
     from shinymud.data.config import GAME_NAME, DB_NAME, PORT
 
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
@@ -30,13 +31,13 @@ from shinymud.lib.sport import SPort
 
 
 # Create the logs folder if it doesn't exist
-if not os.path.exists(path + 'shinymud/data/logs'):
-    os.mkdir(path + 'shinymud/data/logs')
+if not os.path.exists(os.path.join(path,'shinymud/data/logs')):
+    os.mkdir(os.path.join(path,'shinymud/data/logs'))
 
 def check_running():
     """Return true if the MUD is running, false if it's not."""
-    if os.path.exists(path + 'shinymud/data/.shinypid'):
-        f = open(path + 'shinymud/data/.shinypid', 'r')
+    if os.path.exists(os.path.join(path, 'shinymud/data/.shinypid')):
+        f = open(os.path.join(path,'shinymud/data/.shinypid'), 'r')
         pid = int(f.read())
         f.close()
         try:
@@ -59,8 +60,8 @@ def start():
     
     # build the path to the directory above shinymud
     if not check_running():
-        pid = Popen(['python', path + 'shinymud/lib/shiny_server.py'], env={'PYTHONPATH': pypath}).pid
-        f = open(path + 'shinymud/data/.shinypid', 'w')
+        pid = Popen(['python', os.path.join(path, 'shinymud/lib/shiny_server.py')], env={'PYTHONPATH': pypath}).pid
+        f = open(os.path.join(path, 'shinymud/data/.shinypid'), 'w')
         f.write(str(pid))
         f.close()
         print "%s is now running on port %s." % (GAME_NAME, str(PORT))
@@ -79,7 +80,7 @@ def stop():
     pid = check_running()
     if pid:
         os.kill(pid, signal.SIGKILL)
-        os.remove(path + 'shinymud/data/.shinypid')
+        os.remove(os.path.join(path, 'shinymud/data/.shinypid'))
         print '%s has been stopped.' % GAME_NAME
     else:
         print "%s is not running!" % GAME_NAME
@@ -123,8 +124,8 @@ def create_god(world):
     while not save['gender']:
         print "Choose from: neutral, female, or male."
         gender = (raw_input('Gender: ')).strip()
-        if gender in ['male', 'female', 'neutral']:
-            save['gender'] = gender
+        if len(gender) and gender[0].lower() in ['m', 'f', 'n']:
+            save['gender'] = {'m':'male', 'f':'female', 'n':'neutral'}[gender[0].lower()]
         else:
             print "That's not a valid gender."
     
@@ -193,11 +194,11 @@ def clean():
     os.path.walk(path, rm_pyc_files, 'foo')
     # Delete all the .log files in the logs directory
     print 'Deleting log files...'
-    if os.path.exists(path + 'shinymud/data/logs'):
-        for logfile in os.listdir(path + 'shinymud/data/logs'):
+    if os.path.exists(os.path.join(path, 'shinymud/data/logs')):
+        for logfile in os.listdir(os.path.join(path, 'shinymud/data/logs')):
             if logfile.endswith('.log'):
                 try:
-                    os.remove(path + 'shinymud/data/logs/' + logfile)
+                    os.remove(os.path.join(path, 'shinymud/data/logs/', logfile))
                 except Exception, e:
                     print 'Error removing logfile: ' + str(e)
     print "Cleaning complete!"

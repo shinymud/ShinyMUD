@@ -9,18 +9,22 @@ import traceback
 import datetime
 
 import logging
+import logging.handlers
+
 initialize_database()
 format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d| %(message)s"
 shiny_log = logging.getLogger('SHINYMUD')
-shiny_log.addHandler(logging.handlers.RotatingFileHandler(
-        SHINYMUD_LOGFILE, SHINYMUD_MAXBYTES, SHINYMUD_NUMFILES))
-shiny_log.setFormatter(logging.Formatter(format))
+shiny_handler = logging.handlers.RotatingFileHandler(
+        SHINYMUD_LOGFILE, SHINYMUD_MAXBYTES, SHINYMUD_NUMFILES)
+shiny_handler.setFormatter(logging.Formatter(format))
+shiny_log.addHandler(shiny_handler)
 shiny_log.setLevel(SHINYMUD_LOGLEVEL)
 
 social_log = logging.getLogger('SOCIAL')
-social_log.addHandler(logging.handlers.RotatingFileHandler(
-        SOCIAL_LOGFILE, SOCIAL_MAXBYTES, SOCIAL_NUMFILES))
-social_log.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+social_handler = logging.handlers.RotatingFileHandler(
+        SOCIAL_LOGFILE, SOCIAL_MAXBYTES, SOCIAL_NUMFILES)
+social_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+social_log.addHandler(social_handler)
 social_log.setLevel(SOCIAL_LOGLEVEL)
 
 world = World()
