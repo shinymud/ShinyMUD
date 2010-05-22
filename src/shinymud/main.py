@@ -5,6 +5,7 @@ from subprocess import Popen
 import signal
 import hashlib
 import logging
+import shutil
 
 # H'Okay, so, first we need to set the python path...
 # using __file__ and os.environ
@@ -14,7 +15,12 @@ path = path[:index]
 pypath = path + ':' + os.environ.get('PYTHONPATH', '')
 sys.path.insert(0, path)
 
-from shinymud.data.config import GAME_NAME, DB_NAME, PORT
+try:
+    from shinymud.data.config import GAME_NAME, DB_NAME, PORT
+except ImportError:
+    shutil.copy(path + 'shinymud/data/config.py-sample', path + 'shinymud/data/config.py')
+    from shinymud.data.config import GAME_NAME, DB_NAME, PORT
+
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
 from shinymud.models.player import *
