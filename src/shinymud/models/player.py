@@ -9,8 +9,9 @@ from shinymud.modes.passchange_mode import PassChangeMode
 from shinymud.lib.world import World
 from shinymud.models.item import GameItem
 from shinymud.models.character import Character
+
 import re
-import logging
+from socket import error as socket_error
 
 class Player(Character):
     """Represents a player character."""
@@ -23,7 +24,6 @@ class Player(Character):
         self.inq = []
         self.outq = []
         self.quit_flag = False
-        self.log = logging.getLogger('Player')
         self.mode = InitMode(self)
         self.last_mode = None
         self.dbid = None
@@ -50,7 +50,7 @@ class Player(Character):
         self.location = args.get('location')
         if self.location:
             loc = args.get('location').split(',')
-            self.log.debug(loc)
+            self.world.log.debug(loc)
             self.location = self.world.get_location(loc[0], loc[1])
         if self.dbid:
             self.load_inventory()
@@ -70,12 +70,12 @@ class Player(Character):
                 if item.has_type('container'):
                     self.load_contents(item)
                 self.inventory.append(item)
-                
+    
     def load_container_contents(self, container):
         """Load this game_item's contents.
         """
         rows = World.get_world().db.select("* FROM game_item WHERE container=?", [container.dbid])
-        self.log.debug(rows)
+        self.world.log.debug(rows)
         for row in rows:
             new_item = GameItem(**row)
             if new_item.has_type('container'):
@@ -159,10 +159,9 @@ class Player(Character):
                 del self.outq[0]
             if sent_output.endswith('\r\n'):
                 self.conn.send(self.get_prompt())
-        except Exception, e:
+        except socket_error:
             # If we die here, it's probably because we got a broken pipe.
             # In this case, we should disconnect the player
-            self.log.error(str(e))
             self.player_logout(True)
     
     def get_prompt(self):
@@ -230,7 +229,10 @@ class Player(Character):
         if self.dbid:
             self.world.db.update_from_dict('player', self.to_dict())
         if not broken_pipe:
-            self.conn.send('Bye!\n')
+            self.conn.send('Bye!\r\n')
+            self.world.play_log.info('%s has exited.' % self.fancy_name())
+        else:
+            self.world.play_log.info('%s has been disconnected (broken pipe).' % self.fancy_name())
         self.conn.close()
         if hasattr(self, 'location') and self.location:
             self.location.player_remove(self)
@@ -352,15 +354,15 @@ class Player(Character):
     
     def effects_add(self, effect_list):
         """Add a list of character effects to the player."""
-        self.log.debug(effect_list)
+        self.world.log.debug(effect_list)
         for effect in effect_list:
             effect.char = self
             if effect.name in self.effects:
                 self.effects[effect.name].combine(effect)
-                self.log.debug(effect.duration)
+                self.world.log.debug(effect.duration)
             else:
                 self.effects[effect.name] = effect
-                self.log.debug(effect.duration)
+                self.world.log.debug(effect.duration)
             
             self.effects[effect.name].begin()
     
@@ -372,7 +374,7 @@ class Player(Character):
     def death(self):
         # Send character to the default location, with 1 hp.
         self.hp = 1
-        self.log.debug("%s has died." % self.fancy_name())
+        self.world.log.debug("%s has died." % self.fancy_name())
         self.update_output('You Died.')
         self.go(self.world.get_location(DEFAULT_LOCATION[0], DEFAULT_LOCATION[1]))
     

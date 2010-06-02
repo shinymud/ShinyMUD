@@ -1,6 +1,8 @@
+from shinymud.lib.world import World
+# Initialize the World
+world = World()
 from shinymud.lib.connection_handler import ConnectionHandler
 from shinymud.lib.statsender import StatSender
-from shinymud.lib.world import World
 from shinymud.models.area import Area
 from shinymud.models.schema import initialize_database
 from shinymud.data.config import *
@@ -8,31 +10,11 @@ from shinymud.data.config import *
 import traceback
 import datetime
 
-import logging
-import logging.handlers
-
 initialize_database()
-format = "%(asctime)s %(levelname)s %(name)s %(funcName)s %(lineno)d| %(message)s"
-shiny_log = logging.getLogger('SHINYMUD')
-shiny_handler = logging.handlers.RotatingFileHandler(
-        SHINYMUD_LOGFILE, SHINYMUD_MAXBYTES, SHINYMUD_NUMFILES)
-shiny_handler.setFormatter(logging.Formatter(format))
-shiny_log.addHandler(shiny_handler)
-shiny_log.setLevel(SHINYMUD_LOGLEVEL)
-
-social_log = logging.getLogger('SOCIAL')
-social_handler = logging.handlers.RotatingFileHandler(
-        SOCIAL_LOGFILE, SOCIAL_MAXBYTES, SOCIAL_NUMFILES)
-social_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
-social_log.addHandler(social_handler)
-social_log.setLevel(SOCIAL_LOGLEVEL)
-
-world = World()
-world.log = shiny_log
-world.play_log = social_log
 world.db.delete('from game_item where (owner is null or owner=\'None\') and container is null')
 
 # load the entities in the world from the database
+# This should probably happen inside the world itself...
 for area in world.db.select("* from area"):
     world.new_area(Area(**area))
 for area in world.areas.values():
@@ -48,10 +30,8 @@ if STATS_ENABLED:
     stat_sender = StatSender(STATS_PORT, HOST, world)
     stat_sender.start()
 
-logger.debug('Started the connection handler. Now listening.')
-
-# Let there be light!
-logger.info('The world is about to start turning')
+world.log.info('Started the connection handler. Now listening for Players.')
+world.log.debug('The world is about to start turning.')
 try:
     world.start_turning()
 except:
@@ -59,7 +39,7 @@ except:
         fp.write('\n' + (str(datetime.datetime.today())).center(50, '*') + '\n')
         traceback.print_exc(file=fp)
         fp.write('\n' + ('*' * 50))
-    logger.critical('OH NOES! The server died! More information in the death_errors.log.')
+    world.log.critical('OH NOES! The server died! More information in the death_errors.log.')
     player_error = "Bloody hell, the game server crashed!\n" +\
     "Don't worry, we've done our best to save your data.\n" +\
     "Try logging on again in a minute or two.\r\n"

@@ -3,16 +3,15 @@ from shinymud.models import to_bool
 from shinymud.lib.world import World
 from shinymud.lib.char_effect import *
 
-import logging
 import re
 
 class ItemType(object):
+    log = World.get_world().log
     """The base class that must be inherited by all item types.
      
     If you're going to build a new item type, the first stop is to inherit from
     this class and implement its required functions (explained below!).
     """
-    log = logging.getLogger('ItemType')
     def __init__(self, args={}):
         """ An ItemType's __init__ function should take a dictionary of keyword
         arguments which could be empty (if this is a brand new instance), or hold
@@ -184,13 +183,13 @@ class Damage(object):
 
 class Equippable(ItemType):
     def __init__(self, args={}):
+        self.world = world.get_world()
         self.build_item = args.get('build_item')
         self.game_item = args.get('game_item')
         self.equip_slot = str(args.get('equip_slot', ''))
         self.hit = args.get('hit', 0)
         self.evade = args.get('evade', 0)
         absorb = args.get('absorb')
-        self.log = logging.getLogger('Equippable')
         self.hit_id = None
         self.evade_id = None
         self.absorb_ids = []
@@ -239,7 +238,6 @@ class Equippable(ItemType):
         if loc in EQUIP_SLOTS.keys():
             self.equip_slot = loc
             self.save({'equip_slot': self.equip_slot})
-            # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item equip location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
@@ -429,6 +427,7 @@ class Equippable(ItemType):
 class Food(ItemType):
     food_verbs = {'food': 'eat', 'drink': 'drink from'}
     def __init__(self, args={}):
+        self.world = World.get_world()
         self.on_eat = args.get('on_eat', [])
         self.dbid = args.get('dbid')
         self.build_item = args.get('build_item')
@@ -639,6 +638,7 @@ class Food(ItemType):
 
 class Container(ItemType):
     def __init__(self, args={}):
+        self.world = World.get_world()
         self.weight_capacity = args.get('weight_capacity')
         self.build_item_capacity = args.get('item_capacity')
         self.weight_reduction = args.get('weight_reduction', 0)
@@ -646,7 +646,6 @@ class Container(ItemType):
         self.dbid = args.get('dbid')
         self.build_item = args.get('build_item')
         self.game_item = args.get('game_item')
-        self.log = logging.getLogger('Container')
         self.openable = to_bool(str(args.get('openable'))) or False
         self.closed = to_bool(str(args.get('closed'))) or False
         self.locked = to_bool(str(args.get('locked'))) or False
@@ -692,7 +691,6 @@ class Container(ItemType):
         d['openable'] = self.openable
         d['closed'] = self.closed
         d['locked'] = self.locked
-        self.log.debug('ITEM: ' + str(self.build_item))
         if self.build_item:
             d['build_item'] = self.build_item.dbid
         if self.game_item:
@@ -787,6 +785,7 @@ class Container(ItemType):
 
 class Furniture(ItemType):
     def __init__(self, args={}):
+        self.world = World.get_world()
         self.sit_effects = args.get('sit_effects', [])
         self.sleep_effects = args.get('sleep_effects', [])
         self.players = []
@@ -862,6 +861,7 @@ class Furniture(ItemType):
 
 class Portal(ItemType):
     def __init__(self, args={}):
+        self.world = World.get_world()
         self.leave_message = args.get('leave_message', '#actor enters a portal.')
         self.entrance_message = args.get('entrance_message', 'You enter a portal.')
         self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
@@ -874,7 +874,6 @@ class Portal(ItemType):
         # the area of the room this portal points to
         self._location = None
         self.to_area = args.get('to_area')
-        self.world = World.get_world()
     
     def to_dict(self):
         d = {}
@@ -992,5 +991,3 @@ ITEM_TYPES = {'equippable': Equippable,
               'portal': Portal
               # 'book': Book
              }
-
-

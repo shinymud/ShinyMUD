@@ -7,8 +7,6 @@ from shinymud.data.config import *
 from shinymud.models.schema import initialize_database
 from unittest import TestCase
 
-import logging
-
 class TestReset(TestCase):
     def setUp(self):
         self.world = World()

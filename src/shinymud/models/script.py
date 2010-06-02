@@ -2,7 +2,6 @@ from shinymud.lib.world import World
 from shinymud.modes.text_edit_mode import TextEditMode
 
 import re
-import logging
 
 class Script(object):
     """A model that represents an in-game script object."""
@@ -12,7 +11,6 @@ class Script(object):
         self.dbid = args.get('dbid')
         self.name = args.get('name', 'New Script')
         self.body = args.get('body', '')
-        self.log = logging.getLogger('Scripts')
     
     def to_dict(self):
         d = {}

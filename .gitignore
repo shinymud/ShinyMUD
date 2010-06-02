@@ -7,4 +7,4 @@
 *.DS_Store
 *.db
 .shinypid
-data/config.py
+src/shinymud/data/config.py

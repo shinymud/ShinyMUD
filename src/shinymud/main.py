@@ -4,7 +4,6 @@ import time
 from subprocess import Popen
 import signal
 import hashlib
-import logging
 import shutil
 
 # H'Okay, so, first we need to set the python path...
@@ -24,11 +23,8 @@ except ImportError:
 
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
-from shinymud.models.player import *
 from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
-from shinymud.lib.sport import SPort
-
 
 # Create the logs folder if it doesn't exist
 if not os.path.exists(os.path.join(path,'shinymud/data/logs')):
@@ -142,6 +138,9 @@ def setup():
               "you can already do that in-game (see 'help import')."
     else:
         world = setup_stub_world()
+        from shinymud.lib.sport import SPort
+        from shinymud.models.player import Player
+        
         print "\nWelcome to the ShinyMUD setup wizard! First, we'll have you create a \n" +\
               "God character (a character with full in-game priviliges).\n"
         create_god(world)
@@ -205,7 +204,6 @@ def clean():
 
 def setup_stub_world():
     world = World()
-    world.db = DB()
     initialize_database(world.db.conn)
     return world
 

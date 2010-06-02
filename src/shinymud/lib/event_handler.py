@@ -1,9 +1,9 @@
 from shinymud.commands import *
 from shinymud.commands.commands import *
 from shinymud.commands.emotes import *
+from shinymud.lib.world import World
 
 import re
-import logging
 import random
 
 class EventHandler(object):
@@ -22,7 +22,7 @@ class EventHandler(object):
         self.script_text = self.script.body
         self.probability = args.get('probability')
         self.args = args
-        self.log = logging.getLogger('EventHandler')
+        self.log = World.get_world().log
         self.script_cmds = {'record': self.record_player
                            }
         self.conditions = {'remember': self.remember_player,

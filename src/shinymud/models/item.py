@@ -1,10 +1,9 @@
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import to_bool
-from shinymud.models.item_types import *
+from shinymud.models.item_types import ITEM_TYPES
 from shinymud.lib.world import World
 
 import types
-import logging
 import re
 
 class Item(object):
@@ -26,7 +25,6 @@ class Item(object):
             self.carryable = to_bool(args.get('carryable'))
         self.world = World.get_world()
         self.dbid = args.get('dbid')
-        self.log = logging.getLogger('BuildItem')
         self.item_types = {}
     
     def to_dict(self):

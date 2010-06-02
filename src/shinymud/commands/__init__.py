@@ -37,7 +37,6 @@ class BaseCommand(object):
         self.pc = player
         self.alias = alias
         self.world = World.get_world()
-        self.log = logging.getLogger('Command')
         self.allowed = True
         if not (self.pc.permissions & GOD):
             if not (self.pc.permissions & self.required_permissions):

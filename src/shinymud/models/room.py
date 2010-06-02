@@ -2,7 +2,7 @@ from shinymud.models.room_exit import RoomExit
 from shinymud.models.spawn import Spawn
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
-import logging
+
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',
@@ -27,7 +27,6 @@ class Room(object):
         self.spawns = {}
         self.players = {}
         self.dbid = args.get('dbid')
-        self.log = logging.getLogger('Room')
         self.world = World.get_world()
         if self.dbid:
             self.load_exits()
@@ -40,7 +39,7 @@ class Room(object):
             self.exits[row['direction']] = RoomExit(**row)
     
     def load_spawns(self, spawn_list=None):
-        self.log.debug(spawn_list)
+        self.world.log.debug(spawn_list)
         if not spawn_list:
             spawn_list = self.world.db.select('* FROM room_spawns WHERE room=?', [self.dbid])
         for row in spawn_list:
@@ -50,7 +49,7 @@ class Room(object):
                 obj = getattr(area, row['spawn_type'] + "s").get(row['spawn_object_id'])
                 if obj:
                     row['obj'] = obj
-                    self.log.debug(row)
+                    self.world.log.debug(row)
                     self.new_spawn(row)
         for spawn in self.spawns.values():
             if spawn.container:

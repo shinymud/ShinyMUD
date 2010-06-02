@@ -1,13 +1,12 @@
 from shinymud.data.config import DB_NAME
 
-import logging
 import sqlite3
 import re
 
 class DB(object):
-    def __init__(self, db_name=None):
+    def __init__(self, logger, db_name=None):
         self.conn  = sqlite3.Connection(db_name or DB_NAME)
-        self.log = logging.getLogger('DB')
+        self.log = logger
     
     def insert(self, query, params=None):
         """    Insert a new row into a table.

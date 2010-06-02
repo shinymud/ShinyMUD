@@ -1,6 +1,8 @@
 import threading
 import time
 import logging
+import logging.handlers
+
 from shinymud.lib.db import DB
 from shinymud.data.config import *
 
@@ -14,6 +16,7 @@ class World(object):
         return cls._instance
     
     def __init__(self):
+        self.configure_logs()
         self.player_list = {}
         self.player_delete = []
         self.battles = {}
@@ -21,8 +24,7 @@ class World(object):
         self.player_list_lock = threading.Lock()
         self.shutdown_flag = False
         self.areas = {}
-        self.log = logging.getLogger('World')
-        self.db = DB()
+        self.db = DB(self.log)
         self.default_location = None
         self.currency_name = CURRENCY
         self.login_greeting = ''
@@ -48,6 +50,22 @@ class World(object):
         tried to grab the world before the main thread started, which really
         aught to be impossible."""
         return cls._instance
+    
+    def configure_logs(self):
+        format = "%(asctime)s %(levelname)s %(funcName)s:%(lineno)d | %(message)s"
+        self.log = logging.getLogger('SHINYMUD')
+        shiny_handler = logging.handlers.RotatingFileHandler(
+                        SHINYMUD_LOGFILE, 'a', SHINYMUD_MAXBYTES, SHINYMUD_NUMFILES)
+        shiny_handler.setFormatter(logging.Formatter(format))
+        self.log.addHandler(shiny_handler)
+        self.log.setLevel(SHINYMUD_LOGLEVEL)
+        
+        self.play_log = logging.getLogger('SOCIAL')
+        social_handler = logging.handlers.RotatingFileHandler(
+                         SOCIAL_LOGFILE, 'a', SOCIAL_MAXBYTES, SOCIAL_NUMFILES)
+        social_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s: %(message)s"))
+        self.play_log.addHandler(social_handler)
+        self.play_log.setLevel(SOCIAL_LOGLEVEL)
     
     def cleanup(self):
         """Do any cleanup that needs to be done after a turn. This includes

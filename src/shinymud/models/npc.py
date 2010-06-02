@@ -6,7 +6,6 @@ from shinymud.commands import PLAYER, DM
 from shinymud.models.npc_event import NPCEvent
 from shinymud.models.npc_ai_packs import NPC_AI_PACKS
 
-import logging
 import re
 
 class Npc(Character):
@@ -29,7 +28,6 @@ class Npc(Character):
         self.description = args.get('description', 'You see nothing special about this person.')
         self.world = World.get_world()
         self.spawn_id = None
-        self.log = logging.getLogger('Npc')
         self.events = {}
         self.next_event_id = 1
         self.ai_packs = {}
@@ -112,7 +110,7 @@ description:
     def load_events(self):
         """Load the events associated with this NPC."""
         events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
-        self.log.debug(events)
+        self.world.log.debug(events)
         for event in events:
             s_id = self.world.db.select('id FROM script WHERE dbid=?', 
                                         [event['script']])
@@ -122,7 +120,7 @@ description:
                 event['script'] = s
                 self.new_event(event)
             else:
-                self.log.error('The script this event points to is gone! '
+                self.world.log.error('The script this event points to is gone! '
                                'NPC (id:%s, area:%s)' % (self.id, self.area.name))
     
     def load_ai_packs(self):

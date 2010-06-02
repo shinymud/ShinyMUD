@@ -7,7 +7,6 @@ from shinymud.data.config import AREAS_IMPORT_DIR, AREAS_EXPORT_DIR, VERSION
 
 import os
 import re
-import logging
 from resources import simplejson as json
 
 def sanitize(obj):
@@ -31,7 +30,7 @@ class SPort(object):
     """Export and import areas (and their objects) to a file."""
     def __init__(self, import_dir=AREAS_IMPORT_DIR,
                  export_dir=AREAS_EXPORT_DIR):
-        self.log = logging.getLogger('SPort')
+        # self.world.log = logging.getLogger('SPort')
         self.world = World.get_world()
         self.import_dir = import_dir
         self.export_dir = export_dir
@@ -155,7 +154,7 @@ class SPort(object):
                 if my_spawns:
                     new_room.load_spawns(my_spawns)
             for exit in room_exits:
-                self.log.debug(exit['room'])
+                self.world.log.debug(exit['room'])
                 my_room = new_area.get_room(str(exit['room']))
                 my_room.new_exit(**exit)
         except Exception, e:
@@ -163,7 +162,7 @@ class SPort(object):
             # the area that got created.  This way, we won't run into problems
             # if they try to import it again, and we won't leave orphaned or
             # erroneous data in the db.
-            self.log.error(str(e))
+            self.world.log.error(str(e))
             self.world.destroy_area(areaname, 'SPort Error')
             raise SPortImportError('There was a horrible error on import! '
                                    'Aborting! Check logfile for details.')
@@ -238,7 +237,7 @@ class SPort(object):
             try:
                 os.mkdir(self.export_dir)
             except Exception, e:
-                self.log.error('EXPORT FAILED: ' + str(e))
+                self.world.log.error('EXPORT FAILED: ' + str(e))
                 # TODO: reraise an SPortExportError here...
                 return 'Export failed; something went wrong accessing the export directory for areas.'
         return ''
@@ -256,7 +255,7 @@ class SPort(object):
         try:
             f = open(filepath, 'r')
         except IOError, e:
-            self.log.debug(str(e))
+            self.world.log.debug(str(e))
             raise SPortImportError('Error: opening the area file failed. '
                                    'Check the logfile for details.')
         else:
@@ -272,7 +271,7 @@ class SPort(object):
         try:
             f = open(filepath, 'w')
         except IOError, e:
-            self.log.debug(str(e))
+            self.world.log.debug(str(e))
             raise SPExportError('Error writing your area to file. '
                                 'Check the logfile for details')
         else:

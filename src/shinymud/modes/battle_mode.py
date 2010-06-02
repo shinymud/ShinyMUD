@@ -1,12 +1,10 @@
 from shinymud.commands.commands import *
 import re
-import logging
 
 class BattleMode(object):
     
     def __init__(self, player):
         self.player = player
-        self.log = logging.getLogger('BattleMode')
         self.state = self.parse_command
         self.active = True
         self.name = 'BattleMode'

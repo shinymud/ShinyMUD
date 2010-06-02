@@ -1,6 +1,5 @@
 import threading
 import socket
-import logging
 
 class StatSender(threading.Thread):
     """StatSender is a stand-alone thread that sends game-statistics to any
@@ -27,7 +26,6 @@ class StatSender(threading.Thread):
     
     def __init__(self, port, host, world):
         threading.Thread.__init__(self)
-        self.log = logging.getLogger('StatSender')
         self.daemon = True # So this thread will exit when the main thread does
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -42,7 +40,7 @@ class StatSender(threading.Thread):
             try:
                 conn, info = self.listener.accept()
             except Exception, e:
-                self.log.debug(str(e))
+                self.world.log.debug(str(e))
             else:
                 # Send them the game-stats!
                 plist = ','.join([name for name in self.world.player_list if isinstance(name, str)])

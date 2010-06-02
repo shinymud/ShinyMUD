@@ -1,7 +1,7 @@
 from shinymud.commands import CommandRegister
 from shinymud.lib.world import World
 from random import randint
-import logging
+
 NORMAL_ACTION_COST = 5
 FAST_ACTION_COST = 3
 SLOW_ACTION_COST = 7
@@ -14,7 +14,7 @@ class BattleAction(object):
         self.target = target
         self.bonuses = 0
         self.battle = battle
-        self.log = logging.getLogger("BattleAction")
+        self.log = World.get_world().log
     
     def roll_to_hit(self):
         # Remove the attack points for this action

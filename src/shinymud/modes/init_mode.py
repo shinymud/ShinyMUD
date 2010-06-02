@@ -5,7 +5,6 @@ from shinymud.lib.world import World
 
 import hashlib
 import re
-import logging
 
 BAD_PASSWORDS = ['cancel', '@cancel']
 
@@ -20,10 +19,10 @@ BAD_PASSWORDS = ['cancel', '@cancel']
 # """
 
 class InitMode(object):
-    """InitMode is a giant state machine that handles the log-in and character
+    """InitMode is a giant state machine that handles the self.world.log-in and character
     create process.
     Each function in the InitMode class is meant to be (more or less) a single
-    state in the log-in or character creation process. Each state-function
+    state in the self.world.log-in or character creation process. Each state-function
     takes care of designating which state-function gets executed next by
     setting the self.state or self.next_state functions (depending on whether
     the next state-function requires player input or not).
@@ -50,7 +49,6 @@ class InitMode(object):
         self.active = True
         self.name = 'InitMode'
         self.world = World.get_world()
-        self.log = logging.getLogger('InitMode')
         self.save = {}
     
     def get_input(self):
@@ -84,13 +82,13 @@ class InitMode(object):
         self.next_state = self.verify_playername
     
     def verify_playername(self, arg):
-        """Get the name of the player logging in. If the player exists, grab their
+        """Get the name of the player self.world.logging in. If the player exists, grab their
         data and verify their password. Otherwise, start the character creation
         process.
         
         PREV STATE: self.intro
-        NEXT STATE: self.verify_password, if the player logging in exists, OR
-                    self.verify_new_character if the player logging in is new
+        NEXT STATE: self.verify_password, if the player self.world.logging in exists, OR
+                    self.verify_new_character if the player self.world.logging in is new
         """
         playername = arg
         if playername:
@@ -123,7 +121,7 @@ class InitMode(object):
         """
         password = hashlib.sha1(arg).hexdigest()
         if password == self.password:
-            # Wicked cool, our player exists AND the right person is logging in
+            # Wicked cool, our player exists AND the right person is self.world.logging in
             self.player.playerize(**self.world.db.select('* FROM player WHERE dbid=?', [self.dbid])[0])
             # Make sure that we clear the concealed text effect that we 
             # initiated when we moved to the password state
@@ -147,11 +145,13 @@ class InitMode(object):
             newb += ('*' * 69)
             self.player.update_output(newb, strip_nl=False)
             self.world.tell_players("%s, a new player, has entered the world." % self.player.fancy_name())
+            self.world.play_log.info('New player "%s" created.' % self.player.name)
         else:
             self.world.tell_players("%s has entered the world." % self.player.fancy_name())
         if self.player.location:
             self.player.update_output(self.player.look_at_room())
             self.player.location.player_add(self.player)
+        self.world.play_log.info('Player "%s" logging in from: %s.' % (self.player.fancy_name(), str(self.player.addr)))
     
     def character_cleanup(self):
         """This is the final stage before the player enters the world, where any

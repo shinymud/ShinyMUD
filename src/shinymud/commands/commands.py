@@ -6,7 +6,6 @@ from shinymud.commands import *
 from shinymud.lib.battle import Battle
 
 import re
-import logging
    
 # ************************ GENERIC COMMANDS ************************
 command_list = CommandRegister()
@@ -428,7 +427,7 @@ Or just give the direction you want to go:
                         # SOMETHING WENT BADLY WRONG IF WE GOT HERE!!!
                         # somehow the room that this exit pointed to got deleted without informing
                         # this exit.
-                        self.log.critical('EXIT FAIL: Exit %s from room %s in area %s failed to resolve.' % (go_exit.direction, go_exit.room.id, go_exit.room.area.name))
+                        self.world.log.critical('EXIT FAIL: Exit %s from room %s in area %s failed to resolve.' % (go_exit.direction, go_exit.room.id, go_exit.room.area.name))
                         # Delete this exit in the database and the room - we don't want it 
                         # popping up again
                         go_exit.destruct()
@@ -1181,6 +1180,10 @@ permissions and permission groups, see "help permissions".
             self.pc.update_output('%s already has that authority.' % player.fancy_name())
             return
         player.permissions = player.permissions | permission
+        if not player.is_npc():
+            player.save()
+        self.world.play_log.info('%s bestowed the authority of %s upon %s.' % (
+                    self.pc.fancy_name(), perm.upper(), player.fancy_name()))
         self.pc.update_output('%s now has the privilige of being %s.' % (player.fancy_name(), perm.upper()))
         player.update_output('%s has bestowed the authority of %s upon you!' % (self.pc.fancy_name(), perm.upper()))
         self.world.tell_players('%s has bestowed the authority of %s upon %s!' %
@@ -1233,9 +1236,12 @@ permissions and permission groups, see "help permissions".
             self.pc.update_output('%s doesn\'t have that authority anyway.' % player.fancy_name())
             return
         player.permissions = player.permissions ^ permission
+        self.world.play_log.info('%s revoked %s\'s %s authority.' % (
+                    self.pc.fancy_name(), player.fancy_name(), perm.upper()))
         self.pc.update_output('%s has had the privilige of %s revoked.' % (player.fancy_name(), perm))
         player.update_output('%s has revoked your %s priviliges.' % (self.pc.fancy_name(), perm))
         if not player.is_npc():
+            player.save()
             if player.get_mode() == 'BuildMode':
                 player.set_mode('normal')
                 player.update_output('You have been kicked from BuildMode.')
@@ -1795,7 +1801,7 @@ To consume an edible item:
             self.pc.update_output('You\'re too drunk to manage it.')
             return
         # Remove the food object
-        self.log.debug(food_obj)
+        self.world.log.debug(food_obj)
         self.pc.item_remove(food)
         food.destruct()
         # Replace it with another object, if applicable
@@ -1808,7 +1814,7 @@ To consume an edible item:
             r_tell = self.personalize(food_obj.get_room_message(), self.pc)
             self.pc.location.tell_room(r_tell, [self.pc.name], self.pc)
         # Add this food's effects to the player
-        self.log.debug('Adding effects.')
+        self.world.log.debug('Adding effects.')
         self.pc.effects_add(food_obj.load_effects())
     
 
@@ -1842,7 +1848,7 @@ character)
         # set the players default target.
         self.pc.battle_target = target
         if not self.pc.battle:
-            self.log.debug("Beginning battle between %s and %s" %(self.pc.fancy_name(), target.fancy_name()))
+            self.world.log.debug("Beginning battle between %s and %s" %(self.pc.fancy_name(), target.fancy_name()))
             # Start the battle if it doesn't exist yet.
             self.pc.enter_battle()
             b = Battle()

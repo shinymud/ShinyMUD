@@ -8,7 +8,6 @@ from shinymud.commands import *
 from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
 
 import re
-import logging
 
 build_list = CommandRegister()
 

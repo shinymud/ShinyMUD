@@ -1,8 +1,5 @@
 from shinymud.commands.attacks import *
 from shinymud.data.config import EQUIP_SLOTS
-import logging 
-
-
 
 from random import randint
 

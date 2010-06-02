@@ -2,19 +2,17 @@ from shinymud.models.player import Player
 
 import threading
 import socket
-import logging
 
 class ConnectionHandler(threading.Thread):
     
     def __init__(self, port, host, world):
         threading.Thread.__init__(self)
-        self.log = logging.getLogger('ConnectionHandler')
+        self.world = world
         self.daemon = True # So this thread will exit when the main thread does
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.listener.bind((host, port))
-        self.log.info("Running on host: %s and port: %s." % (host, port))
-        self.world = world
+        self.world.log.info("Running on host: %s and port: %s." % (host, port))
     
     def run(self):
         """Start the connection-handler thread running.
@@ -22,15 +20,15 @@ class ConnectionHandler(threading.Thread):
         player logging in, and then add that Player object to the world.
         """
         self.listener.listen(5)
-        self.log.debug("Listener started")
+        self.world.log.debug("Listener started")
         while 1:
             try:
                 new_player = Player(self.listener.accept())
             except Exception, e:
-                self.log.debug(str(e))
+                self.world.log.debug(str(e))
             else:
                 self.set_telnet_options(new_player)
-                self.log.info("Client logging in from: %s" % str(new_player.addr))
+                self.world.log.info("Client logging in from: %s" % str(new_player.addr))
                 new_player.conn.setblocking(0)
                 # The player_add function in the world requires access to the player_list,
                 # which the main thread edits quite a bit -- that's why we need a lock 
@@ -59,7 +57,7 @@ class ConnectionHandler(threading.Thread):
             # response to our initiating linemode... we should just move on
             result = 'Client response FAIL for linemode.'
         finally:
-            self.log.debug(result)
+            self.world.log.debug(result)
         
         # IAC DO NAWS (Negotiate About Window Size)
         pc.conn.send(chr(255) + chr(253) + chr(31) + '\r\n')
@@ -75,5 +73,5 @@ class ConnectionHandler(threading.Thread):
                 pc.parse_winchange(stuff)
         finally:
             pc.conn.settimeout(None)
-            self.log.debug(str(result))
+            self.world.log.debug(str(result))
     

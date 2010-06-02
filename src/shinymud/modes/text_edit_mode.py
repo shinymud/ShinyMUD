@@ -1,5 +1,4 @@
 import re
-import logging
 
 class TextEditMode(object):
     """The mode for editing large amounts of text, such as rooms or descriptions."""
@@ -13,7 +12,6 @@ class TextEditMode(object):
         self.edit_attribute = obj_attr
         self.format = format
         self.command_form = re.compile(r'(@(?P<cmd>\w+))([ ]+(?P<line>\d+))?([ ]+(?P<args>.*))?')
-        self.log = logging.getLogger('TextEditMode')
         self.edit_commands = {'show': self.show_progress,
                               'help': self.help,
                               'done': self.finish_editing,

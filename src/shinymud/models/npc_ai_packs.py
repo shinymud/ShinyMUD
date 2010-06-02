@@ -2,17 +2,16 @@ from shinymud.lib.world import World
 from shinymud.models import to_bool
 from shinymud.models.item_types import ITEM_TYPES
 
-import logging
 import json
 import re
 
 class NpcAiPack(object):
+    log = World.get_world().log
     """The base class that must be inherited by all ai pack.
      
     If you're going to build a new ai pack, the first stop is to inherit from
     this class and implement its required functions (explained below!).
     """
-    log = logging.getLogger('NpcAI')
     def __init__(self, args={}):
         """ An AiPack's __init__ function should take a dictionary of keyword
         arguments which could be empty (if this is a brand new instance), or hold
