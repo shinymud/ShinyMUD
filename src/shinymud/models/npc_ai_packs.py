@@ -1,6 +1,7 @@
 from shinymud.lib.world import World
 from shinymud.models import to_bool
 from shinymud.models.item_types import ITEM_TYPES
+from shinymud.data.config import CURRENCY
 
 import json
 import re
@@ -172,17 +173,18 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             if self.world.area_exists(group.get('item_area')):
                 item = self.world.get_area(group.get('item_area')).get_item(group.get('item_id'))
                 if item:
-                    self.sale_items.append([item, group.get('price')])
+                    self.sale_items.append([item, int(group.get('price'))])
     
     def player_sale_list(self):
         """Get a list of the item's for sale to players."""
-        sl = 'Items for sale:\n'
         if self.sale_items is None:
             self.assemble_sale_list()
-        for group in self.sale_items:
-            sl += '%s -- %s' % (str(group[1]), group[0].name)
-        if not sl:
-            sl += '  None.'
+        if self.sale_items:
+            sl = '%s\'s sale list:\n' % self.npc.name
+            for group in self.sale_items:
+                sl += '  %s %s -- %s\n' % (str(group[1]), CURRENCY, group[0].name)
+        else:
+            sl = '%s doesn\'t have anything for sale.' % self.npc.name
         return sl
     
     def builder_sale_list(self):
@@ -199,7 +201,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         if not sl:
             sl = 'Nothing.'
         return sl
-        
+    
     def tell_buy_types(self):
         """Return a sentence formatted list of the types this merchant buys."""
         if not self.buyer:
@@ -215,13 +217,16 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             m = "I only buy %s and %s." % (', '.join(map(lambda x: p[x], self.buys_types[:-1])), p[self.buys_types[-1]])
         return m
     
-    def has_item(self, keyword):
-        """If this merchant have an item with the given keyword, return it,
-        else return None.
+    def get_item(self, keyword):
+        """If this merchant have an item with the given keyword, return it and
+        its price in [item, price] form, else return None.
         """
         if self.sale_items is None:
             self.assemble_sale_list()
-        return item in self.sale_items
+        for group in self.sale_items:
+            if keyword in group[0].keywords:
+                return group
+        return None
     
     def will_buy(self, item):
         """Return True if merchant will buy a certain item, false if they will 

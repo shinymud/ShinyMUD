@@ -559,14 +559,15 @@ The Inventory command shows a player to see a list of items in their inventory.
     """
     )
     def execute(self):
+        i = 'You have %s %s.\n' % (str(self.pc.currency), CURRENCY)
         if not self.pc.inventory:
-            self.pc.update_output('Your inventory is empty.\n')
+            i += 'Your inventory is empty.'
         else:
-            i = 'Your inventory consists of:\n'
+            i += 'Your inventory consists of:\n'
             for item in self.pc.inventory:
                 if item not in self.pc.isequipped:
                     i += item.name + '\n'
-            self.pc.update_output(i)
+        self.pc.update_output(i)
     
 
 command_list.register(Inventory, ['i', 'inventory', 'inv'])
@@ -1943,6 +1944,7 @@ in a room when you use the Goto command to leave it
             effects = 'You feel normal.'
         me = '|' + (' %s ' % self.pc.fancy_name()).center(width -2 , '-') + '|\n'
         me += ('| title: ' + self.pc.title).ljust(width - 1) + '|\n'
+        me += ('| money: %s %s' % (self.pc.currency, CURRENCY)).ljust(width - 1) + '|\n'
         me += ('| position: ' + self.pc.position[0]).ljust(width - 1) + '|\n'
         me += ('| effects: ' + effects).ljust(width - 1) + '|\n'
         if self.pc.permissions > PLAYER:
@@ -2102,14 +2104,90 @@ command_help.register(Commands.help, ['command', 'commands'])
 class Buy(BaseCommand):
     help = (
     """<title>Buy (Command)</title>
-Buy items from npc merchants.
-    """
+The Buy command allows you to purchase items from merchants (provided you have
+enough money to do so). Money in %s comes in the form of %s, 
+and you can check how much you have by using the Inventory or Me commands.
+\nUSAGE:
+To get a list of items a merchant is selling:
+  buy [list]
+To buy an item from a merchant:
+  buy <item-keyword> [from <merchant-name>]
+    """ % (GAME_NAME, CURRENCY)
     )
     def execute(self):
-        
+        if not self.pc.location:
+            self.pc.update_output('There aren\'t any merchants in the void.')
+            return
         # No arguments, or list aliases, display inventory
-        
+        if (not self.args) or (self.args == 'list'):
+            try:
+                merchant = self.verify_merchant(None)
+            except SaleFail as e:
+                self.pc.update_output(str(e))
+            else:
+                self.pc.update_output(merchant.ai_packs['merchant'].player_sale_list())
+            return
         # transaction handling of buy
+        exp = r'(?P<item>.+?)([ ]+from[ ]+(?P<merchant>\w+))?$'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.pc.update_output('Try "help buy" for help on buying items.')
+            return
+        item_name, merchant_name = match.group('item', 'merchant')
+        try:
+            merchant = self.verify_merchant(merchant_name)
+            item, price = self.verify_item(item_name, merchant)
+        except SaleFail as e:
+            self.pc.update_output(str(e))
+        else:
+            self.pc.currency -= price
+            self.pc.save({'currency': self.pc.currency})
+            self.pc.item_add(item)
+            self.pc.update_output('You buy %s from %s for %s %s.' % (item.name,
+                                            merchant.name, str(price), CURRENCY))
+            self.pc.location.tell_room('%s buys %s from %s.' % (self.pc.fancy_name(),
+                                                    item.name, merchant.name),
+                                       [self.pc.name])
+    
+    def verify_item(self, item_name, merchant):
+        item_n_price = merchant.ai_packs['merchant'].get_item(item_name)
+        if not item_n_price:
+            raise SaleFail('%s isn\'t selling any %s.' % (merchant.name, item_name))
+        if self.pc.currency < item_n_price[1]:
+            self.world.log.debug('pc: %s,%s item: %s,%s' % (str(self.pc.currency),
+                                                            str(type(self.pc.currency)),
+                                                            str(item_n_price[1]),
+                                                            str(type(item_n_price[1]))))
+            raise SaleFail('%s costs %s %s. You don\'t have enough %s.' %\
+                           (item_n_price[0].name.capitalize(),
+                            str(item_n_price[1]), CURRENCY, CURRENCY))
+        # Make sure we create a new game item from the merchant's prototype
+        item = item_n_price[0].load()
+        return [item, item_n_price[1]]
+    
+    def verify_merchant(self, merchant_name):
+        """Return a merchant if there is a valid one, """
+        # If the player specified a merchant, try to grab that one
+        if merchant_name:
+            merchant = self.pc.location.get_npc_by_kw(merchant_name)
+            if not merchant:
+                raise SaleFail('%s isn\'t here.' % merchant_name)
+            elif not merchant.has_ai('merchant'):
+                raise SaleFail('%s isn\'t a merchant.' % (merchant.name))
+            else:
+                return merchant
+        # if they didn't list a merchant, grab the first npc merchant you 
+        # can find in the room
+        else:
+            merchant = None
+            for npc in self.pc.location.npcs:
+                if npc.has_ai('merchant'):
+                    merchant = npc
+                    break
+            if not merchant:
+                raise SaleFail('There aren\'t any merchants here to buy from.')
+            else:
+                return merchant
     
 
 command_list.register(Buy, ['buy'])
@@ -2168,6 +2246,7 @@ before you sell it:
             # player-sold items later
             item.destruct()
             self.pc.currency += sale_price
+            self.pc.save({'currency': self.pc.currency})
             self.pc.update_output('You sell %s for %s %s to %s.' % (item.name,
                                                               str(sale_price),
                                                               CURRENCY, 
