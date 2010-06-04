@@ -111,6 +111,7 @@ class Character(object):
         self.damage = DamageRegister()
         self.effects = {}
         self.position = ('standing', None)
+        self.currency = args.get('currency') or 0
     
     def to_dict(self):
         d = {}
@@ -292,4 +293,6 @@ class Character(object):
     
     def death(self):
         raise Exception("Not Implemented")
+    
+
         

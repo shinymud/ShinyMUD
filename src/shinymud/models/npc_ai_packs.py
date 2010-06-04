@@ -101,12 +101,14 @@ class Merchant(NpcAiPack):
 The Merchant AI pack is meant to give NPCs the ability to become merchants.
     """
     )
+    plural_map = {'plain':'plain items'}
+    plural_map.update(dict([(key, val.plural) for key,val in ITEM_TYPES.items()]))
     def __init__(self, args={}):
         self.world = World.get_world()
         self.dbid = args.get('dbid')
         self.npc = args.get('npc')
         self.buyer = to_bool(args.get('buyer', True))
-        self.markup = args.get('markup', 0)
+        self.markup = args.get('markup', 1)
         self._sale_list = args.get('sale_items')
         if not self._sale_list:
             self.sale_items = []
@@ -145,7 +147,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
                        "  For sale: " + self.builder_sale_list(),
                        "  Buys items: " + str(self.buyer),
                        "  Buys only these types: " + bt,
-                       "  Markup: " + str(self.markup) + '%',
+                       "  Markup: " + str(self.markup) + 'x item\'s base value.',
                        ""
                      ))
         return s
@@ -197,6 +199,21 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         if not sl:
             sl = 'Nothing.'
         return sl
+        
+    def tell_buy_types(self):
+        """Return a sentence formatted list of the types this merchant buys."""
+        if not self.buyer:
+            return 'I\'m not interested in buying anything.'
+        if not self.buys_types:
+            return "I'll buy whatever you've got!"
+        # only a single thing in the list
+        p = self.plural_map
+        if len(self.buys_types) == 1:
+            m = "I only buy %s." % p[self.buys_types[0]]
+        # Two or more types
+        if len(self.buys_types) >= 2:
+            m = "I only buy %s and %s." % (', '.join(map(lambda x: p[x], self.buys_types[:-1])), p[self.buys_types[-1]])
+        return m
     
     def has_item(self, keyword):
         """If this merchant have an item with the given keyword, return it,
@@ -206,18 +223,45 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             self.assemble_sale_list()
         return item in self.sale_items
     
+    def will_buy(self, item):
+        """Return True if merchant will buy a certain item, false if they will 
+        not.
+        """
+        # If the merchant is not a buyer, return False by definition
+        if not self.buyer:
+            return False
+        # If there are no specific types specified (the buys_types list is 
+        # empty), then the merchant buys ALL types and we should return True
+        # by default
+        if not self.buys_types:
+            return True
+        # If item has no item types, then merchant will only buy the item if 
+        # they accept "plain" items
+        if (not item.item_types) and ('plain' in self.buys_types):
+            return True
+        # If this item has at least one item type that is listed in this
+        # merchant's buys_types list, then the item is eligible to be bought and
+        # we should return True
+        for t in item.item_types:
+            if t in self.buys_types:
+                return True
+        # If we made it to here, then this merchant doesn't want this item type.
+        return False
+    
     def build_set_markup(self, markup, player=None):
         """Set the markup percentage for this merchant."""
         if not markup.strip():
             return 'Try: "set markup <mark-up>", or see "help merchant".'
-        if not markup.isdigit():
-            return 'Markup must be a number between 0 and 100.'
-        mark = int(markup)
-        if mark < 0 or mark > 100:
-            return 'Markup must be a number between 0 and 100.'
-        self.markup = mark
-        self.save({'markup': self.markup})
-        return 'Markup is now set to %s%%.' % (markup)
+        try:
+            mark = float(markup)
+        except:
+            return 'Markup must be a number. See "help merchant" for details.'
+        else:
+            if mark < 0:
+                return 'Markup must number greater than zero.'
+            self.markup = mark
+            self.save({'markup': self.markup})
+            return 'Markup is now set to %s.' % (markup)
     
     def build_set_buys(self, buyer, player=None):
         """Set whether or not this merchant is a buyer."""

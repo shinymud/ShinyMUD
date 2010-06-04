@@ -15,11 +15,11 @@ pypath = path + ':' + os.environ.get('PYTHONPATH', '')
 sys.path.insert(0, path)
 
 try:
-    from shinymud.data.config import GAME_NAME, DB_NAME, PORT
+    from shinymud.data.config import *
 except ImportError:
     shutil.copy(os.path.join(path,'shinymud/data/config.py-sample'),
                 os.path.join(path,'shinymud/data/config.py'))
-    from shinymud.data.config import GAME_NAME, DB_NAME, PORT
+    from shinymud.data.config import *
 
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
@@ -83,6 +83,8 @@ def stop():
 
 def create_god(world):
     """Create a god character and save it to this MUD's db."""
+    from shinymud.models.player import Player
+    
     save = {'permissions': GOD | PLAYER}
     player = Player(('foo', 'bar'))
     
@@ -139,7 +141,6 @@ def setup():
     else:
         world = setup_stub_world()
         from shinymud.lib.sport import SPort
-        from shinymud.models.player import Player
         
         print "\nWelcome to the ShinyMUD setup wizard! First, we'll have you create a \n" +\
               "God character (a character with full in-game priviliges).\n"

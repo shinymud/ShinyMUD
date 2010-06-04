@@ -3,6 +3,7 @@ from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.lib.world import World
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
+from shinymud.commands.commands import command_list
 from shinymud.models.npc_event import NPCEvent
 from shinymud.models.npc_ai_packs import NPC_AI_PACKS
 
@@ -88,6 +89,7 @@ description:
         new_npc = Npc(**args)
         new_npc.spawn_id = spawn_id
         new_npc.events = self.events
+        new_npc.ai_packs = self.ai_packs
         new_npc.permissions = PLAYER | DM
         new_npc.location = None
         new_npc.inventory = []
@@ -145,24 +147,6 @@ description:
             return False
         self.cmdq.pop(0).run()
         return True
-        # else:
-        #     if self.dbid:
-        #         self.cycle_effects()
-        #     self.get_input()
-        #     if not self.mode:
-        #         self.parse_command()
-        #     elif self.mode.active:
-        #         self.mode.state()
-        #         if not self.mode.active:
-        #             if self.last_mode:
-        #                 self.mode = self.last_mode
-        #             else:
-        #                 self.mode = None
-        #     else:
-        #         # If we get here somehow (where the state of this mode is not
-        #         # active, but the mode has not been cleared), just clear the
-        #         # mode.
-        #         self.mode = None
     
 # ***** BuildMode accessor functions *****
     def build_set_description(self, description, player=None):
@@ -208,6 +192,18 @@ description:
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
 # ***** Event functions *****
+    def perform(self, command_string):
+        """Parse the command and add its corresponding command object to this
+        npc's cmdq (if the command is found).
+        """
+        match = re.search(r'\s*(\w+)([ ](.+))?$', command_string)
+        if match:
+            cmd_name, _, args = match.groups()
+            cmd = command_list[cmd_name]
+            if cmd:
+                self.cmdq.append(cmd(self, args, cmd_name))
+                self.world.npc_subscribe(self)
+    
     def build_add_event(self, args):
         """Add an event to an npc."""
         # add event on_enter call script 1
@@ -301,6 +297,16 @@ description:
             return "This npc (%s) is now a %s." % (self.name, args)
         else:
             return '"%s" is not a valid ai pack. See "help ai packs".' % args
+    
+    def build_remove_ai(self, ai_type):
+        """Remove an ai pack from this npc via BuildMode."""
+        if not ai_type:
+            return 'Try: "remove ai <ai-pack-name>", or type "help ai packs".'
+        if not ai_type in self.ai_packs:
+            return 'This npc doesn\'t have the "%s" ai type.' % ai_type
+        pack = self.ai_packs.pop(ai_type)
+        pack.destruct()
+        return 'Npc %s (%s) no longer has %s ai.' % (self.id, self.name, ai_type)
     
     def new_ai(self, ai_pack, args={}):
         """Add a new ai pack to this npc."""

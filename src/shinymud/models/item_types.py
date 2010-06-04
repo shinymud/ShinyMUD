@@ -182,6 +182,7 @@ class Damage(object):
 
 
 class Equippable(ItemType):
+    plural = 'equippable items'
     def __init__(self, args={}):
         self.world = world.get_world()
         self.build_item = args.get('build_item')
@@ -426,6 +427,7 @@ class Equippable(ItemType):
 
 class Food(ItemType):
     food_verbs = {'food': 'eat', 'drink': 'drink from'}
+    plural = 'food'
     def __init__(self, args={}):
         self.world = World.get_world()
         self.on_eat = args.get('on_eat', [])
@@ -637,6 +639,7 @@ class Food(ItemType):
     
 
 class Container(ItemType):
+    plural = 'containers'
     def __init__(self, args={}):
         self.world = World.get_world()
         self.weight_capacity = args.get('weight_capacity')
@@ -784,6 +787,7 @@ class Container(ItemType):
     
 
 class Furniture(ItemType):
+    plural = 'furniture'
     def __init__(self, args={}):
         self.world = World.get_world()
         self.sit_effects = args.get('sit_effects', [])
@@ -860,6 +864,7 @@ class Furniture(ItemType):
     
 
 class Portal(ItemType):
+    plural = 'portals'
     def __init__(self, args={}):
         self.world = World.get_world()
         self.leave_message = args.get('leave_message', '#actor enters a portal.')
@@ -981,6 +986,7 @@ class Portal(ItemType):
     
 
 class Book(ItemType):
+    plural = 'books'
     pass
 
 

@@ -2099,6 +2099,126 @@ following and the Look command would work:
 command_list.register(Commands, ['command', 'commands'])
 command_help.register(Commands.help, ['command', 'commands'])
 
+class Buy(BaseCommand):
+    help = (
+    """<title>Buy (Command)</title>
+Buy items from npc merchants.
+    """
+    )
+    def execute(self):
+        
+        # No arguments, or list aliases, display inventory
+        
+        # transaction handling of buy
+    
+
+command_list.register(Buy, ['buy'])
+command_help.register(Buy.help, ['buy'])
+
+class Sell(BaseCommand):
+    help = (
+    """<title>Sell (Command)</title>
+The Sell command allows a player to sell an item to a merchant. Keep in mind
+that not all merchants buys all types of items!
+\nUSAGE:
+To sell an item:
+  sell <item-keyword> [to <merchant-name>]
+If you would like to see how much your item is worth to a merchant
+before you sell it:
+  show <item-keyword> [to <merchant-name>]
+    """
+    )
+    def execute(self):
+        if not self.args:
+            self.pc.update_output('Sell what? Try "help sell" for help on sale transactions.')
+            return
+        if not self.pc.location:
+            self.pc.update_output('There aren\'t any merchants in the void.')
+            return
+        #<item> [to <merchant>]
+        exp = r'(?P<item>.+?)([ ]+to[ ]+(?P<merchant>\w+))?$'
+        match = re.match(exp, self.args, re.I)
+        if not match:
+            self.pc.update_output('Try "help sell" for help on sale transactions.')
+            return
+        item_name, merchant_name = match.group('item', 'merchant')
+        try:
+            item = self.verify_item(item_name)
+            merchant = self.verify_merchant(merchant_name)
+        except SaleFail as e:
+            self.pc.update_output(str(e))
+            return
+        else:
+            if not merchant.ai_packs['merchant'].will_buy(item):
+                merchant.perform('tell %s %s' % (self.pc.name,
+                                 merchant.ai_packs['merchant'].tell_buy_types()))
+                return
+            # calculate sale price
+            sale_price = int((item.base_value * merchant.ai_packs['merchant'].markup) + 0.5) or 1
+            if self.alias in ['show', 'appraise']:
+                merchant.perform('tell %s I\'ll give you %s %s for %s.' % (self.pc.fancy_name(),
+                                 str(sale_price), CURRENCY, item.name))
+                # self.pc.update_output('%s is worth %s %s to %s.' % (item.name.capitalize(),
+                #                                                     str(sale_price),
+                #                                                     CURRENCY,
+                #                                                     merchant.name))
+                return
+            self.pc.item_remove(item)
+            # Just destroy the item for now -- maybe later we'll have merchants resell
+            # player-sold items later
+            item.destruct()
+            self.pc.currency += sale_price
+            self.pc.update_output('You sell %s for %s %s to %s.' % (item.name,
+                                                              str(sale_price),
+                                                              CURRENCY, 
+                                                              merchant.name))
+            self.pc.location.tell_room('%s sells %s to %s.' % (self.pc.fancy_name(),
+                                                               item.name,
+                                                               merchant.name),
+                                       [self.pc.name])
+    
+    def verify_item(self, item_name):
+        item = self.pc.check_inv_for_keyword(item_name)
+        if not item:
+            raise SaleFail('You don\'t have "%s".' % item_name)
+        return item
+    
+    def verify_merchant(self, merchant_name):
+        """Return a merchant if there is a valid one, """
+        # If the player specified a merchant, try to grab that one
+        if merchant_name:
+            merchant = self.pc.location.get_npc_by_kw(merchant_name)
+            if not merchant:
+                raise SaleFail('%s isn\'t here.' % merchant_name)
+            elif not merchant.has_ai('merchant'):
+                raise SaleFail('%s isn\'t a merchant.' % (merchant.name))
+            else:
+                return merchant
+        # if they didn't list a merchant, grab the first npc merchant you 
+        # can find in the room
+        else:
+            merchant = None
+            for npc in self.pc.location.npcs:
+                if npc.has_ai('merchant'):
+                    merchant = npc
+                    break
+            if not merchant:
+                raise SaleFail('There aren\'t any merchants here to sell to.')
+            else:
+                return merchant
+    
+
+command_list.register(Sell, ['sell', 'show', 'appraise'])
+command_help.register(Sell.help, ['sell', 'show', 'appraise'])
+
+# **************** Command Specific Exceptions *******************
+class SaleFail(Exception):
+    """Throw this exception if there's an error in the player's sale
+    process.
+    """
+    pass
+
+# **************** Extra Command-related Help pages *******************
 command_help.register(("<title>TextEditMode (Mode)</title>"
 """TextEditMode is a special mode for editing large amounts of text, such as
 room or character descriptions. TextEditMode lets you enter text

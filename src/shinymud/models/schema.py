@@ -24,7 +24,8 @@ def initialize_database(connection=None):
     location TEXT,
     goto_appear TEXT,
     goto_disappear TEXT,
-    title TEXT
+    title TEXT,
+    currency INTEGER
 )''',\
 '''CREATE TABLE IF NOT EXISTS area (
     dbid INTEGER PRIMARY KEY,
@@ -190,7 +191,7 @@ def initialize_database(connection=None):
     dbid INTEGER PRIMARY KEY,
     npc INTEGER NOT NULL REFERENCES npc(dbid),
     buyer TEXT,
-    markup INTEGER,
+    markup NUMBER,
     buys_types TEXT,
     sale_items TEXT
 )'''

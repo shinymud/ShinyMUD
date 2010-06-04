@@ -42,7 +42,7 @@ To create a new object:
                         self.pc.update_output(new_area)
                     else:
                         self.pc.mode.edit_area = new_area
-                        new_area.add_builder(self.pc.name)
+                        new_area.build_add_builder(self.pc.name)
                         self.pc.mode.edit_object = None
                         self.pc.update_output('New area "%s" created.\n' % new_area.name)
             
