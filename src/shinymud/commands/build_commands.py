@@ -4,6 +4,7 @@ from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
 from shinymud.lib.sport import *
+from shinymud.lib.registers import CommandRegister
 from shinymud.commands import *
 from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
 

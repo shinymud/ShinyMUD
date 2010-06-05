@@ -1,6 +1,6 @@
 from shinymud.lib.world import *
 from shinymud.data.config import *
-
+from shinymud.lib.registers import CommandRegister
 def get_permission_names(perm_int):
     """Takes an integer representing a set of permissions and returns a list
     of corresponding permission names."""
@@ -11,18 +11,6 @@ def get_permission_names(perm_int):
             perm_list.append(key)
     return perm_list
 
-class CommandRegister(object):
-    
-    def __init__(self):
-        self.commands = {}
-    
-    def __getitem__(self, key):
-        return self.commands.get(key)
-    
-    def register(self, func, aliases):
-        for alias in aliases:
-            self.commands[alias] = func
-    
 
 # Create the list of command-related Help Pages
 command_help = CommandRegister()
