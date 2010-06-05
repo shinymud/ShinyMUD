@@ -3,8 +3,8 @@ from shinymud.lib.world import World
 world = World()
 from shinymud.lib.connection_handler import ConnectionHandler
 from shinymud.lib.statsender import StatSender
+from shinymud.lib.setup import initialize_database
 from shinymud.models.area import Area
-from shinymud.models.schema import initialize_database
 from shinymud.data.config import *
 
 import traceback

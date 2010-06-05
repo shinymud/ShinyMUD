@@ -7,15 +7,50 @@ from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.modes.passchange_mode import PassChangeMode
 from shinymud.lib.world import World
+from shinymud.models import write_dict, to_bool, Column, model_list
 from shinymud.models.item import GameItem
 from shinymud.models.character import Character
 
 import re
 from socket import error as socket_error
 
+
 class Player(Character):
     """Represents a player character."""
     char_type = 'player'
+    db_table_name = 'player'
+    db_columns = Character.db_columns + [
+        Column('name', null=False, unique=True),
+        Column('channels', read=Player.read_channels, write=write_dict, default={'chat': False}),
+        Column('password', null=False),
+        Column('permissions', type="INTEGER", null=False, default=1),
+        Column('email'),
+        Column('location', read=Player.read_location, write=Player.write_location),
+        Column('goto_appear'),
+        Column('goto_disappear'),
+        Column('title',default='a %s player.' % GAME_NAME)
+    ]
+    
+    @classmethod
+    def read_channels(cls, val):
+        d = {}
+        for pair in val.split(','):
+            k,v = pair.split('=')
+            d[k] = to_bool(v)
+        return d    
+    
+    @classmethod
+    def read_location(cls, val):
+        #loc == 'area,id'
+        loc = val.split(',')
+        return cls.world.get_location(loc[0], loc[1])
+    
+    @classmethod
+    def write_location(cls, val):
+        if val:
+            return '%s,%s' % (val.area.name, val.id)
+        return None
+    
     win_change_regexp = re.compile(r"\xff\xfa\x1f(?P<size>.*?)\xff\xf0")
     def __init__(self, conn_info):
         self.conn, self.addr = conn_info
@@ -30,30 +65,15 @@ class Player(Character):
         self.world = World.get_world()
         self.channels = {'chat': False}
     
-    def playerize(self, **args):
-        self.characterize(**args)
-        self.name = str(args.get('name'))
-        self.password = args.get('password', None)
-        self.description = str(args.get('description','You see nothing special about this person.'))
-        self.title = str(args.get('title', 'a %s player.' % GAME_NAME))
-        self.email = str(args.get('email'))
-        self.permissions = int(args.get('permissions', 1))
-        self.dbid = args.get('dbid')
-        self.goto_appear = args.get('goto_appear', 
-            '%s appears in the room.' % self.fancy_name())
-        self.goto_disappear = args.get('goto_disappear', 
-            '%s disappears in a cloud of smoke.' % self.fancy_name())
-        if 'channels' in args:
-            self.channels = dict([_.split('=') for _ in args['channels'].split(',')])
-        else:
-            self.channels = {'chat': True}        
-        self.location = args.get('location')
-        if self.location:
-            loc = args.get('location').split(',')
-            self.world.log.debug(loc)
-            self.location = self.world.get_location(loc[0], loc[1])
-        if self.dbid:
-            self.load_inventory()
+    def playerize(self, args={}):
+        self.characterize(args)
+        if not self.goto_appear:
+            self.goto_appear = '%s appears in the room.' % str(self))
+        if not self.goto_disappear:
+            self.goto_disappear = '%s disappears in a cloud of smoke.' % str(self))
+    
+    def load_extras(self):
+        self.load_inventory()
     
     def load_inventory(self):
         rows = self.world.db.select('* FROM game_item WHERE owner=?', [self.dbid])
@@ -82,24 +102,24 @@ class Player(Character):
                 self.load_contents(new_item)
             container.item_add(new_item)
     
-    def to_dict(self):
-        d = Character.to_dict(self)
-        d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
-        d['name'] = self.name
-        d['password'] = self.password
-        d['description'] = self.description
-        d['permissions'] = self.permissions
-        d['goto_appear'] = self.goto_appear
-        d['goto_disappear'] = self.goto_disappear
-        d['title'] = self.title
-        if self.email:
-            d['email'] = self.email
-        if self.dbid:
-            d['dbid'] = self.dbid
-        if self.location:
-            d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
-        
-        return d
+    # def to_dict(self):
+    #     d = Character.to_dict(self)
+    #     d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
+    #     d['name'] = self.name
+    #     d['password'] = self.password
+    #     d['description'] = self.description
+    #     d['permissions'] = self.permissions
+    #     d['goto_appear'] = self.goto_appear
+    #     d['goto_disappear'] = self.goto_disappear
+    #     d['title'] = self.title
+    #     if self.email:
+    #         d['email'] = self.email
+    #     if self.dbid:
+    #         d['dbid'] = self.dbid
+    #     if self.location:
+    #         d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
+    #     
+    #     return d
     
     def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the player's output queue."""
@@ -378,3 +398,5 @@ class Player(Character):
         self.update_output('You Died.')
         self.go(self.world.get_location(DEFAULT_LOCATION[0], DEFAULT_LOCATION[1]))
     
+
+model_list.register(Player)

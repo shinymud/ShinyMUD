@@ -1,7 +1,8 @@
 from shinymud.lib.world import World
 from shinymud.lib.registers import ModelRegister
-    
+
 model_list = ModelRegister()
+
 def to_bool(val):
     """Take a string representation of true or false and convert it to a boolean
     value. Returns a boolean value or None, if no corresponding boolean value
@@ -22,7 +23,7 @@ def read_dict(val):
     return dict([thing.split('=') for thing in x.split(',')]),
 
 def write_dict(val):
-    return ",".join('='.join([k,v]) for k,v in val.items())
+    return ",".join('='.join([str(k),str(v)]) for k,v in val.items())
 
 def read_list(val):
     return val.split(',')
@@ -38,11 +39,27 @@ class Column(object):
         self.default = args.get('default')
         self.null = args.get('null', True)
         self.primary_key = args.get('primary_key', False)
+        self.foreign_key = args.get('foreign_key') # (model, column)
         self.unique = args.get('unique', False)
         self.read = args.get('read', unicode)
         self.write = args.get('write', unicode)
         self.cascade = args.get('cascade')
-    
+    def __str__(self):
+        sql_string = []
+        sql_string.append(self.name)
+        sql_string.append(self.type)
+        if self.primary_key: 
+            sql_string.append("PRIMARY KEY")
+        else:
+            if self.foreign_key:
+                sql_string.append("REFERENCES %s(%s)" % (self.foreign_key[0].db_table_name, self.foreign_key[1]))
+            if self.unique: 
+                sql_string.append('UNIQUE')
+            if not self.null:
+                sql_string.append('NOT NULL')
+            if self.cascade:
+                sql_string.append('CASCADE %s' % str(self.cascade))
+        return unicode(" ".join(sql_string))
 
 # primary_key, null, unique, cascade_on_delete, references, 
 class Model(object):
@@ -83,3 +100,4 @@ class Model(object):
     def destruct(self):
         if self.dbid:
             self.world.db.delete('FROM ? WHERE dbid=?', [self.db_table_name, self.dbid])
+

@@ -1,19 +1,25 @@
 from shinymud.commands.attacks import *
 from shinymud.data.config import EQUIP_SLOTS
 from shinymud.lib.registers import IntRegister, DictRegister, DamageRegister
+from shinymud.models import Model, Column
 from random import randint
     
-class Character(object):
+class Character(Model):
     """The basic functionality that both player characters (players) and 
     non-player characters share.
     """
-    def characterize(self, **args):
-        self.gender = str(args.get('gender', 'neutral'))
-        self.hp = args.get('hp', 20)
-        self.mp = args.get('mp', 5)
+    db_columns = Model.db_columns + [
+        Column('gender', default='neutral'),
+        Column('hp', type="INTEGER", default=20, read=int, write=int),
+        Column('mp', type="INTEGER", default=5, read=int, write=int),
+        Column('max_mp', type="INTEGER", default=5, read=int, write=int),
+        Column('max_hp', type="INTEGER", default=20, read=int, write=int),
+        Column('currency', type="INTEGER", default=0, read=int, write=int),
+        Column('description', default="You see nothing special about this person.")
+    ]
+    def characterize(self, args={}):
+        Model.__init__(self, args)
         self.atk = 0
-        self.max_mp = args.get('max_mp', 5)
-        self.max_hp = args.get('max_hp', 20)
         self.battle = None
         self._battle_target = None
         self.inventory = []
@@ -28,16 +34,15 @@ class Character(object):
         self.damage = DamageRegister()
         self.effects = {}
         self.position = ('standing', None)
-        self.currency = args.get('currency') or 0
     
-    def to_dict(self):
-        d = {}
-        d['gender'] = self.gender
-        d['hp'] = self.hp
-        d['mp'] = self.mp
-        d['max_mp'] = self.max_mp
-        d['max_hp'] = self.max_hp
-        return d
+    # def to_dict(self):
+    #     d = {}
+    #     d['gender'] = self.gender
+    #     d['hp'] = self.hp
+    #     d['mp'] = self.mp
+    #     d['max_mp'] = self.max_mp
+    #     d['max_hp'] = self.max_hp
+    #     return d
     
     def __str__(self):
         return self.fancy_name()
@@ -51,23 +56,23 @@ class Character(object):
             return True
         return False
     
-    def save(self, save_dict=None):
-        """Save the character to the database."""
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict(self.char_type, save_dict)
-            else:    
-                self.world.db.update_from_dict(self.char_type, self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict(self.char_type, 
-                                                       self.to_dict())
-    
-    def destruct(self):
-        """Remove the character from the database."""
-        if self.dbid:
-            self.world.db.delete('FROM %s WHERE dbid=?' % self.char_type, 
-                                 [self.dbid])
+    # def save(self, save_dict=None):
+    #     """Save the character to the database."""
+    #     if self.dbid:
+    #         if save_dict:
+    #             save_dict['dbid'] = self.dbid
+    #             self.world.db.update_from_dict(self.char_type, save_dict)
+    #         else:    
+    #             self.world.db.update_from_dict(self.char_type, self.to_dict())
+    #     else:
+    #         self.dbid = self.world.db.insert_from_dict(self.char_type, 
+    #                                                    self.to_dict())
+    # 
+    # def destruct(self):
+    #     """Remove the character from the database."""
+    #     if self.dbid:
+    #         self.world.db.delete('FROM %s WHERE dbid=?' % self.char_type, 
+    #                              [self.dbid])
     
     def item_add(self, item):
         """Add an item to the character's inventory."""
