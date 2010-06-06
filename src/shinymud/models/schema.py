@@ -38,7 +38,7 @@ def initialize_database(connection=None):
 '''CREATE TABLE IF NOT EXISTS room (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
+    area TEXT NOT NULL REFERENCES area(name),
     name TEXT,
     description TEXT,
     UNIQUE (area, id)
@@ -46,7 +46,7 @@ def initialize_database(connection=None):
 '''CREATE TABLE IF NOT EXISTS  build_item (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
+    area TEXT NOT NULL REFERENCES area(name),
     name TEXT,
     title TEXT,
     description TEXT,

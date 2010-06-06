@@ -1,45 +1,52 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import to_bool
+from shinymud.models import to_bool, Model, Column, read_list, write_list
 from shinymud.models.item_types import ITEM_TYPES
 from shinymud.lib.world import World
 
 import types
 import re
 
-class Item(object):
+class Item(Model):
     """The base class that both BuildItem and GameItem should inherit from."""
-    def __init__(self, **args):
-        self.name = args.get('name', 'New Item')
-        self.title = str(args.get('title', 'A shiny new object sparkles happily.'))
-        self.description = args.get('description', 'This is a shiny new object.')
-        self.keywords = []
-        kw = args.get('keywords')
-        if kw:
-            self.keywords = [str(w) for w in kw.split(',')]
-        else:
+    db_columns = Model.Columns + [
+        Column('name', default='New Item'),
+        Column('title', default='A shiny new object sparkles happily'),
+        Column('description', default='This is a shiny new object'),
+        Column('keywords', read=read_list, write=write_list, default=[]),
+        Column('weight', type="INTEGER", read=int, write=int, default=0),
+        Column('base_value', type="INTEGER", read=int, write=int, default=0),
+        Column('carryable', read=to_bool, default=True)
+    ]
+    
+    def __init__(self, args={}):
+        Model.__init__(self, args)
+        if not self.keywords and self.name:
             self.keywords = self.name.lower().split()
-        self.weight = int(args.get('weight', 0))
-        self.base_value = int(args.get('base_value', 0))
-        self.carryable = True
-        if 'carryable' in args:
-            self.carryable = to_bool(args.get('carryable'))
-        self.world = World.get_world()
-        self.dbid = args.get('dbid')
         self.item_types = {}
     
-    def to_dict(self):
-        d = {}
-        d['name'] = self.name
-        d['title'] = self.title
-        d['description'] = self.description
-        d['keywords'] = ','.join(self.keywords)
-        d['weight'] = self.weight
-        d['base_value'] = self.base_value
-        d['carryable'] = str(self.carryable)
-        if self.dbid:
-            d['dbid'] = self.dbid
-        
-        return d
+    # def to_dict(self):
+    #     d = {}
+    #     d['name'] = self.name
+    #     d['title'] = self.title
+    #     d['description'] = self.description
+    #     d['keywords'] = ','.join(self.keywords)
+    #     d['weight'] = self.weight
+    #     d['base_value'] = self.base_value
+    #     d['carryable'] = str(self.carryable)
+    #     if self.dbid:
+    #         d['dbid'] = self.dbid
+    # 
+    #     return d
+    
+    def save(self):
+        save_all = False
+        if not self.dbid:
+            save_all = True
+        Item.save(self)
+        if save_all:
+            # First time build item is saved, save item_types.
+            for value in self.item_types.values():
+                value.save()
     
     def __str__(self):
         s = ', '.join(['%s: %s' % (key,val) for key,val in self.to_dict() if key != 'dbid'])
@@ -60,31 +67,28 @@ class BuildItem(Item):
     to create a GameItem, which is essentially a copy of the BuildItem instance
     and is meant to be used by players in-game.
     """
-    def __init__(self, area=None, id='0', **args):
-        Item.__init__(self, **args)
+    db_columns = Item.db_columns + [
+        Column('area', foreign_key=('area', 'name'), read=BuildItem.world.get_area, write=(lambda x: x.name)),
+        Column('id')
+    ]
+    def __init__(self, args={}):
+        Item.__init__(self, args)
         self.area = area
         self.id = str(id)
         if self.dbid:
-            for key, value in ITEM_TYPES.items():
-                row = self.world.db.select('* FROM %s WHERE build_item=?' % key,
-                                           [self.dbid])
-                if row:
-                    row[0]['build_item'] = self
-                    self.item_types[key] = value(row[0])
-    
-    def to_dict(self):
-        d = Item.to_dict(self)
-        if isinstance(self.area, int):
-            d['area'] = self.area
-        else:
-            d['area'] = self.area.dbid
-        d['id'] = self.id
-        return d
+            
+    def load_extras(self):
+        for key, value in ITEM_TYPES.items():
+            row = self.world.db.select('* FROM %s WHERE build_item=?' % key,
+                                       [self.dbid])
+            if row:
+                row[0]['build_item'] = self
+                self.item_types[key] = value(row[0])
     
     @classmethod
     def create(cls, area=None, item_id=0):
         """Create a new item."""
-        new_item = cls(area, item_id)
+        new_item = cls({'area':area, 'id':item_id})
         return new_item
     
     def __str__(self):
@@ -106,23 +110,6 @@ class BuildItem(Item):
             string += str(itype)
         string += ('-' * 50)
         return string
-    
-    def destruct(self):
-        """Remove this instance and all of its item types from the database."""
-        if self.dbid:
-            self.world.db.delete('FROM build_item WHERE dbid=?', [self.dbid])
-    
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('build_item', save_dict)
-            else:    
-                self.world.db.update_from_dict('build_item', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('build_item', self.to_dict())
-            for value in self.item_types.values():
-                value.save()
     
     #***************** Set Basic Attribute (VIA BuildMode) Functions *****************
     def build_set_description(self, desc, player=None):
@@ -235,7 +222,7 @@ class BuildItem(Item):
         spawn_id -- The id of the spawn that is loading this item into a room,
         or None if this item is not being loaded by a spawn
         """
-        item = GameItem(spawn_id, **self.to_dict())
+        item = GameItem(self.to_dict(), spawn_id=spawn_id)
         # Clear the prototype's dbid so we don't accidentally overwrite it in the db
         item.dbid = None
         item.build_area = self.area.name
@@ -251,54 +238,22 @@ class GameItem(Item):
     GameItems are what players use in-game, and are 'copies' of their BuildItem
     counterparts.
     """
-    def __init__(self, spawn_id=None, **args):
-        Item.__init__(self, **args)
-        # The build_area and build_id below reference this game_item's prototype;
-        # that is, the BuildItem that this item was derived from. 
-        self.build_area = args.get('build_area') # The area this item originated from
-        self.build_id = args.get('build_id') # The build_item this item originated from
-        
-        self.owner_id = args.get('owner')
+    db_table_name = 'game_item'
+    db_columns = Item.db_columns + [
+        Column('build_area'),
+        Column('build_id'),
+        Column('container', type="INTEGER", read=int, write=int, foreign_key=(GameItem.db_table_name, 'dbid'), cascade="ON DELETE"),
+        Column('owner_id', type="INTEGER", read=int, write=int, foreign_key=('player', 'dbid'), cascade='ON DELETE')
+    ]
+    def __init__(self, args={}, spawn_id=None):
         self.spawn_id = spawn_id
-        self.container = args.get('container')
-        if self.dbid:
-            for key, value in ITEM_TYPES.items():
-                row = self.world.db.select('* FROM %s WHERE game_item=?' % key,
-                                           [self.dbid])
-                if row:
-                    row[0]['game_item'] = self
-                    self.item_types[key] = value(row[0])
-            
+        Item.__init__(self, **args)
     
-    def to_dict(self):
-        d = Item.to_dict(self)
-        if self.owner:
-            d['owner'] = self.owner.dbid
-        if self.dbid:
-            d['dbid'] = self.dbid
-        if self.container:
-            d['container'] = self.container.dbid
-        d['build_area'] = self.build_area
-        d['build_id'] = self.build_id
-        return d
+    def load_extras(self):
+        for key, value in ITEM_TYPES.items():
+            row = self.world.db.select('* FROM %s WHERE game_item=?' % key,
+                                       [self.dbid])
+            if row:
+                row[0]['game_item'] = self
+                self.item_types[key] = value(row[0])
     
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('game_item', save_dict)
-            else:    
-                self.world.db.update_from_dict('game_item', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('game_item', self.to_dict())
-            # If an item has not yet been saved, its item types will not have been
-            # saved either.
-        for value in self.item_types.values():
-            value.save()
-    
-    def destruct(self):
-        """Remove this instance and all of its item types from the database."""
-        if self.dbid:
-            self.world.db.delete('FROM game_item WHERE dbid=?', [self.dbid])
-    
-

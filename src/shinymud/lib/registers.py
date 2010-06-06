@@ -12,10 +12,10 @@ class CommandRegister(object):
 
 class ModelRegister(object):
     def __init__(self):
-        self.models = []
+        self.models = {}
 
     def register(self, model):
-        self.models.append(model)
+        self.models[model.db_table_name] = model
 
 class IntRegister(object):
     """Keeps a dictionary of id:integer pairs, so we can keep track

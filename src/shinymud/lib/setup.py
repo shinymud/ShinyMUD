@@ -29,10 +29,13 @@ def create_table(model):
     # check for dependencies
     dependencies = [col.foreign_key for col in model.db_columns if col.foreign_key and col.foreign_key[0].db_table_name != model.db_table_name]
     for mod, col in dependencies:
-        if mod.db_table_name not in EXISTING_TABLES:
+        M = model_list.get[mod]
+        if not M:
+            raise Exception('Dependency on unknown model: %s' % str(mod))
+        if M.db_table_name not in EXISTING_TABLES:
             create_table(mod)
-        elif col not in EXISTING_TABLES[mod.db_table_name]:
-            add_column(mod, col)    
+        elif col not in EXISTING_TABLES[M.db_table_name]:
+            add_column(M, col)    
     # generate create table string
     table_string = []
     table_string.append('CREATE TABLE %s (' % model.db_table_name)
@@ -65,10 +68,11 @@ def add_column(mod, col):
             raise Exception('Trying to create undefined column!')
         if column.foreign_key:
             m, c = column.foreign_key
-            if m.db_table_name not in EXISTING_TABLES:
-                create_table(m)
-            elif c not in EXISTING_TABLES[m.db_table_name]:
-                add_column(m, c)
+            M = model_list.get[m]
+            if M.db_table_name not in EXISTING_TABLES:
+                create_table(M)
+            elif c not in EXISTING_TABLES[M.db_table_name]:
+                add_column(M, c)
         alter_stmt = 'ALTER TABLE %s ADD COLUMN %s' % (mod.db_table_name, str(column))
         world = World.get_world()
         cursor = world.db.conn.cursor()

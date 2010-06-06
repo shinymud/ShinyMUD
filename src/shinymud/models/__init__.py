@@ -29,7 +29,9 @@ def read_list(val):
     return val.split(',')
 
 def write_list(val):
-    return ','.join(val)
+    if not val:
+        return None
+    return ','.join(map(str, val))
 
 
 class Column(object):
@@ -58,7 +60,7 @@ class Column(object):
             if not self.null:
                 sql_string.append('NOT NULL')
             if self.cascade:
-                sql_string.append('CASCADE %s' % str(self.cascade))
+                sql_string.append('%s CASCADE' % str(self.cascade))
         return unicode(" ".join(sql_string))
 
 # primary_key, null, unique, cascade_on_delete, references, 
@@ -75,7 +77,7 @@ class Model(object):
         )
     ]
     db_extras = []
-    def __init__(self, args):
+    def __init__(self, args={}):
         for col in self.db_columns:
             if col.name in args:
                 setattr(self, col.name, col.read(args[col.name]))
