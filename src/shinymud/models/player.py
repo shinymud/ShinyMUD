@@ -6,7 +6,6 @@ from shinymud.modes.build_mode import BuildMode
 from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.modes.passchange_mode import PassChangeMode
-from shinymud.lib.world import World
 from shinymud.models import write_dict, to_bool, Column, model_list
 from shinymud.models.item import GameItem
 from shinymud.models.character import Character
@@ -62,7 +61,6 @@ class Player(Character):
         self.mode = InitMode(self)
         self.last_mode = None
         self.dbid = None
-        self.world = World.get_world()
         self.channels = {'chat': False}
     
     def playerize(self, args={}):

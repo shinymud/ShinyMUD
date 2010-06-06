@@ -1,6 +1,6 @@
 from shinymud.models.character import Character
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.lib.world import World
+from shinymud.models import Model, Column, read_list, write_list, model_list
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
 from shinymud.commands.commands import command_list
@@ -13,46 +13,34 @@ class Npc(Character):
     """Represents a non-player character."""
     LOG_LINES = 25 # The number of lines an npc should "remember"
     char_type = 'npc'
-    def __init__(self, area=None, id=0, **args):
-        self.characterize(**args)
-        self.area = area
-        self.id = str(id)
-        self.name = str(args.get('name', 'Shiny McShinerson'))
-        self.dbid = args.get('dbid')
-        self.title = args.get('title', '%s is here.' % self.name)
-        self.gender = args.get('gender', 'neutral')
-        self.keywords = [name.lower() for name in self.name.split()]
-        self.keywords.append(self.name.lower())
-        kw = str(args.get('keywords', ''))
-        if kw:
-            self.keywords = kw.split(',')
-        self.description = args.get('description', 'You see nothing special about this person.')
-        self.world = World.get_world()
+    db_table_name = 'npc'
+    db_columns = Character.db_columns + [
+        Column('area', read=Npc.world.get_area, write=(lambda x: x.name),
+               foreign_key=('area', 'name'), null=False),
+        Column('id', null=False),
+        Column('name', default='Shiny McShinerson'),
+        Column('gender', default='neutral'),
+        Column('keywords', read=read_list, write=write_list),
+        Column('title')
+    ]
+    def __init__(self, args):
+        self.characterize(args)
+        if not self.title:
+            self.title = args.get('title', '%s is here.' % self.name)
+        if not self.keywords:
+            self.keywords = [name.lower() for name in self.name.split()]
         self.spawn_id = None
         self.events = {}
-        self.next_event_id = 1
         self.ai_packs = {}
-        if self.dbid:
-            self.load_events()
-            self.load_ai_packs()
     
-    def to_dict(self):
-        d = Character.to_dict(self)
-        d['keywords'] = ','.join(self.keywords)
-        d['area'] = self.area.dbid
-        d['id'] = self.id
-        d['name'] = self.name
-        d['gender'] = self.gender
-        d['title'] = self.title
-        d['description'] = self.description
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
+    def load_extras(self):
+        self.load_events()
+        self.load_ai_packs()
     
     @classmethod
-    def create(cls, area=None, npc_id=0):
-        """Create a new npc"""
-        new_npc = cls(area, npc_id)
+    def create(cls, area, npc_id):
+        """Create a brand new npc"""
+        new_npc = cls({'area': area, 'id':npc_id})
         return new_npc
     
     def __str__(self):
@@ -83,10 +71,12 @@ description:
         return string
     
     def load(self, spawn_id=None):
-        args = self.to_dict()
+        """Create a copy of this npc, then add the necessary attributes for the
+        npc to survive in the game-environment.
+        """
+        args = self.copy_save_attrs()
         args['dbid'] = None
-        args['area'] = self.area
-        new_npc = Npc(**args)
+        new_npc = Npc(args)
         new_npc.spawn_id = spawn_id
         new_npc.events = self.events
         new_npc.ai_packs = self.ai_packs
@@ -315,4 +305,5 @@ description:
         pack.save()
         self.ai_packs[ai_pack] = pack
     
+
 

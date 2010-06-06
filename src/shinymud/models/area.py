@@ -1,4 +1,4 @@
-from shinymud.lib.world import World
+from shinymud.models import Model, Column, read_list, write_list, model_list
 from shinymud.models.room import Room
 from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
@@ -6,37 +6,24 @@ from shinymud.models.script import Script
 from shinymud.modes.text_edit_mode import TextEditMode
 import time
 
-class Area(object):
-    
-    def __init__(self, name=None, **args):
-        self.name = str(name)
-        self.title = args.get('title', 'New Area')
+class Area(Model):
+    db_table_name = 'area'
+    db_columns = Model.db_columns + [
+        Column('name', null=False, unique=True),
+        Column('title', default='New Area'),
+        Column('builders', read=read_list, write=write_list),
+        Column('level_range', default='All'),
+        Column('description', default='No Description'),
+        
+    ]
+    def __init__(self, args={}):
+        Model.__init__(self, args)
         self.rooms = {}
         self.items = {}
         self.npcs = {}
         self.scripts = {}
-        builders = args.get('builders')
-        if builders:
-            self.builders = builders.split(',')
-        else:
-            self.builders = []
-        self.level_range = args.get('level_range', 'All')
-        self.description = args.get('description', 'No Description')
-        self.dbid = args.get('dbid')
-        self.world = World.get_world()
         self.time_of_last_reset = 0
         self.times_visited_since_reset = 0
-    
-    def to_dict(self):
-        d = {}
-        d['name'] = self.name
-        d['level_range'] = self.level_range
-        d['builders'] = ",".join(self.builders)
-        d['description']  = self.description
-        d['title'] = self.title
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
     
     def load(self):
         """Load all of this area's objects from the database."""
@@ -122,17 +109,16 @@ Description: \n    %s""" % (self.name,
     
 # ***** BuildMode Accessor Functions *****
     @classmethod
-    def create(cls, name, **area_dict):
+    def create(cls, name, area_dict={}):
         """Create a new area instance and add it to the world's area list."""
-        world = World.get_world()
         if world.get_area(name):
-            return "This area already exists.\n"
-        if area_dict:
-            new_area = cls(name, **area_dict)
-        else:
-            new_area = cls(name)
+            return "This area already exists."
+        if not name:
+            return "Invalid area name. Areas must have a name."
+        area_dict['name'] = name
+        new_area = cls(area_dict)
         new_area.save()
-        world.new_area(new_area)
+        world.area_add(new_area)
         return new_area
     
     def build_set_description(self, desc, player=None):
@@ -234,7 +220,7 @@ Description: \n    %s""" % (self.name,
         """Add a new npc to this area's npc list."""
         if npc_dict:
             npc_dict['area'] = self
-            new_npc = Npc(**npc_dict)
+            new_npc = Npc(npc_dict)
         else:
             new_npc = Npc.create(self, self.get_id('npc'))
         new_npc.save()
@@ -344,3 +330,5 @@ Description: \n    %s""" % (self.name,
         del self.scripts[script_id]
         return 'Script "%s" has been successfully destroyed.' % script_id
     
+
+model_list.register(Player)

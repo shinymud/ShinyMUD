@@ -138,7 +138,7 @@ class World(object):
 # Here exist all the functions that the world uses to manage the areas
 # it contains.
     
-    def new_area(self, area):
+    def area_add(self, area):
         self.areas[area.name] = area
     
     def list_areas(self):
