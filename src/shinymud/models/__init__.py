@@ -26,6 +26,8 @@ def write_dict(val):
     return ",".join('='.join([str(k),str(v)]) for k,v in val.items())
 
 def read_list(val):
+    if not val:
+        return []
     return val.split(',')
 
 def write_list(val):
@@ -44,6 +46,7 @@ class Column(object):
         self.read = args.get('read', unicode)
         self.write = args.get('write', unicode)
         self.cascade = args.get('cascade')
+    
     def __str__(self):
         sql_string = []
         sql_string.append(self.name)
@@ -60,6 +63,7 @@ class Column(object):
             if self.cascade:
                 sql_string.append('CASCADE %s' % str(self.cascade))
         return unicode(" ".join(sql_string))
+    
 
 # primary_key, null, unique, cascade_on_delete, references, 
 class Model(object):
@@ -78,14 +82,25 @@ class Model(object):
     def __init__(self, args):
         for col in self.db_columns:
             if col.name in args:
-                setattr(self, col.name, col.read(args[col.name]))
+                if args[col.name] is None:
+                    setattr(self, col.name, None)
+                else:
+                    setattr(self, col.name, col.read(args[col.name]))
             else:
                 setattr(self, col.name, col.default)
         if hasattr(self, 'dbid'):
-            self.load_extras()
+            if self.dbid:
+                self.load_extras()
     
     def load_extras(self):
         pass
+    
+    def copy_save_attrs(self):
+        copy_dict = {}
+        for col in self.db_columns:
+            val = getattr(self, col.name)
+            copy_dict[col.name] = col.read(col.write(val)) if val else None
+        return copy_dict
     
     def save(self):
         save_dict = {}

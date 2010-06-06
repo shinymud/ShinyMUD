@@ -16,7 +16,7 @@ world.db.delete('from game_item where (owner is null or owner=\'None\') and cont
 # load the entities in the world from the database
 # This should probably happen inside the world itself...
 for area in world.db.select("* from area"):
-    world.new_area(Area(**area))
+    world.area_add(Area.create(area))
 for area in world.areas.values():
     area.load()
 
