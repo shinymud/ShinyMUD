@@ -116,7 +116,7 @@ class Character(Model):
                     prev = '%s_%s' % (self.location.id, self.location.area.name)
                     if tell_old:
                         self.location.tell_room(tell_old, [self.name])
-                    self.location.player_remove(self)
+                    self.location.remove_char(self)
                 else:
                     prev = 'void'
                 if self.location and self.location == room:
@@ -124,7 +124,7 @@ class Character(Model):
                 else:
                     self.location = room
                     self.update_output(self.look_at_room())
-                    self.location.player_add(self, prev)
+                    self.location.add_char(self, prev)
                     if tell_new:
                         self.location.tell_room(tell_new, [self.name])
             else:

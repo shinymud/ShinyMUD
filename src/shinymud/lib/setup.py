@@ -36,7 +36,7 @@ def create_table(model):
     # generate create table string
     table_string = []
     table_string.append('CREATE TABLE %s (' % model.db_table_name)
-    columns_string
+    columns_string = []
     for col in model.db_columns:
         columns_string.append(str(col))
     for extra in model.db_extras:

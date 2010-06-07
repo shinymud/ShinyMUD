@@ -306,4 +306,4 @@ description:
         self.ai_packs[ai_pack] = pack
     
 
-
+model_list.register(Npc)
