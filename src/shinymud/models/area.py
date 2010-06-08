@@ -264,8 +264,8 @@ Description: \n    %s""" % (self.name,
     def new_item(self, item_dict=None):
         """Add a new item to this area's item list."""
         if item_dict:
-            item_dict['area'] = self
-            new_item = BuildItem(**item_dict)
+            item_dict['area'] = self.name
+            new_item = BuildItem(item_dict)
         else:
             new_item = BuildItem.create(self, self.get_id('build_item'))
         new_item.save()

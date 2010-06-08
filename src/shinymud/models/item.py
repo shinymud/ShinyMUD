@@ -1,5 +1,5 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import to_bool, Model, Column, read_list, write_list
+from shinymud.models import to_bool, Model, Column, ShinyTypes
 from shinymud.models.item_types import ITEM_TYPES
 from shinymud.lib.world import World
 
@@ -12,10 +12,10 @@ class Item(Model):
         Column('name', default='New Item'),
         Column('title', default='A shiny new object sparkles happily'),
         Column('description', default='This is a shiny new object'),
-        Column('keywords', read=read_list, write=write_list, default=[]),
+        Column('keywords', read=ShinyTypes.read_list, write=ShinyTypes.write_list, default=[]),
         Column('weight', type="INTEGER", read=int, write=int, default=0),
         Column('base_value', type="INTEGER", read=int, write=int, default=0),
-        Column('carryable', read=to_bool, default=True)
+        Column('carryable', read=ShinyTypes.to_bool, default=True)
     ]
     
     def __init__(self, args={}):
@@ -67,16 +67,12 @@ class BuildItem(Item):
     to create a GameItem, which is essentially a copy of the BuildItem instance
     and is meant to be used by players in-game.
     """
+    db_table_name = 'build_item'
     db_columns = Item.db_columns + [
-        Column('area', foreign_key=('area', 'name'), read=BuildItem.world.get_area, write=(lambda x: x.name)),
+        Column('area', foreign_key=('area', 'name'), read=ShinyTypes.read_area, write=ShinyTypes.write_area),
         Column('id')
     ]
-    def __init__(self, args={}):
-        Item.__init__(self, args)
-        self.area = area
-        self.id = str(id)
-        if self.dbid:
-            
+    
     def load_extras(self):
         for key, value in ITEM_TYPES.items():
             row = self.world.db.select('* FROM %s WHERE build_item=?' % key,
@@ -88,7 +84,7 @@ class BuildItem(Item):
     @classmethod
     def create(cls, area=None, item_id=0):
         """Create a new item."""
-        new_item = cls({'area':area, 'id':item_id})
+        new_item = cls({'area':area.name, 'id':item_id})
         return new_item
     
     def __str__(self):
@@ -222,7 +218,7 @@ class BuildItem(Item):
         spawn_id -- The id of the spawn that is loading this item into a room,
         or None if this item is not being loaded by a spawn
         """
-        item = GameItem(self.to_dict(), spawn_id=spawn_id)
+        item = GameItem(self.copy_save_attrs(), spawn_id=spawn_id)
         # Clear the prototype's dbid so we don't accidentally overwrite it in the db
         item.dbid = None
         item.build_area = self.area.name
@@ -245,6 +241,16 @@ class GameItem(Item):
         Column('container', type="INTEGER", read=int, write=int, foreign_key=(GameItem.db_table_name, 'dbid'), cascade="ON DELETE"),
         Column('owner_id', type="INTEGER", read=int, write=int, foreign_key=('player', 'dbid'), cascade='ON DELETE')
     ]
+    
+    def _set_owner(self, owner):
+        self._owner = owner
+        self.owner_id = owner.id if owner else None
+    
+    def _get_owner(self):
+        return getattr(self, '_owner', None)
+    
+    owner = property(_get_owner, _set_owner)
+    
     def __init__(self, args={}, spawn_id=None):
         self.spawn_id = spawn_id
         Item.__init__(self, **args)
