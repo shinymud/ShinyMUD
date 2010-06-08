@@ -74,10 +74,10 @@ class Player(Character):
         self.load_inventory()
     
     def load_inventory(self):
-        rows = self.world.db.select('* FROM game_item WHERE owner=?', [self.dbid])
+        rows = self.world.db.select('* FROM game_item WHERE owner_id=?', [self.dbid])
         if rows:
             for row in rows:
-                item = GameItem(**row)
+                item = GameItem(row)
                 item.owner = self
                 if item.has_type('equippable'):
                     equip_type = item.item_types['equippable']

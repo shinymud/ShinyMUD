@@ -3,36 +3,57 @@ from shinymud.lib.registers import ModelRegister
 
 model_list = ModelRegister()
 
-def to_bool(val):
-    """Take a string representation of true or false and convert it to a boolean
-    value. Returns a boolean value or None, if no corresponding boolean value
-    exists.
-    """
-    bool_states = {'true': True, 'false': False, '0': False, '1': True}
-    if not val:
-        return None
-    if isinstance(val, bool):
+class ShinyTypes(object):
+    world = World.get_world()
+    @classmethod
+    def to_bool(cls, val):
+        """Take a string representation of true or false and convert it to a boolean
+        value. Returns a boolean value or None, if no corresponding boolean value
+        exists.
+        """
+        bool_states = {'true': True, 'false': False, '0': False, '1': True}
+        if not val:
+            return None
+        if isinstance(val, bool):
+            return val
+        val = str(val)
+        val = val.strip().lower()
+        return bool_states.get(val)
+    
+    @classmethod
+    def read_dict(cls, val):
+        # val is a string like "foo=bar,name=fred"
+        # return {'foo':'bar', 'name':'fred'}
+        return dict([thing.split('=') for thing in x.split(',')]),
+    
+    @classmethod
+    def write_dict(cls, val):
+        return ",".join('='.join([str(k),str(v)]) for k,v in val.items())
+    
+    @classmethod
+    def read_list(cls, val):
+        if not val:
+            return []
+        return val.split(',')
+    
+    @classmethod
+    def write_list(cls, val):
+        if not val:
+            return None
+        return ','.join(map(str, val))
+    
+    @classmethod
+    def read_area(cls, val):
+        if isinstance(val, basestring):
+            return cls.world.get_area(val)
         return val
-    val = str(val)
-    val = val.strip().lower()
-    return bool_states.get(val)
-
-def read_dict(val):
-    # val ="foo=bar,name=fred"
-    # return {'foo':'bar', 'name':'fred'}
-    return dict([thing.split('=') for thing in x.split(',')]),
-
-def write_dict(val):
-    return ",".join('='.join([str(k),str(v)]) for k,v in val.items())
-
-def read_list(val):
-    if not val:
-        return []
-    return val.split(',')
-
-def write_list(val):
-    return ','.join(val)
-
+    
+    @classmethod
+    def write_area(cls, val):
+        if isinstance(val, basestring):
+            return val
+        return val.name
+    
 
 class Column(object):
     def __init__(self, name, **args):
@@ -61,7 +82,7 @@ class Column(object):
             if not self.null:
                 sql_string.append('NOT NULL')
             if self.cascade:
-                sql_string.append('CASCADE %s' % str(self.cascade))
+                sql_string.append('%s CASCADE' % str(self.cascade))
         return unicode(" ".join(sql_string))
     
 
@@ -79,7 +100,7 @@ class Model(object):
         )
     ]
     db_extras = []
-    def __init__(self, args):
+    def __init__(self, args={}):
         for col in self.db_columns:
             if col.name in args:
                 if args[col.name] is None:
@@ -115,4 +136,4 @@ class Model(object):
     def destruct(self):
         if self.dbid:
             self.world.db.delete('FROM ? WHERE dbid=?', [self.db_table_name, self.dbid])
-
+    

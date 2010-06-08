@@ -7,6 +7,7 @@ from shinymud.data.config import DB_NAME
 
 def initialize_database(connection=None):
     queries = [\
+
 # '''CREATE TABLE IF NOT EXISTS player (
 #     dbid INTEGER PRIMARY KEY,
 #     name TEXT NOT NULL UNIQUE,
