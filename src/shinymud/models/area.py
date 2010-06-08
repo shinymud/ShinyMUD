@@ -1,4 +1,4 @@
-from shinymud.models import Model, Column, read_list, write_list, model_list
+from shinymud.models import Model, Column, ShinyTypes, model_list
 from shinymud.models.room import Room
 from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
@@ -11,7 +11,7 @@ class Area(Model):
     db_columns = Model.db_columns + [
         Column('name', null=False, unique=True),
         Column('title', default='New Area'),
-        Column('builders', read=read_list, write=write_list),
+        Column('builders', read=ShinyTypes.read_list, write=ShinyTypes.write_list),
         Column('level_range', default='All'),
         Column('description', default='No Description'),
         

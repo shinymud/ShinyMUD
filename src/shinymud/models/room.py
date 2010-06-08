@@ -1,7 +1,7 @@
 from shinymud.models.room_exit import RoomExit
 from shinymud.models.spawn import Spawn
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import Model, Column, read_list, write_list, model_list
+from shinymud.models import Model, Column, ShinyTypes, model_list
 
 import re
 
@@ -12,14 +12,14 @@ dir_opposites = {'north': 'south', 'south': 'north',
 class Room(Model):
     db_table_name = 'room'
     db_columns = Model.db_columns + [
-        Column('area', read=Room.world.get_area, write=(lambda x: x.name),
+        Column('area', read=ShinyTypes.read_area, write=ShinyTypes.write_area,
                foreign_key=('area', 'name'), null=False),
         Column('id', null=False),
         Column('name', default='New Room'),
         Column('description', default='This is a shiny new room!')
     ]
     db_extras = Model.db_extras + ['UNIQUE (area, id)']
-    def __init__(self, args):
+    def __init__(self, args={}):
         self.items = []
         self.exits = {'north': None,
                       'south': None,

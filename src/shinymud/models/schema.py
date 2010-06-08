@@ -7,101 +7,101 @@ from shinymud.data.config import DB_NAME
 
 def initialize_database(connection=None):
     queries = [\
-'''CREATE TABLE IF NOT EXISTS player (
-    dbid INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    channels TEXT,
-    password TEXT NOT NULL,
-    description TEXT,
-    permissions INTEGER NOT NULL DEFAULT 1,
-    hp INTEGER NOT NULL DEFAULT 0,
-    mp INTEGER NOT NULL DEFAULT 0,
-    max_hp INTEGER NOT NULL DEFAULT 20,
-    max_mp INTEGER NOT NULL DEFAULT 0,
-    default_attack TEXT,
-    email TEXT,
-    gender TEXT,
-    location TEXT,
-    goto_appear TEXT,
-    goto_disappear TEXT,
-    title TEXT,
-    currency INTEGER
-)''',\
-'''CREATE TABLE IF NOT EXISTS area (
-    dbid INTEGER PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
-    title TEXT,
-    level_range TEXT,
-    builders TEXT,
-    description TEXT
-)''',\
-'''CREATE TABLE IF NOT EXISTS room (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
-    name TEXT,
-    description TEXT,
-    UNIQUE (area, id)
-)''',\
-'''CREATE TABLE IF NOT EXISTS  build_item (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
-    name TEXT,
-    title TEXT,
-    description TEXT,
-    keywords TEXT,
-    weight INTEGER DEFAULT 0,
-    base_value INTEGER DEFAULT 0,
-    carryable TEXT DEFAULT 'True',
-    UNIQUE (area, id)
-)''',\
-'''CREATE TABLE IF NOT EXISTS room_exit (
-    dbid INTEGER PRIMARY KEY,
-    room_id INTEGER NOT NULL,
-    area TEXT NOT NULL,
-    to_room_id INTEGER NOT NULL,
-    to_area TEXT NOT NULL,
-    linked_exit TEXT,
-    direction TEXT NOT NULL,
-    openable TEXT,
-    closed TEXT,
-    hidden TEXT,
-    locked TEXT,
-    key_id INTEGER,
-    key_area TEXT,
-    UNIQUE (room_id, area, direction)
-)''',\
-'''CREATE TABLE IF NOT EXISTS game_item (
-    dbid INTEGER PRIMARY KEY,
-    build_id TEXT,
-    build_area TEXT,
-    name TEXT,
-    title TEXT,
-    description TEXT,
-    keywords TEXT,
-    weight INTEGER DEFAULT 0,
-    base_value INTEGER DEFAULT 0,
-    carryable TEXT,
-    owner INTEGER REFERENCES player(dbid),
-    container INTEGER REFERENCES game_item(dbid) ON DELETE CASCADE
-)''',\
-'''CREATE TABLE IF NOT EXISTS npc (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
-    name TEXT,
-    gender TEXT,
-    hp INTEGER NOT NULL DEFAULT 0,
-    mp INTEGER NOT NULL DEFAULT 0,
-    max_hp INTEGER NOT NULL DEFAULT 20,
-    max_mp INTEGER NOT NULL DEFAULT 0,
-    default_attack TEXT,
-    title TEXT,
-    keywords TEXT,
-    description TEXT,
-    UNIQUE (area, id)
-)''',\
+# '''CREATE TABLE IF NOT EXISTS player (
+#     dbid INTEGER PRIMARY KEY,
+#     name TEXT NOT NULL UNIQUE,
+#     channels TEXT,
+#     password TEXT NOT NULL,
+#     description TEXT,
+#     permissions INTEGER NOT NULL DEFAULT 1,
+#     hp INTEGER NOT NULL DEFAULT 0,
+#     mp INTEGER NOT NULL DEFAULT 0,
+#     max_hp INTEGER NOT NULL DEFAULT 20,
+#     max_mp INTEGER NOT NULL DEFAULT 0,
+#     default_attack TEXT,
+#     email TEXT,
+#     gender TEXT,
+#     location TEXT,
+#     goto_appear TEXT,
+#     goto_disappear TEXT,
+#     title TEXT,
+#     currency INTEGER
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS area (
+#     dbid INTEGER PRIMARY KEY,
+#     name TEXT NOT NULL UNIQUE,
+#     title TEXT,
+#     level_range TEXT,
+#     builders TEXT,
+#     description TEXT
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS room (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     area INTEGER NOT NULL REFERENCES area(dbid),
+#     name TEXT,
+#     description TEXT,
+#     UNIQUE (area, id)
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS  build_item (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     area INTEGER NOT NULL REFERENCES area(dbid),
+#     name TEXT,
+#     title TEXT,
+#     description TEXT,
+#     keywords TEXT,
+#     weight INTEGER DEFAULT 0,
+#     base_value INTEGER DEFAULT 0,
+#     carryable TEXT DEFAULT 'True',
+#     UNIQUE (area, id)
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS room_exit (
+#     dbid INTEGER PRIMARY KEY,
+#     room_id INTEGER NOT NULL,
+#     area TEXT NOT NULL,
+#     to_room_id INTEGER NOT NULL,
+#     to_area TEXT NOT NULL,
+#     linked_exit TEXT,
+#     direction TEXT NOT NULL,
+#     openable TEXT,
+#     closed TEXT,
+#     hidden TEXT,
+#     locked TEXT,
+#     key_id INTEGER,
+#     key_area TEXT,
+#     UNIQUE (room_id, area, direction)
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS game_item (
+#     dbid INTEGER PRIMARY KEY,
+#     build_id TEXT,
+#     build_area TEXT,
+#     name TEXT,
+#     title TEXT,
+#     description TEXT,
+#     keywords TEXT,
+#     weight INTEGER DEFAULT 0,
+#     base_value INTEGER DEFAULT 0,
+#     carryable TEXT,
+#     owner INTEGER REFERENCES player(dbid),
+#     container INTEGER REFERENCES game_item(dbid) ON DELETE CASCADE
+# )''',\
+# '''CREATE TABLE IF NOT EXISTS npc (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     area INTEGER NOT NULL REFERENCES area(dbid),
+#     name TEXT,
+#     gender TEXT,
+#     hp INTEGER NOT NULL DEFAULT 0,
+#     mp INTEGER NOT NULL DEFAULT 0,
+#     max_hp INTEGER NOT NULL DEFAULT 20,
+#     max_mp INTEGER NOT NULL DEFAULT 0,
+#     default_attack TEXT,
+#     title TEXT,
+#     keywords TEXT,
+#     description TEXT,
+#     UNIQUE (area, id)
+# )''',\
 '''CREATE TABLE IF NOT EXISTS room_spawns (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,
