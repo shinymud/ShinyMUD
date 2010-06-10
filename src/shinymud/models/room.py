@@ -213,11 +213,11 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         return 'Room spawn #%s doesn\'t exist.\n' % spawn_id
     
 #************** Exits Management **************
-    def new_exit(self, direction, to_room, **exit_dict):
+    def new_exit(self, direction, to_room, exit_dict={}):
         if exit_dict:
-            new_exit = RoomExit(self, direction, to_room, **exit_dict)
-        else:
-            new_exit = RoomExit(self, direction, to_room)
+            new_exit = RoomExit(exit_dict.update({'room': self,
+                                                  'direction': direction,
+                                                  '': to_room}))
         new_exit.save()
         self.exits[direction] = new_exit
     

@@ -1,27 +1,18 @@
-from shinymud.lib.world import World
+from shinymud.models import Model, Column, ShinyTypes, model_list
 
-class NPCEvent(object):
-    
-    def __init__(self, **args):
-        self.prototype = args.get('prototype')
-        self.probability = args.get('probability')
-        self.event_trigger = args.get('event_trigger')
-        self.script = args.get('script')
-        self.condition = args.get('condition')
-        self.dbid = args.get('dbid')
-    
-    def to_dict(self):
-        d = {}
-        d['prototype'] = self.prototype.dbid
-        d['script'] = self.script.dbid
-        d['probability'] = self.probability
-        d['event_trigger'] = self.event_trigger
-        if self.condition:
-            d['condition'] = self.condition
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
+class NPCEvent(Model):
+    db_table_name = 'npc_event'
+    db_columns = Model.db_columns + [
+        # Prototype and script are expected to be passed in by Npc.new_event()
+        # as Npc and Script objects, respectively. NPC events should not be
+        # created any other way.
+        Column('prototype', read=lambda x: x, write=lambda x: x.dbid,
+                foreign_key=('npc', 'dbid'), null=False),
+        Column('script', read=lambda x: x, write=lambda x: x.id),
+        Column('event_trigger'),
+        Column('condition'),
+        Column('probability', read=int, write=int, default=100)
+    ]
     def __str__(self):
         string = '%s' % self.event_trigger
         if self.condition:
@@ -34,25 +25,14 @@ class NPCEvent(object):
     def get_args(self):
         """Build a dictionary of this event's attributes so that they can be
         passed as arguments to the event handler."""
-        d = self.to_dict()
+        d = {}
+        d['prototype'] = self.prototype
         d['script'] = self.script
+        d['probability'] = self.probability
+        d['event_trigger'] = self.event_trigger
+        if self.condition:
+            d['condition'] = self.condition
         return d
     
-    def save(self, save_dict=None):
-        """Save this npc_event to the database."""
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('npc_event', save_dict)
-            else:    
-                world.db.update_from_dict('npc_event', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('npc_event', self.to_dict())
-    
-    def destruct(self):
-        """Remove this npc_event from the database."""
-        world = World.get_world()
-        if self.dbid:
-            world.db.delete('FROM npc_event WHERE dbid=?', [self.dbid])
-    
+
+model_list.register(NPCEevent)

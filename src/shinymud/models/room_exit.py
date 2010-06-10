@@ -7,7 +7,10 @@ class RoomExit(Model):
     db_columns = Model.db_columns + [
         Column('to_room_id', null=False),
         Column('to_area', null=False),
-        Column('room_id', null=False),
+        # I always expect room to be passed in by the function calling this class'
+        # constructor. For this reason, I'm not bothering with a more elaborate
+        # read function for room_id.
+        Column('room', null=False, write=lambda x: x.id, read=lambda x: x),
         Column('area', null=False, read=ShinyTypes.read_area, write=ShinyTypes.write_area),
         Column('direction', null=False),
         Column('linked_exit'),
@@ -26,6 +29,8 @@ class RoomExit(Model):
         # Initialize the current state of the door from the default settings:
         self._closed = self.closed
         self._locked = self.locked
+        if 'to_room' in args:
+            self.to_room = args.get('to_room')
     
     def save(self, save_dict=None):
         if not self.to_room:
@@ -55,6 +60,7 @@ class RoomExit(Model):
     
     def _set_to_room(self, to_room):
         self._to_room = to_room
+    
     to_room = property(_resolve_to_room, _set_to_room)
     
     def _resolve_key(self):
