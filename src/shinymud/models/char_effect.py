@@ -1,10 +1,16 @@
 from shinymud.commands import *
+from shinymud.models import Column, model_list
+from shinymud.models.shiny_types import *
 
 import re
 import random
 
-class CharacterEffect(object):
-    
+class CharacterEffect(Model):
+    db_columns = Model.db_columns + [
+        Column('duration', type="INTEGER", read=int, write=int),
+        Column('item'),
+        Column('item_type')
+    ]
     def __init__(self, **args):
         self.duration = args.get('duration')
         self.char = args.get('char')
@@ -14,7 +20,7 @@ class CharacterEffect(object):
     
     def copy(self):
         # Want a new copy of the same class as this instance
-        new_me = self.__class__(**self.to_dict())
+        new_me = self.__class__(**self.copy_save_attrs())
         return new_me
     
     def to_dict(self):

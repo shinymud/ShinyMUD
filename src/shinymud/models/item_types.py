@@ -1,7 +1,8 @@
 from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
-from shinymud.models import to_bool
+from shinymud.models import Column, model_list
+from shinymud.models.shiny_types import *
 from shinymud.lib.world import World
-from shinymud.lib.char_effect import *
+from shinymud.models.char_effect import *
 
 import re
 
@@ -184,9 +185,9 @@ class Equippable(ItemType):
         Column('equip_slot'),
         Column('hit', type="INTEGER", read=int, write=int, default=0),
         Column('evade', type="INTEGER", read=int, write=int, default=0),
-        Column('absorb', read=Equippable.read_absorb, write=Equippable.write_absorb, copy=ShinyTypes.copy_dict),
+        Column('absorb', read=Equippable.read_absorb, write=Equippable.write_absorb, copy=copy_dict),
         Column('dmg', read=Equippable.read_damage, write=Equippable.write_damage, copy=lambda d: [Damage(str(x)) for x in d ))
-        Column('is_equipped', read=ShinyTypes.to_bool, default=False)
+        Column('is_equipped', read=to_bool, default=False)
     ]
     
     def __init__(self, args={}):
@@ -422,12 +423,13 @@ class Food(ItemType):
         self.effects = {}
 
     def load_extras(self):
-        rows = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
-                              ['food', self.dbid])
-        for e in rows:
-            e['build_item'] = self
-            effect = EFFECTS[e['name']](**e)
-            self.effects[effect.name] = effect
+        pass
+        # rows = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
+        #                       ['food', self.dbid])
+        # for e in rows:
+        #     e['build_item'] = self
+        #     effect = EFFECTS[e['name']](**e)
+        #     self.effects[effect.name] = effect
     
     def _resolve_ro(self):
         if getattr(self, '_ro', None):
@@ -481,6 +483,7 @@ class Food(ItemType):
     
     def load_effects(self):
         """Return a list of copies of this food item's effects."""
+        return [] # TODO: fix character effects.
         e = [effect.copy() for effect in self.effects.values()]
         return e
     
@@ -488,8 +491,8 @@ class Food(ItemType):
         """Add an effect to this food item that will be transferred to the
         player when the item is eaten.
         """
-        # return 'Sorry, this functionality is not finished, yet.'
-        # FINISH THIS FUNCTION LOL
+        # TODO: fix character effects
+        return "sorry, we're still working on effects."
         if not args:
             return 'Type "help effects" for help on this command.'
         exp = r'(?P<effect>\w+)([ ]+(?P<duration>\d+))'
@@ -511,6 +514,8 @@ class Food(ItemType):
     
     def build_remove_effect(self, args):
         """Remove an effect from this item."""
+        # TODO: fix character effects
+        return "sorry, we're still working on effects."
         if not args:
             return 'Which effect did you want to remove?'
         if args not in self.effects:
@@ -596,9 +601,9 @@ class Container(ItemType):
         Column('weight_capacity', type="NUMBER", read=float),
         Column('build_item_capacity', type="INTEGER", read=int, write=int),
         Column('weight_reduction', type="INTEGER", read=int, write=int, default=0),
-        Column('openable', read=ShinyTypes.to_bool, default=False),
-        Column('closed', read=ShinyTypes.to_bool, default=False),
-        Column('locked', read=ShinyTypes.to_bool, defult=False),
+        Column('openable', read=to_bool, default=False),
+        Column('closed', read=to_bool, default=False),
+        Column('locked', read=to_bool, defult=False),
         Column('key_area'),
         Column('key_id')
     ]
@@ -713,8 +718,9 @@ class Furniture(ItemType):
     plural = 'furniture'
     db_table_name = 'furniture'
     db_columns = ItemType.db_columns + [
-        Column('sit_effects', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
-        Column('sleep_effects', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
+        # TODO: fix character effects
+        Column('sit_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
+        Column('sleep_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
         Column('capacity', type="INTEGER", read=int, write=int),
     ]
     def __init__(self, args={}):

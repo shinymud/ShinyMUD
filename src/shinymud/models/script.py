@@ -1,27 +1,19 @@
-from shinymud.lib.world import World
 from shinymud.modes.text_edit_mode import TextEditMode
+from shinymud.models import Column, model_list
+from shinymud.models.shiny_types import *
+
 
 import re
 
-class Script(object):
+class Script(Model):
     """A model that represents an in-game script object."""
-    def __init__(self, area=None, id='0', **args):
-        self.id = str(id)
-        self.area = area
-        self.dbid = args.get('dbid')
-        self.name = args.get('name', 'New Script')
-        self.body = args.get('body', '')
-    
-    def to_dict(self):
-        d = {}
-        d['id'] = self.id
-        d['area'] = self.area.dbid
-        d['body'] = self.body
-        d['name'] = self.name
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
+    db_table_name = 'script'
+    db_columns = Model.db_columns + [
+        Column('area', type="INTEGER", read=read_area, write=write_area),
+        Column('name', default='New Script', null=False),
+        Column('body', default='', null=False),
+        Column('id')
+    ]        
     def __str__(self):
         string = (' Script %s in Area %s ' % (self.id, self.area.name)
                   ).center(50, '-') + '\n'
@@ -31,19 +23,7 @@ class Script(object):
         string += "Name: %s\nBody:\n  %s" % (self.name, body)
         string += '\n' + ('-' * 50)
         return string
-    
-    def save(self, save_dict=None):
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('script', save_dict)
-            else:    
-                world.db.update_from_dict('script', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('script', 
-                                                       self.to_dict())
-    
+        
     def build_set_name(self, name, player=None):
         """Set the name of this script item."""
         if not name:
@@ -59,7 +39,6 @@ class Script(object):
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
     def destruct(self):
-        world = World.get_world()
         if self.dbid:
-            world.db.delete('FROM script WHERE dbid=?', [self.dbid])
+            self.world.db.delete('FROM script WHERE dbid=?', [self.dbid])
     

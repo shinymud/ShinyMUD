@@ -1,67 +1,8 @@
 from shinymud.lib.world import World
 from shinymud.lib.registers import ModelRegister
+import json
 
 model_list = ModelRegister()
-
-class ShinyTypes(object):
-    world = World.get_world()
-    @classmethod
-    def to_bool(cls, val):
-        """Take a string representation of true or false and convert it to a boolean
-        value. Returns a boolean value or None, if no corresponding boolean value
-        exists.
-        """
-        bool_states = {'true': True, 'false': False, '0': False, '1': True}
-        if not val:
-            return None
-        if isinstance(val, bool):
-            return val
-        val = str(val)
-        val = val.strip().lower()
-        return bool_states.get(val)
-    
-    @classmethod
-    def read_dict(cls, val):
-        # val is a string like "foo=bar,name=fred"
-        # return {'foo':'bar', 'name':'fred'}
-        return dict([thing.split('=') for thing in x.split(',')]),
-    
-    @classmethod
-    def write_dict(cls, val):
-        return ",".join('='.join([str(k),str(v)]) for k,v in val.items())
-    
-    @classmethod
-    def read_list(cls, val):
-        if not val:
-            return []
-        return val.split(',')
-    
-    @classmethod
-    def write_list(cls, val):
-        if not val:
-            return None
-        return ','.join(map(str, val))
-    
-    @classmethod
-    def read_area(cls, val):
-        if isinstance(val, basestring):
-            return cls.world.get_area(val)
-        return val
-    
-    @classmethod
-    def write_area(cls, val):
-        if isinstance(val, basestring):
-            return val
-        return val.name
-    
-    @classmethod
-    def copy_list(cls, val):
-        return val[:]
-    
-    @classmethod
-    def copy_dict(cls, val):
-        return dict(val.items())
-    
 
 class Column(object):
     def __init__(self, name, **args):

@@ -1,4 +1,4 @@
-from shinymud.models import Model, Column, ShinyTypes, model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.data.config import *
 import re
 
@@ -11,14 +11,14 @@ class RoomExit(Model):
         # constructor. For this reason, I'm not bothering with a more elaborate
         # read function for room_id.
         Column('room', null=False, write=lambda x: x.id),
-        Column('area', null=False, read=ShinyTypes.read_area, write=ShinyTypes.write_area),
+        Column('area', null=False, read=read_area, write=write_area),
         Column('direction', null=False),
         Column('linked_exit'),
         Column('direction'),
-        Column('openable', read=ShinyTypes.to_bool),
-        Column('closed', read=ShinyTypes.to_bool),
-        Column('hidden', read=ShinyTypes.to_bool),
-        Column('locked', read=ShinyTypes.to_bool),
+        Column('openable', read=to_bool),
+        Column('closed', read=to_bool),
+        Column('hidden', read=to_bool),
+        Column('locked', read=to_bool),
         Column('key_area'),
         Column('key_id')
     ]

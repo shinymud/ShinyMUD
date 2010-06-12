@@ -1,5 +1,6 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import to_bool, Model, Column, ShinyTypes
+from shinymud.models import Column, model_list
+from shinymud.models.shiny_types import *
 from shinymud.models.item_types import ITEM_TYPES
 from shinymud.lib.world import World
 
@@ -12,10 +13,10 @@ class Item(Model):
         Column('name', default='New Item'),
         Column('title', default='A shiny new object sparkles happily'),
         Column('description', default='This is a shiny new object'),
-        Column('keywords', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list, default=[]),
+        Column('keywords', read=read_list, write=write_list, copy=copy_list, default=[]),
         Column('weight', type="INTEGER", read=int, write=int, default=0),
         Column('base_value', type="INTEGER", read=int, write=int, default=0),
-        Column('carryable', read=ShinyTypes.to_bool, default=True)
+        Column('carryable', read=to_bool, default=True)
     ]
     
     def __init__(self, args={}):
@@ -69,7 +70,7 @@ class BuildItem(Item):
     """
     db_table_name = 'build_item'
     db_columns = Item.db_columns + [
-        Column('area', foreign_key=('area', 'name'), read=ShinyTypes.read_area, write=ShinyTypes.write_area),
+        Column('area', foreign_key=('area', 'name'), read=read_area, write=write_area),
         Column('id')
     ]
     

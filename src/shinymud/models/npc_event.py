@@ -1,4 +1,5 @@
-from shinymud.models import Model, Column, ShinyTypes, model_list
+from shinymud.models import Model, Column, model_list
+from shinymud.models.shiny_types import *
 
 class NPCEvent(Model):
     db_table_name = 'npc_event'

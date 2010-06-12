@@ -163,14 +163,14 @@ def initialize_database(connection=None):
 #     sit_effects TEXT,
 #     sleep_effects TEXT
 # )''',\
-'''CREATE TABLE IF NOT EXISTS script (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    area INTEGER NOT NULL REFERENCES area(dbid),
-    name TEXT,
-    body TEXT,
-    UNIQUE (area, id)
-)''',\
+# '''CREATE TABLE IF NOT EXISTS script (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     area INTEGER NOT NULL REFERENCES area(dbid),
+#     name TEXT,
+#     body TEXT,
+#     UNIQUE (area, id)
+# )''',\
 # '''CREATE TABLE IF NOT EXISTS npc_event (
 #     dbid INTEGER PRIMARY KEY,
 #     prototype INTEGER NOT NULL REFERENCES npc(dbid),
@@ -179,14 +179,14 @@ def initialize_database(connection=None):
 #     script INTEGER REFERENCES script(dbid),
 #     probability INTEGER
 # )''',\
-'''CREATE TABLE IF NOT EXISTS char_effect (
-    dbid INTEGER PRIMARY KEY,
-    duration INTEGER,
-    name TEXT,
-    item INTEGER,
-    item_type TEXT,
-    player INTEGER NULL REFERENCES player(dbid)
-)''',\
+# '''CREATE TABLE IF NOT EXISTS char_effect (
+#     dbid INTEGER PRIMARY KEY,
+#     duration INTEGER,
+#     name TEXT,
+#     item INTEGER,
+#     item_type TEXT,
+#     player INTEGER NULL REFERENCES player(dbid)
+# )''',\
 '''CREATE TABLE IF NOT EXISTS merchant (
     dbid INTEGER PRIMARY KEY,
     npc INTEGER NOT NULL REFERENCES npc(dbid),

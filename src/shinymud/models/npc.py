@@ -1,6 +1,7 @@
 from shinymud.models.character import Character
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import Model, Column, ShinyTypes, model_list
+from shinymud.models import Model, Column, model_list
+from shinymud.models.shiny_types import *
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
 from shinymud.commands.commands import command_list
@@ -15,13 +16,13 @@ class Npc(Character):
     char_type = 'npc'
     db_table_name = 'npc'
     db_columns = Character.db_columns + [
-        Column('area', read=ShinyTypes.read_area, write=ShinyTypes.write_area,
+        Column('area', read=read_area, write=write_area,
                foreign_key=('area', 'name'), null=False, type='INTEGER'),
         Column('id', null=False),
         Column('name', default='Shiny McShinerson'),
         Column('gender', default='neutral'),
-        Column('keywords', read=ShinyTypes.read_list,
-               write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
+        Column('keywords', read=read_list,
+               write=write_list, copy=copy_list),
         Column('title')
     ]
     def __init__(self, args={}):
