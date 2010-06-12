@@ -13,7 +13,7 @@ class Room(Model):
     db_table_name = 'room'
     db_columns = Model.db_columns + [
         Column('area', read=ShinyTypes.read_area, write=ShinyTypes.write_area,
-               foreign_key=('area', 'name'), null=False),
+               foreign_key=('area', 'name'), null=False, type='INTEGER'),
         Column('id', null=False),
         Column('name', default='New Room'),
         Column('description', default='This is a shiny new room!')
@@ -280,7 +280,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
 #************** Spawn Management **************
     def new_spawn(self, spawn_dict):
         """Create a new spawn object from the spawn_dict and return it."""
-        spawn = Spawn(**spawn_dict)
+        spawn = Spawn(spawn_dict)
         if not spawn.dbid:
             spawn.save()
         self.spawns[spawn.id] = spawn

@@ -3,15 +3,12 @@ from shinymud.models import Model, Column, ShinyTypes, model_list
 class NPCEvent(Model):
     db_table_name = 'npc_event'
     db_columns = Model.db_columns + [
-        # Prototype and script are expected to be passed in by Npc.new_event()
-        # as Npc and Script objects, respectively. NPC events should not be
-        # created any other way.
-        Column('prototype', read=lambda x: x, write=lambda x: x.dbid,
-                foreign_key=('npc', 'dbid'), null=False),
-        Column('script', read=lambda x: x, write=lambda x: x.id),
+        Column('prototype', write=lambda npc: npc.dbid,
+                foreign_key=('npc', 'dbid'), null=False, type='INTEGER'),
+        Column('script', write=lambda script: script.id),
         Column('event_trigger'),
         Column('condition'),
-        Column('probability', read=int, write=int, default=100)
+        Column('probability', read=int, write=int, default=100, type='INTEGER')
     ]
     def __str__(self):
         string = '%s' % self.event_trigger
@@ -24,7 +21,8 @@ class NPCEvent(Model):
     
     def get_args(self):
         """Build a dictionary of this event's attributes so that they can be
-        passed as arguments to the event handler."""
+        passed as arguments to the event handler.
+        """
         d = {}
         d['prototype'] = self.prototype
         d['script'] = self.script

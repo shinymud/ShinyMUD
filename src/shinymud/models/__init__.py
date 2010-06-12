@@ -54,6 +54,14 @@ class ShinyTypes(object):
             return val
         return val.name
     
+    @classmethod
+    def copy_list(cls, val):
+        return val[:]
+    
+    @classmethod
+    def copy_dict(cls, val):
+        return dict(val.items())
+    
 
 class Column(object):
     def __init__(self, name, **args):
@@ -64,9 +72,10 @@ class Column(object):
         self.primary_key = args.get('primary_key', False)
         self.foreign_key = args.get('foreign_key') # (model, column)
         self.unique = args.get('unique', False)
-        self.read = args.get('read', unicode)
+        self.read = args.get('read', lambda x: x)
         self.write = args.get('write', unicode)
         self.cascade = args.get('cascade')
+        self.copy = args.get('copy', lambda x: x)
     
     def __str__(self):
         sql_string = []
@@ -120,7 +129,7 @@ class Model(object):
         copy_dict = {}
         for col in self.db_columns:
             val = getattr(self, col.name)
-            copy_dict[col.name] = col.read(col.write(val)) if val else None
+            copy_dict[col.name] = col.copy(val) if val else None
         return copy_dict
     
     def save(self):

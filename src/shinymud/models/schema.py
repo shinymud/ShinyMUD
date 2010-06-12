@@ -103,15 +103,15 @@ def initialize_database(connection=None):
 #     description TEXT,
 #     UNIQUE (area, id)
 # )''',\
-'''CREATE TABLE IF NOT EXISTS room_spawns (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    room INTEGER NOT NULL REFERENCES room(dbid),
-    spawn_object_id TEXT,
-    spawn_object_area TEXT,
-    container TEXT,
-    spawn_type TEXT
-)''',\
+# '''CREATE TABLE IF NOT EXISTS room_spawns (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     room INTEGER NOT NULL REFERENCES room(dbid),
+#     spawn_object_id TEXT,
+#     spawn_object_area TEXT,
+#     container TEXT,
+#     spawn_type TEXT
+# )''',\
 '''CREATE TABLE IF NOT EXISTS portal (
     dbid INTEGER PRIMARY KEY,
     build_item INTEGER NULL REFERENCES build_item(dbid) ON DELETE CASCADE,
@@ -172,14 +172,14 @@ def initialize_database(connection=None):
     body TEXT,
     UNIQUE (area, id)
 )''',\
-'''CREATE TABLE IF NOT EXISTS npc_event (
-    dbid INTEGER PRIMARY KEY,
-    prototype INTEGER NOT NULL REFERENCES npc(dbid),
-    event_trigger TEXT,
-    condition TEXT,
-    script INTEGER REFERENCES script(dbid),
-    probability INTEGER
-)''',\
+# '''CREATE TABLE IF NOT EXISTS npc_event (
+#     dbid INTEGER PRIMARY KEY,
+#     prototype INTEGER NOT NULL REFERENCES npc(dbid),
+#     event_trigger TEXT,
+#     condition TEXT,
+#     script INTEGER REFERENCES script(dbid),
+#     probability INTEGER
+# )''',\
 '''CREATE TABLE IF NOT EXISTS char_effect (
     dbid INTEGER PRIMARY KEY,
     duration INTEGER,

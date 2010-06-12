@@ -16,11 +16,12 @@ class Npc(Character):
     db_table_name = 'npc'
     db_columns = Character.db_columns + [
         Column('area', read=ShinyTypes.read_area, write=ShinyTypes.write_area,
-               foreign_key=('area', 'name'), null=False),
+               foreign_key=('area', 'name'), null=False, type='INTEGER'),
         Column('id', null=False),
         Column('name', default='Shiny McShinerson'),
         Column('gender', default='neutral'),
-        Column('keywords', read=ShinyTypes.read_list, write=ShinyTypes.write_list),
+        Column('keywords', read=ShinyTypes.read_list,
+               write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
         Column('title')
     ]
     def __init__(self, args={}):

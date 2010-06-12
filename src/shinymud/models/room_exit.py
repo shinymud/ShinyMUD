@@ -10,7 +10,7 @@ class RoomExit(Model):
         # I always expect room to be passed in by the function calling this class'
         # constructor. For this reason, I'm not bothering with a more elaborate
         # read function for room_id.
-        Column('room', null=False, write=lambda x: x.id, read=lambda x: x),
+        Column('room', null=False, write=lambda x: x.id),
         Column('area', null=False, read=ShinyTypes.read_area, write=ShinyTypes.write_area),
         Column('direction', null=False),
         Column('linked_exit'),

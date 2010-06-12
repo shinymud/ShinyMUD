@@ -11,7 +11,8 @@ class Area(Model):
     db_columns = Model.db_columns + [
         Column('name', null=False, unique=True),
         Column('title', default='New Area'),
-        Column('builders', read=ShinyTypes.read_list, write=ShinyTypes.write_list),
+        Column('builders', read=ShinyTypes.read_list, 
+               write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
         Column('level_range', default='All'),
         Column('description', default='No Description'),
         
