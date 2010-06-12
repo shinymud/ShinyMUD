@@ -5,7 +5,11 @@ from shinymud.lib.char_effect import *
 
 import re
 
-class ItemType(object):
+class ItemType(Model):
+    db_columns = Model.db_columns + [
+        Column('build_item', type="INTEGER", read=int, write=int, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
+        Column('game_item', type="INTEGER", read=int, write=int, foreign_key=('game_item','dbid'), cascade="ON DELETE")
+    ]
     log = World.get_world().log
     """The base class that must be inherited by all item types.
      
@@ -18,13 +22,7 @@ class ItemType(object):
         the saved values of your attributes loaded from the database.
         Your init function should look something like the following:
          
-        # You'll need to initialize these first three attributes
-        # regardless of what kind of ItemType you're creating:
-        self.dbid = args.get('dbid')
-        self.game_item = args.get('game_item')
-        self.build_item = args.get('build_item')
-         
-        # Now we'll initialize our class-specific attributes:
+        # initialize your class-specific attributes:
         self.foo = args.get('foo', 'My default foo value.')
         self.bar = args.get('bar', 'My default bar value.')
         """
@@ -180,32 +178,52 @@ class Damage(object):
         return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
     
 
-
 class Equippable(ItemType):
     plural = 'equippable items'
+    db_columns = ItemType.db_columns + [
+        Column('equip_slot'),
+        Column('hit', type="INTEGER", read=int, write=int, default=0),
+        Column('evade', type="INTEGER", read=int, write=int, default=0),
+        Column('absorb', read=Equippable.read_absorb, write=Equippable.write_absorb, copy=ShinyTypes.copy_dict),
+        Column('dmg', read=Equippable.read_damage, write=Equippable.write_damage, copy=lambda d: [Damage(str(x)) for x in d ))
+        Column('is_equipped', read=ShinyTypes.to_bool, default=False)
+    ]
+    
     def __init__(self, args={}):
-        self.world = world.get_world()
-        self.build_item = args.get('build_item')
-        self.game_item = args.get('game_item')
-        self.equip_slot = str(args.get('equip_slot', ''))
-        self.hit = args.get('hit', 0)
-        self.evade = args.get('evade', 0)
-        absorb = args.get('absorb')
+        ItemType.__init__(self, args)
         self.hit_id = None
         self.evade_id = None
         self.absorb_ids = []
         self.dmg_ids = []
-        self.absorb = {}
-        if absorb:
-            self.absorb = dict([(key, int(val)) for key,val in [a.split('=') for a in absorb.split(',')]])
-        dmg = args.get('dmg')
-        self.dmg = []
-        if dmg:
-            d_list = dmg.split('|')
-            for d in d_list:
-                self.dmg.append(Damage(d))
-        self.is_equipped = to_bool(args.get('is_equipped', False))
-        self.dbid = args.get('dbid')
+    
+    @classmethod
+    def read_absorb(cls, val):
+        d = {}
+        if val:
+            for a in val.split(','):
+                key, val = a.split('=')
+                d[key] = int(val)
+        return d
+    
+    @classmethod
+    def write_absorb(cls, val):
+        s = []
+        if val:
+            for key, val in val.items():
+                s.append("%s=%s" % (str(key), str(val)))
+        return ",".join(s)
+    
+    @classmethod
+    def read_damage(cls, val):
+        dmg = []
+        if val:
+            for d in val.split('|'):
+                dmg.append(Damage(d))
+        return dmg
+    
+    @classmethod
+    def write_damage(cls, val):
+        return '|'.join([str(d) for d in val])
     
     def build_set_damage(self, params, player=None):
         if not params:
@@ -316,21 +334,9 @@ class Equippable(ItemType):
         return string
     
     def load(self, game_item):
-        e = Equippable()
+        e = Equippable(self.copy_save_attrs())
+        e.build_item = None
         e.game_item = game_item
-        e.equip_slot = self.equip_slot
-        if self.hit:
-            self.log.debug("self.hit is truthy: %s %s" % (str(self.hit), str(type(self.hit))))
-            e.hit = int(self.hit)
-        if self.evade:
-            e.evade = int(self.evade)
-        a = {}
-        for k,v in self.absorb.items():
-            a[str(k)] = int(v)
-        if a:
-            e.absorb = a
-        for d in self.dmg:
-            e.build_add_damage(str(d))
         return e
     
     def on_equip(self):
@@ -378,23 +384,7 @@ class Equippable(ItemType):
         self.dmg_ids = []
         self.is_equipped = False
         self.save()
-    
-    def to_dict(self):
-        d = {}
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        if self.game_item:
-            d['game_item'] = self.game_item.dbid
-        d['is_equipped'] = str(self.is_equipped)
-        d['hit'] = self.hit
-        d['evade'] = self.evade
-        d['absorb'] = ','.join(['='.join([str(key),str(val)]) for key,val in self.absorb.items()])
-        d['dmg'] = '|'.join([str(eachone) for eachone in self.dmg])
-        d['equip_slot'] = self.equip_slot
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
+        
     def build_remove_damage(self, index):
         if len(self.dmg) == 0:
             return "this item does not do any damage"
@@ -413,49 +403,37 @@ class Equippable(ItemType):
             return "you must specify which damage to remove: 1 - %s" % str(len(self.dmg))
                 # world.db.update_from_dict('equippable', self.to_dict())
     
-    def save(self, save_dict=None):
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('equippable', save_dict)
-            else:    
-                world.db.update_from_dict('equippable', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('equippable', self.to_dict())
-    
 
 class Food(ItemType):
     food_verbs = {'food': 'eat', 'drink': 'drink from'}
     plural = 'food'
+    db_table_name = 'food'
+    db_columns = ItemType.db_columns + [
+        Column('food_type', read=lambda f: f if f in ('food','drink') else 'food'),
+        Column('ro_id', type="INTEGER", read=int, write=int),
+        Column('ro_area'),
+        Column('actor_use_message', null=False, default=''),
+        Column('room_use_message', null=False, default=''),
+        
+        
+    ]
     def __init__(self, args={}):
-        self.world = World.get_world()
-        self.on_eat = args.get('on_eat', [])
-        self.dbid = args.get('dbid')
-        self.build_item = args.get('build_item')
-        self.game_item = args.get('game_item')
-        self.food_type = args.get('food_type', 'food')
-        self.replace_obj = None
-        self.ro_id = args.get('ro_id')
-        self.ro_area = args.get('ro_area')
-        self.actor_use_message = args.get('actor_use_message', '')
-        self.room_use_message = args.get('room_use_message', '')
+        ItemType.__init__(self, args)
         self.effects = {}
-        if self.dbid:
-            world = World.get_world()
-            row = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
-                                  ['food', self.dbid])
-            for e in row:
-                e['build_item'] = self
-                effect = EFFECTS[e['name']](**e)
-                self.effects[effect.name] = effect
+
+    def load_extras(self):
+        rows = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
+                              ['food', self.dbid])
+        for e in rows:
+            e['build_item'] = self
+            effect = EFFECTS[e['name']](**e)
+            self.effects[effect.name] = effect
     
     def _resolve_ro(self):
-        world = World.get_world()
-        if self._ro:
+        if getattr(self, '_ro', None):
             return self._ro
         try: 
-            self.replace_obj = world.get_area(self.ro_area).get_item(self.ro_id)
+            self.replace_obj = self.world.get_area(self.ro_area).get_item(self.ro_id)
             return self._ro
         except:
             return None
@@ -483,33 +461,6 @@ class Food(ItemType):
                  '  use message (room): ' + self.get_room_message() + '\n' +\
                  '  on-eat effects: ' + effects + '\n'
         return string
-    
-    def to_dict(self):
-        d = {}
-        # d['on_eat'] = ','.join(self.eat_effects)
-        d['ro_area'] = self.ro_area
-        d['ro_id'] = self.ro_id
-        d['food_type'] = self.food_type
-        d['actor_use_message'] = self.actor_use_message
-        d['room_use_message'] = self.room_use_message
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        if self.game_item:
-            d['game_item'] = self.game_item.dbid
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
-    def save(self, save_dict=None):
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('food', save_dict)
-            else:    
-                world.db.update_from_dict('food', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('food', self.to_dict())
     
     def load(self, game_item):
         d = self.to_dict()
@@ -640,24 +591,23 @@ class Food(ItemType):
 
 class Container(ItemType):
     plural = 'containers'
+    db_table_name = 'container'
+    db_columns = ItemType.db_columns + [
+        Column('weight_capacity', type="NUMBER", read=float),
+        Column('build_item_capacity', type="INTEGER", read=int, write=int),
+        Column('weight_reduction', type="INTEGER", read=int, write=int, default=0),
+        Column('openable', read=ShinyTypes.to_bool, default=False),
+        Column('closed', read=ShinyTypes.to_bool, default=False),
+        Column('locked', read=ShinyTypes.to_bool, defult=False),
+        Column('key_area'),
+        Column('key_id')
+    ]
     def __init__(self, args={}):
-        self.world = World.get_world()
-        self.weight_capacity = args.get('weight_capacity')
-        self.build_item_capacity = args.get('item_capacity')
-        self.weight_reduction = args.get('weight_reduction', 0)
+        ItemType.__init__(self, args)
         self.inventory = []
-        self.dbid = args.get('dbid')
-        self.build_item = args.get('build_item')
-        self.game_item = args.get('game_item')
-        self.openable = to_bool(str(args.get('openable'))) or False
-        self.closed = to_bool(str(args.get('closed'))) or False
-        self.locked = to_bool(str(args.get('locked'))) or False
-        self.key = None
-        self.key_area = str(args.get('key_area', ''))
-        self.key_id = str(args.get('key_id', ''))
     
     def _resolve_key(self):
-        if self._key:
+        if getattr(self,'_key', None):
             return self._key
         try: 
             self.key = self.world.get_area(self.key_area).get_item(self.key_id)
@@ -683,43 +633,16 @@ class Container(ItemType):
                  '  locked: ' + str(self.locked) + '\n' +\
                  '  key: ' + key + '\n'
         return string
-    
-    def to_dict(self):
-        d = {}
-        d['weight_capacity'] = self.weight_capacity
-        d['item_capacity'] = self.build_item_capacity
-        d['weight_reduction'] = self.weight_reduction
-        d['key_area'] = self.key_area
-        d['key_id'] = self.key_id
-        d['openable'] = self.openable
-        d['closed'] = self.closed
-        d['locked'] = self.locked
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        if self.game_item:
-            d['game_item'] = self.game_item.dbid
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
-    def save(self, save_dict=None):
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('container', save_dict)
-            else:    
-                world.db.update_from_dict('container', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('container', self.to_dict())
         
+    def save(self):
+        ItemType.save(self)
         for item in self.inventory:
             if item.container != self.game_item:
                 item.container = self.game_item
             item.save()
     
     def load(self, game_item):
-        d = self.to_dict()
+        d = self.copy_save_attrs()
         if 'dbid' in d:
             del d['dbid']
         if 'build_item' in d:
@@ -788,18 +711,15 @@ class Container(ItemType):
 
 class Furniture(ItemType):
     plural = 'furniture'
+    db_table_name = 'furniture'
+    db_columns = ItemType.db_columns + [
+        Column('sit_effects', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
+        Column('sleep_effects', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
+        Column('capacity', type="INTEGER", read=int, write=int),
+    ]
     def __init__(self, args={}):
-        self.world = World.get_world()
-        self.sit_effects = args.get('sit_effects', [])
-        self.sleep_effects = args.get('sleep_effects', [])
+        ItemType.__init__(self, args)
         self.players = []
-        # of players that can use this piece of furniture at one time.
-        self.capacity = args.get('capacity')
-        self.dbid = args.get('dbid')
-        self.build_item = args.get('build_item')
-        self.game_item = args.get('game_item')
-        if self.build_item and self.game_item:
-            raise Exception('item and game_item set in init!')
     
     def __str__(self):
         if self.sit_effects:
@@ -816,31 +736,6 @@ class Furniture(ItemType):
                  '  sleep effects: ' + sleep_effects + '\n' +\
                  '  capacity: ' + str(self.capacity) + '\n'
         return string
-    
-    def to_dict(self):
-        d = {}
-        d['sit_effects'] = ','.join(self.sit_effects)
-        d['sleep_effects'] = ','.join(self.sleep_effects)
-        if self.capacity:
-            d['capacity'] = self.capacity
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        if self.game_item:
-            d['game_item'] = self.game_item.dbid
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
-    
-    def save(self, save_dict=None):
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('furniture', save_dict)
-            else:    
-                world.db.update_from_dict('furniture', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('furniture', self.to_dict())
     
     def load(self, game_item):
         d = self.to_dict()
@@ -865,40 +760,14 @@ class Furniture(ItemType):
 
 class Portal(ItemType):
     plural = 'portals'
-    def __init__(self, args={}):
-        self.world = World.get_world()
-        self.leave_message = args.get('leave_message', '#actor enters a portal.')
-        self.entrance_message = args.get('entrance_message', 'You enter a portal.')
-        self.emerge_message = args.get('emerge_message', '#actor steps out of a shimmering portal.')
-        self.build_item = args.get('build_item')
-        self.game_item = args.get('game_item')
-        self.dbid = args.get('dbid')
-        # The actual room object this portal points to
-        # The id of the room this portal points to
-        self.to_room = args.get('to_room')
-        # the area of the room this portal points to
-        self._location = None
-        self.to_area = args.get('to_area')
-    
-    def to_dict(self):
-        d = {}
-        d['leave_message'] = self.leave_message
-        d['entrance_message'] = self.entrance_message
-        d['emerge_message'] = self.emerge_message
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        if self.game_item:
-            d['game_item'] = self.game_item.dbid
-        if self._location:
-            d['to_room'] = self.location.id
-            d['to_area'] = self.location.area.name
-        elif self.to_room and self.to_area:
-            d['to_room'] = self.to_room
-            d['to_area'] = self.to_area
-        if self.dbid:
-            d['dbid'] = self.dbid
-        
-        return d
+    db_table_name = 'portal'
+    db_columns = ItemType.db_columns + [
+        Column('leave_message', default="#actor enters a portal."),
+        Column('entrance_message', default="You enter a portal."),
+        Column('emerge_message', default="#actor steps out of a shimmering portal."),
+        Column('to_room'),
+        Column('to_area')
+    ]
     
     def load(self, game_item):
         """Return a new copy of this instance so it can be loaded for an inventory item."""
@@ -910,16 +779,6 @@ class Portal(ItemType):
         newp.entrance_message = self.entrance_message
         newp.emerge_message = self.emerge_message
         return newp
-    
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('portal', save_dict)
-            else:    
-                self.world.db.update_from_dict('portal', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('portal', self.to_dict())
     
     def __str__(self):
         location = 'None'
@@ -933,10 +792,10 @@ class Portal(ItemType):
         return string
     
     def _resolve_location(self):
-        if self._location:
+        if getattr(self, '_location'):
             return self._location
         try:
-            self._location = self.world.get_area(str(self.to_area)).get_room(str(self.to_room))
+            self.location = self.world.get_area(str(self.to_area)).get_room(str(self.to_room))
             return self._location
         except:
             return None
@@ -997,3 +856,6 @@ ITEM_TYPES = {'equippable': Equippable,
               'portal': Portal
               # 'book': Book
              }
+
+for klass in ITEM_TYPES.values():
+    model.register(klass)

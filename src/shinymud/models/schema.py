@@ -43,19 +43,19 @@ def initialize_database(connection=None):
     description TEXT,
     UNIQUE (area, id)
 )''',\
-'''CREATE TABLE IF NOT EXISTS  build_item (
-    dbid INTEGER PRIMARY KEY,
-    id INTEGER NOT NULL,
-    area TEXT NOT NULL REFERENCES area(name),
-    name TEXT,
-    title TEXT,
-    description TEXT,
-    keywords TEXT,
-    weight INTEGER DEFAULT 0,
-    base_value INTEGER DEFAULT 0,
-    carryable TEXT DEFAULT 'True',
-    UNIQUE (area, id)
-)''',\
+# '''CREATE TABLE IF NOT EXISTS  build_item (
+#     dbid INTEGER PRIMARY KEY,
+#     id INTEGER NOT NULL,
+#     area TEXT NOT NULL REFERENCES area(name),
+#     name TEXT,
+#     title TEXT,
+#     description TEXT,
+#     keywords TEXT,
+#     weight INTEGER DEFAULT 0,
+#     base_value INTEGER DEFAULT 0,
+#     carryable TEXT DEFAULT 'True',
+#     UNIQUE (area, id)
+# )''',\
 '''CREATE TABLE IF NOT EXISTS room_exit (
     dbid INTEGER PRIMARY KEY,
     room_id INTEGER NOT NULL,
@@ -72,20 +72,20 @@ def initialize_database(connection=None):
     key_area TEXT,
     UNIQUE (room_id, area, direction)
 )''',\
-'''CREATE TABLE IF NOT EXISTS game_item (
-    dbid INTEGER PRIMARY KEY,
-    build_id TEXT,
-    build_area TEXT,
-    name TEXT,
-    title TEXT,
-    description TEXT,
-    keywords TEXT,
-    weight INTEGER DEFAULT 0,
-    base_value INTEGER DEFAULT 0,
-    carryable TEXT,
-    owner INTEGER REFERENCES player(dbid),
-    container INTEGER REFERENCES game_item(dbid) ON DELETE CASCADE
-)''',\
+# '''CREATE TABLE IF NOT EXISTS game_item (
+#     dbid INTEGER PRIMARY KEY,
+#     build_id TEXT,
+#     build_area TEXT,
+#     name TEXT,
+#     title TEXT,
+#     description TEXT,
+#     keywords TEXT,
+#     weight INTEGER DEFAULT 0,
+#     base_value INTEGER DEFAULT 0,
+#     carryable TEXT,
+#     owner INTEGER REFERENCES player(dbid),
+#     container INTEGER REFERENCES game_item(dbid) ON DELETE CASCADE
+# )''',\
 '''CREATE TABLE IF NOT EXISTS npc (
     dbid INTEGER PRIMARY KEY,
     id INTEGER NOT NULL,

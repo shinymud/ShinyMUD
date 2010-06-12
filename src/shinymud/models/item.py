@@ -12,7 +12,7 @@ class Item(Model):
         Column('name', default='New Item'),
         Column('title', default='A shiny new object sparkles happily'),
         Column('description', default='This is a shiny new object'),
-        Column('keywords', read=ShinyTypes.read_list, write=ShinyTypes.write_list, default=[]),
+        Column('keywords', read=ShinyTypes.read_list, write=ShinyTypes.write_list, copy=ShinyTypes.copy_list, default=[]),
         Column('weight', type="INTEGER", read=int, write=int, default=0),
         Column('base_value', type="INTEGER", read=int, write=int, default=0),
         Column('carryable', read=ShinyTypes.to_bool, default=True)
@@ -263,3 +263,6 @@ class GameItem(Item):
                 row[0]['game_item'] = self
                 self.item_types[key] = value(row[0])
     
+
+model.register(BuildItem)
+model.register(GameItem)
