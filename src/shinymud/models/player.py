@@ -253,7 +253,7 @@ class Player(Character):
             self.world.play_log.info('%s has been disconnected (broken pipe).' % self.fancy_name())
         self.conn.close()
         if hasattr(self, 'location') and self.location:
-            self.location.player_remove(self)
+            self.location.remove_char(self)
         self.world.player_remove(self.name)
         self.world.tell_players("%s has left the world." % self.fancy_name())
     

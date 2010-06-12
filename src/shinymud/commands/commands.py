@@ -523,7 +523,7 @@ To load an npc:
         if prototype:
             npc = prototype.load()
             npc.location = self.pc.location
-            self.pc.location.npc_add(npc)
+            self.pc.location.add_char(npc)
             self.pc.update_output('You summon %s into the world.\n' % npc.name)
             if self.alias == 'spawn':
                 self.pc.location.tell_room('%s summons %s.' % (self.pc.fancy_name(), npc.name), 

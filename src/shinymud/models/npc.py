@@ -1,6 +1,6 @@
 from shinymud.models.character import Character
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import Model, Column, read_list, write_list, model_list
+from shinymud.models import Model, Column, ShinyTypes, model_list
 from shinymud.lib.event_handler import EVENTS
 from shinymud.commands import PLAYER, DM
 from shinymud.commands.commands import command_list
@@ -15,15 +15,16 @@ class Npc(Character):
     char_type = 'npc'
     db_table_name = 'npc'
     db_columns = Character.db_columns + [
-        Column('area', read=Npc.world.get_area, write=(lambda x: x.name),
-               foreign_key=('area', 'name'), null=False),
+        Column('area', read=ShinyTypes.read_area, write=ShinyTypes.write_area,
+               foreign_key=('area', 'name'), null=False, type='INTEGER'),
         Column('id', null=False),
         Column('name', default='Shiny McShinerson'),
         Column('gender', default='neutral'),
-        Column('keywords', read=read_list, write=write_list),
+        Column('keywords', read=ShinyTypes.read_list,
+               write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
         Column('title')
     ]
-    def __init__(self, args):
+    def __init__(self, args={}):
         self.characterize(args)
         if not self.title:
             self.title = args.get('title', '%s is here.' % self.name)
@@ -99,30 +100,6 @@ description:
         """Return a capitalized version of the character's name."""
         return self.name
     
-    def load_events(self):
-        """Load the events associated with this NPC."""
-        events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
-        self.world.log.debug(events)
-        for event in events:
-            s_id = self.world.db.select('id FROM script WHERE dbid=?', 
-                                        [event['script']])
-            s = self.area.get_script(str(s_id[0].get('id')))
-            if s:
-                # Only load this event if its script exists
-                event['script'] = s
-                self.new_event(event)
-            else:
-                self.world.log.error('The script this event points to is gone! '
-                               'NPC (id:%s, area:%s)' % (self.id, self.area.name))
-    
-    def load_ai_packs(self):
-        for key, value in NPC_AI_PACKS.items():
-            row = self.world.db.select('* FROM %s WHERE npc=?' % key,
-                                       [self.dbid])
-            if row:
-                row[0]['npc'] = self
-                self.ai_packs[key] = value(row[0])
-    
     def update_output(self, message):
         """Append any updates to this npc's action queue.
         Only log up to LOG_LINES worth of updates - once the limit is
@@ -182,6 +159,23 @@ description:
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
 # ***** Event functions *****
+    def load_events(self):
+        """Load the events associated with this NPC."""
+        events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
+        self.world.log.debug(events)
+        for event in events:
+            #TODO: Change me!
+            s_id = self.world.db.select('id FROM script WHERE dbid=?', 
+                                        [event['script']])
+            s = self.area.get_script(str(s_id[0].get('id')))
+            if s:
+                # Only load this event if its script exists
+                event['script'] = s
+                self.new_event(event)
+            else:
+                self.world.log.error('The script this event points to is gone! '
+                               'NPC (id:%s, area:%s)' % (self.id, self.area.name))
+    
     def perform(self, command_string):
         """Parse the command and add its corresponding command object to this
         npc's cmdq (if the command is found).
@@ -233,7 +227,7 @@ description:
     def new_event(self, event_dict):
         """Add a new npc event to this npc."""
         event_dict['prototype'] = self
-        new_event = NPCEvent(**event_dict)
+        new_event = NPCEvent(event_dict)
         if not new_event.dbid:
             new_event.save()
         if new_event.event_trigger in self.events:
@@ -268,10 +262,18 @@ description:
             args['obj'] = self
             for e in self.events[event_name]:
                 args.update(e.get_args())
-                EVENTS[event_name](**args).run()
+                EVENTS[event_name](args).run()
             self.world.npc_subscribe(self)
     
 # ***** ai pack functions *****
+    def load_ai_packs(self):
+        for key, value in NPC_AI_PACKS.items():
+            row = self.world.db.select('* FROM %s WHERE npc=?' % key,
+                                       [self.dbid])
+            if row:
+                row[0]['npc'] = self
+                self.ai_packs[key] = value(row[0])
+    
     def has_ai(self, ai):
         """Return true if this npc has this ai pack, False if it does not."""
         return ai in self.ai_packs
@@ -306,4 +308,4 @@ description:
         self.ai_packs[ai_pack] = pack
     
 
-
+model_list.register(Npc)

@@ -174,7 +174,7 @@ class World(object):
         for player in self.player_list.values():
             if player.location and (player.location.area.name == area.name):
                 player.update_output('You are wisked to safety as the world collapses around you.\n')
-                player.location.player_remove(player)
+                player.location.remove_char(player)
                 player.location = self.default_location
             if player.mode and (player.mode.name == 'BuildMode'):
                 if player.mode.edit_area and (player.mode.edit_area.name == area_name):

@@ -1,4 +1,4 @@
-from shinymud.models import Model, Column, read_list, write_list, model_list
+from shinymud.models import Model, Column, ShinyTypes, model_list
 from shinymud.models.room import Room
 from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
@@ -11,7 +11,8 @@ class Area(Model):
     db_columns = Model.db_columns + [
         Column('name', null=False, unique=True),
         Column('title', default='New Area'),
-        Column('builders', read=read_list, write=write_list),
+        Column('builders', read=ShinyTypes.read_list, 
+               write=ShinyTypes.write_list, copy=ShinyTypes.copy_list),
         Column('level_range', default='All'),
         Column('description', default='No Description'),
         
@@ -31,19 +32,19 @@ class Area(Model):
             items = self.world.db.select("* from build_item where area=?", [self.dbid])
             for item in items:
                 item['area'] = self
-                self.items[str(item['id'])] = BuildItem(**item)
+                self.items[str(item['id'])] = BuildItem(item)
             scripts = self.world.db.select("* from script where area=?", [self.dbid])
             for script in scripts:
                 script['area'] = self
-                self.scripts[str(script['id'])] = Script(**script)
+                self.scripts[str(script['id'])] = Script(script)
             npcs = self.world.db.select("* from npc where area=?", [self.dbid])
             for npc in npcs:
                 npc['area'] = self
-                self.npcs[str(npc['id'])] = Npc(**npc)
+                self.npcs[str(npc['id'])] = Npc(npc)
             rooms = self.world.db.select("* from room where area=?", [self.dbid])
             for room in rooms:
                 room['area'] = self
-                new_room = Room(**room)
+                new_room = Room(room)
                 new_room.reset()
                 self.rooms[str(room['id'])] = new_room
             
@@ -172,7 +173,7 @@ Description: \n    %s""" % (self.name,
         if room_dict:
             # Create a new room with pre-initialized data
             room_dict['area'] = self
-            new_room = Room(**room_dict)
+            new_room = Room(room_dict)
         else:
             # Create a new 'blank' room
             new_room = Room.create(self, self.get_id('room'))
@@ -264,7 +265,7 @@ Description: \n    %s""" % (self.name,
     def new_item(self, item_dict=None):
         """Add a new item to this area's item list."""
         if item_dict:
-            item_dict['area'] = self.name
+            item_dict['area'] = self
             new_item = BuildItem(item_dict)
         else:
             new_item = BuildItem.create(self, self.get_id('build_item'))
@@ -308,7 +309,7 @@ Description: \n    %s""" % (self.name,
         """Add a new script to this area's script list."""
         if script_dict:
             script_dict['area'] = self
-            new_script = Script(**script_dict)
+            new_script = Script(script_dict)
         else:
             new_script = Script(self, self.get_id('script'))
         new_script.save()
@@ -331,4 +332,4 @@ Description: \n    %s""" % (self.name,
         return 'Script "%s" has been successfully destroyed.' % script_id
     
 
-model_list.register(Player)
+model_list.register(Area)

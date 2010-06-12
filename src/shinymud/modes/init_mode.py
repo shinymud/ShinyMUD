@@ -150,7 +150,7 @@ class InitMode(object):
             self.world.tell_players("%s has entered the world." % self.player.fancy_name())
         if self.player.location:
             self.player.update_output(self.player.look_at_room())
-            self.player.location.player_add(self.player)
+            self.player.location.add_char(self.player)
         self.world.play_log.info('Player "%s" logging in from: %s.' % (self.player.fancy_name(), str(self.player.addr)))
     
     def character_cleanup(self):

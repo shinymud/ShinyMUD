@@ -72,13 +72,13 @@ class TestGeneralCommands(TestCase):
         self.world.player_add(bob)
         self.world.player_add(alice)
         
-        room.player_add(bob)
-        room.player_add(alice)
+        room.add_char(bob)
+        room.add_char(alice)
         alice.location = room
         bob.location = room
         proto_npc = area.new_npc()
         npc = proto_npc.load()
-        room.npc_add(npc)
+        room.add_char(npc)
         
         item = area.new_item()
         item.build_set_keywords('bauble', bob)

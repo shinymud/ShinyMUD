@@ -16,7 +16,7 @@ class EventHandler(object):
     **args may contain other key-value pairs that it expects its event might
     need
     """
-    def __init__(self, **args):
+    def __init__(self, args={}):
         self.obj = args.get('obj')
         self.script = args.get('script')
         self.script_text = self.script.body
@@ -179,6 +179,25 @@ class CommandError(Exception):
 EVENTS = CommandRegister()
 
 class PCEnter(EventHandler):
+    help = (
+    """<title>PC Enter (Script trigger)</title>
+This event is triggered when a player enters a room.
+\nUSAGE:
+To add a 'PC Enter' event:
+  add event pc_enter call script <script-id>
+\nCONDITIONS:
+This event has no conditions.
+\nPERSONALIZERS
+When this event is triggered and calls a script, that script will replace the
+following personalizers with their corresponding values:
+<b>#target_name</b> Will be replaced with the name of the player entering the
+  room
+<b>#from_room</b> Will be replaced with a signature of the room the player left
+  when they entered this room. The signature will be of the form:
+  "<room-id>_<area-name>". For example, the signature of room 4 from area foo
+  will be: "4_foo".
+    """
+    )
     def execute(self):
         player = self.args.get('player')
         prev = self.args.get('from')
@@ -190,6 +209,7 @@ class PCEnter(EventHandler):
     
 
 EVENTS.register(PCEnter, ['pc_enter'])
+command_help.register(PCEnter.help, ['pc_enter', 'pcenter'])
 
 class GivenItem(EventHandler):
     help = (

@@ -1,51 +1,36 @@
-from shinymud.models import to_bool
-from shinymud.lib.world import World
+from shinymud.models import Model, Column, ShinyTypes, model_list
 from shinymud.data.config import *
 import re
 
-class RoomExit(object):
+class RoomExit(Model):
+    db_table_name = 'room_exit'
+    db_columns = Model.db_columns + [
+        Column('to_room_id', null=False),
+        Column('to_area', null=False),
+        # I always expect room to be passed in by the function calling this class'
+        # constructor. For this reason, I'm not bothering with a more elaborate
+        # read function for room_id.
+        Column('room', null=False, write=lambda x: x.id),
+        Column('area', null=False, read=ShinyTypes.read_area, write=ShinyTypes.write_area),
+        Column('direction', null=False),
+        Column('linked_exit'),
+        Column('direction'),
+        Column('openable', read=ShinyTypes.to_bool),
+        Column('closed', read=ShinyTypes.to_bool),
+        Column('hidden', read=ShinyTypes.to_bool),
+        Column('locked', read=ShinyTypes.to_bool),
+        Column('key_area'),
+        Column('key_id')
+    ]
+    db_extras = Model.db_extras + ['UNIQUE (room_id, area, direction)']
     
-    def __init__(self, from_room=None, direction=None, to_room=None, **args):
-        self.to_room = to_room
-        self.room = from_room
-        self.linked_exit = args.get('linked_exit')
-        self.direction = direction
-        self.openable = to_bool(args.get('openable')) or False
-        self.closed = to_bool(args.get('closed')) or False # The default closed state
-        self._closed = self.closed # The current closed state
-        self.hidden = to_bool(args.get('hidden')) or False
-        self.locked = to_bool(args.get('locked')) or False # The default locked state
-        self._locked = self.locked # The current locked state
-        self.key = None
-        self.key_area = str(args.get('key_area', ''))
-        self.key_id = str(args.get('key_id', ''))
-        self.to_room_id = str(args.get('to_room_id', ''))
-        self.to_area = str(args.get('to_area', ''))
-        self.dbid = args.get('dbid')
-        self.world = World.get_world()
-    
-    def to_dict(self):
-        d = {}
-        d['to_room_id'] = self.to_room.id
-        d['to_area'] = self.to_room.area.name
-        d['room_id'] = self.room.id
-        d['area'] = self.room.area.name
-        if self.linked_exit:
-            d['linked_exit'] = self.linked_exit
-        d['direction'] = self.direction
-        d['openable'] = self.openable
-        d['closed'] = self.closed
-        d['hidden'] = self.hidden
-        d['locked'] = self.locked
-        if self._key:
-            d['key_area'] = self.key.area.name
-            d['key_id'] = self.key.id
-        elif self.key_id and self.key_area:
-            d['key_area'] = self.key_area
-            d['key_id'] = self.key_id
-        if self.dbid:
-            d['dbid'] = self.dbid
-        return d
+    def __init__(self, args={}):
+        Model.__init__(self, args)
+        # Initialize the current state of the door from the default settings:
+        self._closed = self.closed
+        self._locked = self.locked
+        if 'to_room' in args:
+            self.to_room = args.get('to_room')
     
     def save(self, save_dict=None):
         if not self.to_room:
@@ -54,18 +39,7 @@ class RoomExit(object):
             # save it! This should be fixed in later code so that it won't be
             # possible
             return
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('room_exit', save_dict)
-            else:    
-                self.world.db.update_from_dict('room_exit', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('room_exit', self.to_dict())
-    
-    def destruct(self):
-        if self.dbid:
-            self.world.db.delete('FROM room_exit WHERE dbid=?', [self.dbid])
+        Model.save(self)
     
     def unlink(self):
         """Unlink any corresponding exits if they exist."""
@@ -76,7 +50,7 @@ class RoomExit(object):
             self.to_room.linked_exit = None
     
     def _resolve_to_room(self):
-        if self._to_room:
+        if getattr(self, '_to_room', None):
             return self._to_room
         try:
             self.to_room = self.world.get_area(str(self.to_area)).get_room(str(self.to_room_id))
@@ -86,10 +60,11 @@ class RoomExit(object):
     
     def _set_to_room(self, to_room):
         self._to_room = to_room
+    
     to_room = property(_resolve_to_room, _set_to_room)
     
     def _resolve_key(self):
-        if self._key:
+        if getattr(self, '_key', None):
             return self._key
         if self.key_area and self.key_id:
             try: 
@@ -101,6 +76,12 @@ class RoomExit(object):
     
     def _set_key(self, key):
         self._key = key
+        if key:
+            self.key_area = key.area.name
+            self.key_id = key.id
+        else:
+            self.key_area = None
+            self.key_id = None
     key = property(_resolve_key, _set_key)
     
     def _str_key(self):
@@ -283,3 +264,4 @@ class RoomExit(object):
                                                                         self.direction)
     
 
+model_list.register(RoomExit)
