@@ -1,5 +1,5 @@
 from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
-from shinymud.models import Column, model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 from shinymud.lib.world import World
 from shinymud.models.char_effect import *
@@ -8,8 +8,8 @@ import re
 
 class ItemType(Model):
     db_columns = Model.db_columns + [
-        Column('build_item', type="INTEGER", read=int, write=int, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
-        Column('game_item', type="INTEGER", read=int, write=int, foreign_key=('game_item','dbid'), cascade="ON DELETE")
+        Column('build_item', type="INTEGER", read=int, write=write_model, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
+        Column('game_item', type="INTEGER", read=int, write=write_model, foreign_key=('game_item','dbid'), cascade="ON DELETE")
     ]
     log = World.get_world().log
     """The base class that must be inherited by all item types.
@@ -181,12 +181,13 @@ class Damage(object):
 
 class Equippable(ItemType):
     plural = 'equippable items'
+    db_table_name = 'equippable'    
     db_columns = ItemType.db_columns + [
         Column('equip_slot'),
         Column('hit', type="INTEGER", read=int, write=int, default=0),
         Column('evade', type="INTEGER", read=int, write=int, default=0),
-        Column('absorb', read=Equippable.read_absorb, write=Equippable.write_absorb, copy=copy_dict),
-        Column('dmg', read=Equippable.read_damage, write=Equippable.write_damage, copy=lambda d: [Damage(str(x)) for x in d ))
+        Column('absorb', read=read_int_dict, write=write_int_dict, copy=copy_dict),
+        Column('dmg', read=read_damage, write=write_damage, copy=lambda d: [Damage(str(x)) for x in d ]),
         Column('is_equipped', read=to_bool, default=False)
     ]
     
@@ -196,35 +197,6 @@ class Equippable(ItemType):
         self.evade_id = None
         self.absorb_ids = []
         self.dmg_ids = []
-    
-    @classmethod
-    def read_absorb(cls, val):
-        d = {}
-        if val:
-            for a in val.split(','):
-                key, val = a.split('=')
-                d[key] = int(val)
-        return d
-    
-    @classmethod
-    def write_absorb(cls, val):
-        s = []
-        if val:
-            for key, val in val.items():
-                s.append("%s=%s" % (str(key), str(val)))
-        return ",".join(s)
-    
-    @classmethod
-    def read_damage(cls, val):
-        dmg = []
-        if val:
-            for d in val.split('|'):
-                dmg.append(Damage(d))
-        return dmg
-    
-    @classmethod
-    def write_damage(cls, val):
-        return '|'.join([str(d) for d in val])
     
     def build_set_damage(self, params, player=None):
         if not params:
@@ -428,7 +400,7 @@ class Food(ItemType):
         #                       ['food', self.dbid])
         # for e in rows:
         #     e['build_item'] = self
-        #     effect = EFFECTS[e['name']](**e)
+        #     effect = EFFECTS[e['name']](e)
         #     self.effects[effect.name] = effect
     
     def _resolve_ro(self):
@@ -506,7 +478,7 @@ class Food(ItemType):
         effect = EFFECTS[e]
         if not effect:
             return '%s is not a valid effect. Try "help list effects"' % e
-        eff = effect(**{'duration': int(dur), 'item_type': 'food',
+        eff = effect({'duration': int(dur), 'item_type': 'food',
                         'item': self})
         eff.save()
         self.effects[e] = eff
@@ -864,4 +836,4 @@ ITEM_TYPES = {'equippable': Equippable,
              }
 
 for klass in ITEM_TYPES.values():
-    model.register(klass)
+    model_list.register(klass)

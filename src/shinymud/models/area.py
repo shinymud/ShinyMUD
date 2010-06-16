@@ -1,4 +1,4 @@
-from shinymud.models import Model, Column model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 from shinymud.models.room import Room
 from shinymud.models.item import BuildItem

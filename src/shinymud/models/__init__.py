@@ -8,13 +8,13 @@ class Column(object):
     def __init__(self, name, **args):
         self.name = name
         self.type = args.get('type', 'TEXT')
-        self.default = args.get('default')
+        self.default = args.get('default', None)
         self.null = args.get('null', True)
         self.primary_key = args.get('primary_key', False)
         self.foreign_key = args.get('foreign_key') # (model, column)
         self.unique = args.get('unique', False)
         self.read = args.get('read', lambda x: x)
-        self.write = args.get('write', unicode)
+        self.write = args.get('write', lambda x: None if x is None else unicode(x))
         self.cascade = args.get('cascade')
         self.copy = args.get('copy', lambda x: x)
     
@@ -26,7 +26,7 @@ class Column(object):
             sql_string.append("PRIMARY KEY")
         else:
             if self.foreign_key:
-                sql_string.append("REFERENCES %s(%s)" % (self.foreign_key[0].db_table_name, self.foreign_key[1]))
+                sql_string.append("REFERENCES %s(%s)" % (self.foreign_key[0], self.foreign_key[1]))
             if self.unique: 
                 sql_string.append('UNIQUE')
             if not self.null:
@@ -36,7 +36,6 @@ class Column(object):
         return unicode(" ".join(sql_string))
     
 
-# primary_key, null, unique, cascade_on_delete, references, 
 class Model(object):
     world = World.get_world()
     db_table_name = None
@@ -52,11 +51,8 @@ class Model(object):
     db_extras = []
     def __init__(self, args={}):
         for col in self.db_columns:
-            if col.name in args:
-                if args[col.name] is None:
-                    setattr(self, col.name, None)
-                else:
-                    setattr(self, col.name, col.read(args[col.name]))
+            if args.get(col.name):
+                setattr(self, col.name, col.read(args[col.name]))
             else:
                 setattr(self, col.name, col.default)
         if hasattr(self, 'dbid'):
@@ -69,14 +65,14 @@ class Model(object):
     def copy_save_attrs(self):
         copy_dict = {}
         for col in self.db_columns:
-            val = getattr(self, col.name)
+            val = getattr(self, col.name, col.default)
             copy_dict[col.name] = col.copy(val) if val else None
         return copy_dict
     
     def save(self):
         save_dict = {}
         for col in self.db_columns:
-            val = getattr(self, col.name)
+            val = getattr(self, col.name, col.default)
             save_dict[col.name] = col.write(val) if val else None
         if self.dbid:
                 self.world.db.update_from_dict(self.db_table_name, save_dict)

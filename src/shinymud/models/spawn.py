@@ -1,4 +1,5 @@
 from shinymud.models import Model, Column, model_list
+from shinymud.models.shiny_types import *
 
 class Spawn(Model):
     db_table_name = 'room_spawns'

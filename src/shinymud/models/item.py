@@ -1,5 +1,5 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import Column, model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 from shinymud.models.item_types import ITEM_TYPES
 from shinymud.lib.world import World
@@ -9,7 +9,7 @@ import re
 
 class Item(Model):
     """The base class that both BuildItem and GameItem should inherit from."""
-    db_columns = Model.Columns + [
+    db_columns = Model.db_columns + [
         Column('name', default='New Item'),
         Column('title', default='A shiny new object sparkles happily'),
         Column('description', default='This is a shiny new object'),
@@ -239,22 +239,12 @@ class GameItem(Item):
     db_columns = Item.db_columns + [
         Column('build_area'),
         Column('build_id'),
-        Column('container', type="INTEGER", read=int, write=int, foreign_key=(GameItem.db_table_name, 'dbid'), cascade="ON DELETE"),
-        Column('owner_id', type="INTEGER", read=int, write=int, foreign_key=('player', 'dbid'), cascade='ON DELETE')
+        Column('container', type="INTEGER", read=int, write=int, foreign_key=(db_table_name, 'dbid'), cascade="ON DELETE"),
+        Column('owner', type="INTEGER", write=write_model, foreign_key=('player', 'dbid'), cascade='ON DELETE')
     ]
-    
-    def _set_owner(self, owner):
-        self._owner = owner
-        self.owner_id = owner.id if owner else None
-    
-    def _get_owner(self):
-        return getattr(self, '_owner', None)
-    
-    owner = property(_get_owner, _set_owner)
-    
     def __init__(self, args={}, spawn_id=None):
         self.spawn_id = spawn_id
-        Item.__init__(self, **args)
+        Item.__init__(self, args)
     
     def load_extras(self):
         for key, value in ITEM_TYPES.items():
@@ -265,5 +255,5 @@ class GameItem(Item):
                 self.item_types[key] = value(row[0])
     
 
-model.register(BuildItem)
-model.register(GameItem)
+model_list.register(BuildItem)
+model_list.register(GameItem)

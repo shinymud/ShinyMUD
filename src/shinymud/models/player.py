@@ -6,7 +6,7 @@ from shinymud.modes.build_mode import BuildMode
 from shinymud.modes.battle_mode import BattleMode
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.modes.passchange_mode import PassChangeMode
-from shinymud.models import Column, model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 from shinymud.models.item import GameItem
 from shinymud.models.character import Character
@@ -21,35 +21,15 @@ class Player(Character):
     db_table_name = 'player'
     db_columns = Character.db_columns + [
         Column('name', null=False, unique=True),
-        Column('channels', read=Player.read_channels, write=write_dict, default={'chat': False}),
+        Column('channels', read=read_channels, write=write_dict, default={'chat': False}),
         Column('password', null=False),
-        Column('permissions', type="INTEGER", null=False, default=1),
+        Column('permissions', type="INTEGER", read=int, write=int, null=False, default=1),
         Column('email'),
-        Column('location', read=Player.read_location, write=Player.write_location),
+        Column('location', read=read_location, write=write_location),
         Column('goto_appear'),
         Column('goto_disappear'),
         Column('title',default='a %s player.' % GAME_NAME)
     ]
-    
-    @classmethod
-    def read_channels(cls, val):
-        d = {}
-        for pair in val.split(','):
-            k,v = pair.split('=')
-            d[k] = to_bool(v)
-        return d    
-    
-    @classmethod
-    def read_location(cls, val):
-        #loc == 'area,id'
-        loc = val.split(',')
-        return cls.world.get_location(loc[0], loc[1])
-    
-    @classmethod
-    def write_location(cls, val):
-        if val:
-            return '%s,%s' % (val.area.name, val.id)
-        return None
     
     win_change_regexp = re.compile(r"\xff\xfa\x1f(?P<size>.*?)\xff\xf0")
     def __init__(self, conn_info):
@@ -67,9 +47,9 @@ class Player(Character):
     def playerize(self, args={}):
         self.characterize(args)
         if not self.goto_appear:
-            self.goto_appear = '%s appears in the room.' % str(self))
+            self.goto_appear = '%s appears in the room.' % str(self)
         if not self.goto_disappear:
-            self.goto_disappear = '%s disappears in a cloud of smoke.' % str(self))
+            self.goto_disappear = '%s disappears in a cloud of smoke.' % str(self)
     
     def load_extras(self):
         self.load_inventory()
@@ -96,7 +76,7 @@ class Player(Character):
         rows = World.get_world().db.select("* FROM game_item WHERE container=?", [container.dbid])
         self.world.log.debug(rows)
         for row in rows:
-            new_item = GameItem(**row)
+            new_item = GameItem(row)
             if new_item.has_type('container'):
                 self.load_contents(new_item)
             container.item_add(new_item)

@@ -16,7 +16,13 @@ class ModelRegister(object):
 
     def register(self, model):
         self.models[model.db_table_name] = model
-
+    
+    def values(self):
+        return self.models.values()
+    
+    def get(self, key, default=None):
+        return self.models.get(key,default)
+    
 class IntRegister(object):
     """Keeps a dictionary of id:integer pairs, so we can keep track
     of the things affecting a particular attribute.

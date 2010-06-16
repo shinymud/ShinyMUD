@@ -19,6 +19,7 @@ class DB(object):
             new_id = db.insert("into table mytable (field1, field2...) values (?, ?...)", [val1, val2...])
         """
         cursor = self.conn.cursor()
+        print type(query), query, type(params), repr(params)
         if params:
             cursor.execute("insert " + query, params)
         else:
@@ -34,7 +35,7 @@ class DB(object):
         self.log.debug("INSERTING: " + str(d))
         for key,val in d.items():
             keys.append(key)
-            values.append(str(val))
+            values.append(val)
         key_string = "(" + ",".join(keys) + ")"
         val_string = "(" + ",".join(['?' for _ in values]) + ")"
         query = query + key_string + " VALUES " + val_string
@@ -52,9 +53,11 @@ class DB(object):
             print rows
             > [{'field1': somevalue, 'field2', someothervalue...}, {'field1':...}...]
         """
+        print query, params
         cursor = self.conn.cursor()
         if params:
-            cursor.execute("select " + query, params)
+            params = [unicode(p) for p in params]
+            cursor.execute(u"select " + unicode(query), params)
         else:
             cursor.execute("select " + query)
         keys = [_[0] for _ in cursor.description]
@@ -81,7 +84,7 @@ class DB(object):
             values = []
             for key, val in d.items():
                 if key != 'dbid':
-                    attributes.append(str(key) + "=?")
+                    attributes.append(unicode(key) + "=?")
                     values.append(val)
             query = query + ','.join(attributes) + " WHERE dbid=?"
             values.append(d['dbid'])

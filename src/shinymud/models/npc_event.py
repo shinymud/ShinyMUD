@@ -34,4 +34,4 @@ class NPCEvent(Model):
         return d
     
 
-model_list.register(NPCEevent)
+model_list.register(NPCEvent)

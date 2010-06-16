@@ -1,7 +1,8 @@
 from shinymud.commands.attacks import *
 from shinymud.data.config import EQUIP_SLOTS
 from shinymud.lib.registers import IntRegister, DictRegister, DamageRegister
-from shinymud.models import Model, Column
+from shinymud.models import Model, Column, model_list
+from shinymud.models.shiny_types import *
 from random import randint
     
 class Character(Model):

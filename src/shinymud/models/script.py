@@ -1,5 +1,5 @@
 from shinymud.modes.text_edit_mode import TextEditMode
-from shinymud.models import Column, model_list
+from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 
 
@@ -42,3 +42,5 @@ class Script(Model):
         if self.dbid:
             self.world.db.delete('FROM script WHERE dbid=?', [self.dbid])
     
+
+model_list.register(Script)

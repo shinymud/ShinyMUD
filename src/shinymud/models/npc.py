@@ -20,7 +20,6 @@ class Npc(Character):
                foreign_key=('area', 'name'), null=False, type='INTEGER'),
         Column('id', null=False),
         Column('name', default='Shiny McShinerson'),
-        Column('gender', default='neutral'),
         Column('keywords', read=read_list,
                write=write_list, copy=copy_list),
         Column('title')

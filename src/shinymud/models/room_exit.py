@@ -1,4 +1,5 @@
 from shinymud.models import Model, Column, model_list
+from shinymud.models.shiny_types import *
 from shinymud.data.config import *
 import re
 
@@ -14,7 +15,6 @@ class RoomExit(Model):
         Column('area', null=False, read=read_area, write=write_area),
         Column('direction', null=False),
         Column('linked_exit'),
-        Column('direction'),
         Column('openable', read=to_bool),
         Column('closed', read=to_bool),
         Column('hidden', read=to_bool),
@@ -22,7 +22,7 @@ class RoomExit(Model):
         Column('key_area'),
         Column('key_id')
     ]
-    db_extras = Model.db_extras + ['UNIQUE (room_id, area, direction)']
+    db_extras = Model.db_extras + ['UNIQUE (room, area, direction)']
     
     def __init__(self, args={}):
         Model.__init__(self, args)

@@ -24,7 +24,6 @@ except ImportError:
 from shinymud.lib.ansi_codes import CLEAR, CONCEAL
 from shinymud.lib.world import World
 from shinymud.lib.db import DB
-from shinymud.models.schema import initialize_database
 
 # Create the logs folder if it doesn't exist
 if not os.path.exists(os.path.join(path,'shinymud/data/logs')):
@@ -127,7 +126,7 @@ def create_god(world):
         else:
             print "That's not a valid gender."
     
-    player.playerize(**save)
+    player.playerize(save)
     player.save()
     print 'Your character, %s, has been created.' % player.fancy_name()
 
@@ -205,6 +204,7 @@ def clean():
 
 def setup_stub_world():
     world = World()
+    from shinymud.lib.setup import initialize_database
     initialize_database(world.db.conn)
     return world
 

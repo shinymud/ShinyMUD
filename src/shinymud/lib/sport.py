@@ -13,7 +13,7 @@ def sanitize(obj):
     """Sanitize an object that was built by json.
     simplejson will sometimes use unicode instead of ascii
     for dictionary keys, which cause them to fail when being
-    dereferenced for function calls like foo(**args).
+    dereferenced for function calls like foo(args).
     """
     if isinstance(obj, list) and len(obj):
         for i in range(len(obj)):
@@ -132,7 +132,7 @@ class SPort(object):
         room_spawns = sanitize(json.loads(self.match_shiny_tag('Room Spawns', txt)))
         # Build the area from the assembled dictionary data
         try:
-            new_area = Area.create(**area)
+            new_area = Area.create(area)
             for script in scripts:
                 new_area.new_script(script)
             for item in items:
@@ -156,7 +156,7 @@ class SPort(object):
             for exit in room_exits:
                 self.world.log.debug(exit['room'])
                 my_room = new_area.get_room(str(exit['room']))
-                my_room.new_exit(**exit)
+                my_room.new_exit(exit)
         except Exception, e:
             # if anything went wrong, make sure we destroy whatever parts of
             # the area that got created.  This way, we won't run into problems

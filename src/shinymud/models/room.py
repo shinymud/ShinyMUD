@@ -2,7 +2,7 @@ from shinymud.models.room_exit import RoomExit
 from shinymud.models.spawn import Spawn
 from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import Model, Column, model_list
-
+from shinymud.models.shiny_types import *
 import re
 
 dir_opposites = {'north': 'south', 'south': 'north',
@@ -225,7 +225,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         rows = self.world.db.select("* from room_exit where room_id=? and area=?", [self.id, self.area.name])
         for row in rows:
             row['from_room'] = self
-            self.exits[row['direction']] = RoomExit(**row)
+            self.exits[row['direction']] = RoomExit(row)
     
     def link_exits(self, direction, link_room):
         """Link exits between this room (self), and the room passed."""

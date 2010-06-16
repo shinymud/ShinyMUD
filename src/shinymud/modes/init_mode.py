@@ -122,7 +122,7 @@ class InitMode(object):
         password = hashlib.sha1(arg).hexdigest()
         if password == self.password:
             # Wicked cool, our player exists AND the right person is self.world.logging in
-            self.player.playerize(**self.world.db.select('* FROM player WHERE dbid=?', [self.dbid])[0])
+            self.player.playerize(self.world.db.select('* FROM player WHERE dbid=?', [self.dbid])[0])
             # Make sure that we clear the concealed text effect that we 
             # initiated when we moved to the password state
             self.player.update_output(CLEAR, False)
@@ -273,13 +273,13 @@ class InitMode(object):
         # address to be saved
         elif self.save.get('email') == 'yes_email':
             self.save['email'] = arg
-            self.player.playerize(**self.save)
+            self.player.playerize(self.save)
             self.player.dbid = self.world.db.insert_from_dict('player', self.player.to_dict())
             # self.player.update_output(choose_class_string)
             self.state = self.character_cleanup
             self.newbie = True
         else:
-            self.player.playerize(**self.save)
+            self.player.playerize(self.save)
             self.player.dbid = self.world.db.insert_from_dict('player', self.player.to_dict())
             # self.player.update_output(choose_class_string)
             self.state = self.character_cleanup
@@ -288,7 +288,7 @@ class InitMode(object):
     # def assign_defaults(self):
     #     if len(self.player.inq) > 0:
     #         if len(self.player.inq[0]) > 0 and self.player.inq[0][0].lower() in 'ctfw':
-    #             self.player.playerize(**self.save)
+    #             self.player.playerize(self.save)
     #             if self.player.inq[0][0].lower() == 'c':
     #                 # Custom stats creation
     #                 self.state = self.custom_create
