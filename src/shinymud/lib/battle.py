@@ -1,4 +1,30 @@
 from shinymud.lib.world import World
+import re
+
+class Damage(object):
+    def __init__(self, dstring):
+        exp = r'(?P<d_type>\w+)[ ]+(?P<d_min>\d+)-(?P<d_max>\d+)([ ]+(?P<d_prob>\d+))?'
+        m = re.match(exp, dstring)
+        if m and m.group('d_type') in DAMAGE_TYPES:
+            self.type = m.group('d_type')
+            if m.group('d_min') and m.group('d_max') and int(m.group('d_min')) <= int(m.group('d_max')):
+                self.range = (int(m.group('d_min')), int(m.group('d_max')))
+            else:
+                raise Exception('Bad damage range.\n')
+            if m.group('d_prob'):
+                self.probability = int(m.group('d_prob'))
+                if self.probability > 100:
+                    self.probability = 100
+                elif self.probability < 0:
+                    self.probability = 0
+            else:
+                self.probability = 100
+        else:
+            raise Exception('Bad damage type given.\n')
+    
+    def __str__(self):
+        return self.type + ' ' + str(self.range[0]) + '-' + str(self.range[1]) + ' ' + str(self.probability) + '%'
+    
 
 class Battle(object):
     """A battle is a fight between two teams until one team is unable to continue.

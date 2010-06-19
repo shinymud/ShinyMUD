@@ -4,8 +4,8 @@ import sqlite3
 import re
 
 class DB(object):
-    def __init__(self, logger, db_name=None):
-        self.conn  = sqlite3.Connection(db_name or DB_NAME)
+    def __init__(self, logger, db_name=None, conn=None):
+        self.conn = conn or sqlite3.Connection(db_name or DB_NAME)
         self.log = logger
     
     def insert(self, query, params=None):
@@ -19,7 +19,7 @@ class DB(object):
             new_id = db.insert("into table mytable (field1, field2...) values (?, ?...)", [val1, val2...])
         """
         cursor = self.conn.cursor()
-        print type(query), query, type(params), repr(params)
+        self.log.debug(query + ' ' + repr(params))
         if params:
             cursor.execute("insert " + query, params)
         else:
@@ -53,7 +53,7 @@ class DB(object):
             print rows
             > [{'field1': somevalue, 'field2', someothervalue...}, {'field1':...}...]
         """
-        print query, params
+        self.log.debug(query + ' ' + repr(params))
         cursor = self.conn.cursor()
         if params:
             params = [unicode(p) for p in params]

@@ -12,10 +12,10 @@ class World(object):
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(World, cls).__new__(
-                                  cls, *args, **kwargs)
+                                  cls)
         return cls._instance
     
-    def __init__(self):
+    def __init__(self, conn=None):
         self.configure_logs()
         self.player_list = {}
         self.player_delete = []
@@ -24,7 +24,7 @@ class World(object):
         self.player_list_lock = threading.Lock()
         self.shutdown_flag = False
         self.areas = {}
-        self.db = DB(self.log)
+        self.db = DB(self.log, conn=conn)
         self.default_location = None
         self.currency_name = CURRENCY
         self.login_greeting = ''

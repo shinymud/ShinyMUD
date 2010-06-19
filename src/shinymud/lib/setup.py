@@ -10,9 +10,9 @@ for module in model_files:
 from shinymud.models import model_list
 
 EXISTING_TABLES = {}
+world = World.get_world()
 
 def initialize_database(conn=None):
-    world = World.get_world()
     db_table_names = [x['name'] for x in world.db.select("name from sqlite_master where type='table'")]
     for table_name in db_table_names:
         columns = world.db.select("* from %s limit 1" % table_name)
@@ -52,7 +52,7 @@ def create_table(model, conn=None):
     table_string.append(')')
     create_stmt = "".join(table_string)
     cursor = conn.cursor() if conn else World.get_world().db.conn.cursor()
-    print '\n' + create_stmt + '\n'
+    world.log.debug('\n' + create_stmt + '\n')
     cursor.execute(create_stmt)
     EXISTING_TABLES[model.db_table_name] = [col.name for col in model.db_columns]
 
@@ -80,6 +80,6 @@ def add_column(mod, col, conn):
         alter_stmt = 'ALTER TABLE %s ADD COLUMN %s' % (mod.db_table_name, str(column))
         world = World.get_world()
         cursor = conn.cursor() if conn else World.get_world().db.conn.cursor()
-        print '\n' + alter_stmt + '\n'
+        world.log.debug('\n' + alter_stmt + '\n')
         cursor.execute(alter_stmt)
         EXISTING_TABLES[mod.db_table_name].append(col)
