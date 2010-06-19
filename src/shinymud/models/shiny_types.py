@@ -3,21 +3,6 @@ import json
 
 world = World.get_world()
 
-__all__ = [
-'to_bool',
-'read_dict',
-'write_dict',
-'copy_dict',
-'read_list',
-'write_list',
-'copy_list',
-'read_area',
-'write_area',
-'read_json',
-'write_json',
-'write_model'
-
-]
 def to_bool(val):
     """Take a string representation of true or false and convert it to a boolean
    value. Returns a boolean value or None, if no corresponding boolean value
