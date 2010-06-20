@@ -1,14 +1,12 @@
-from shinymud.lib.world import *
-from shinymud.models.player import *
-from shinymud.modes.build_mode import *
-from shinymud.commands import *
-from shinymud.lib.db import DB
-from shinymud.data.config import *
-from shinymud.models.schema import initialize_database
 from shinytest import ShinyTestCase
+
 
 class TestReset(ShinyTestCase):
     def test_tell_players(self):
+        from shinymud.models.player import Player
+        from shinymud.modes.build_mode import BuildMode
+        from shinymud.modes.init_mode import InitMode
+        from shinymud.data.config import wecho_color, clear_fcolor
         bob = Player(('bob', 'bar'))
         alice = Player(('alice', 'bar'))
         self.world.player_add(bob)

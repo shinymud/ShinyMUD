@@ -31,19 +31,19 @@ class Area(Model):
     def load(self):
         """Load all of this area's objects from the database."""
         if self.dbid:
-            items = self.world.db.select("* from build_item where area=?", [self.dbid])
+            items = self.world.db.select("* from build_item where area=?", [self.name])
             for item in items:
                 item['area'] = self
                 self.items[str(item['id'])] = BuildItem(item)
-            scripts = self.world.db.select("* from script where area=?", [self.dbid])
+            scripts = self.world.db.select("* from script where area=?", [self.name])
             for script in scripts:
                 script['area'] = self
                 self.scripts[str(script['id'])] = Script(script)
-            npcs = self.world.db.select("* from npc where area=?", [self.dbid])
+            npcs = self.world.db.select("* from npc where area=?", [self.name])
             for npc in npcs:
                 npc['area'] = self
                 self.npcs[str(npc['id'])] = Npc(npc)
-            rooms = self.world.db.select("* from room where area=?", [self.dbid])
+            rooms = self.world.db.select("* from room where area=?", [self.name])
             for room in rooms:
                 room['area'] = self
                 new_room = Room(room)
@@ -81,7 +81,7 @@ Description: \n    %s""" % (self.name,
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
         if id_type in ['room', 'build_item', 'npc', 'script']:
-            rows = self.world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
+            rows = self.world.db.select("max(id) as id from " + id_type +" where area=?", [self.name])
             max_id = rows[0]['id']
             if max_id:
                 your_id = int(max_id) + 1

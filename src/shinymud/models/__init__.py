@@ -54,7 +54,10 @@ class Model(object):
             if args.get(col.name):
                 setattr(self, col.name, col.read(args[col.name]))
             else:
-                setattr(self, col.name, col.default)
+                if hasattr(col.default, '__call__'):
+                    setattr(self, col.name, col.default())
+                else:
+                    setattr(self, col.name, col.default)
         if hasattr(self, 'dbid'):
             if self.dbid:
                 self.load_extras()

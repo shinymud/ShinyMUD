@@ -21,7 +21,7 @@ class Player(Character):
     db_table_name = 'player'
     db_columns = Character.db_columns + [
         Column('name', null=False, unique=True),
-        Column('channels', read=read_channels, write=write_dict, default={'chat': False}),
+        Column('channels', read=read_channels, write=write_dict, default=lambda: dict(chat=True)),
         Column('password', null=False),
         Column('permissions', type="INTEGER", read=int, write=int, null=False, default=1),
         Column('email'),

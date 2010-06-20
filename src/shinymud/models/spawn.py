@@ -46,15 +46,15 @@ class Spawn(Model):
     
     spawn_id = property(get_spawn_id)
     
-    def get_spawn_obj(self):
+    def _get_spawn_obj(self):
         return getattr(self, '_spawn_obj', None)
     
-    def set_spawn_obj(self, val):
+    def _set_spawn_obj(self, val):
         self._spawn_obj = val
         self.spawn_object_id = val.id
         self.spawn_object_area = val.area.name
     
-    spawn_obj = property(get_spawn_obj, set_spawn_obj)
+    spawn_object = property(_get_spawn_obj, _set_spawn_obj)
     def add_nested_spawn(self, spawn):
         """Add another item to this object's "containee list"."""
         self.nested_spawns.append(spawn)

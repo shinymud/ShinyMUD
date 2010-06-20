@@ -1,25 +1,10 @@
-from shinymud.lib.world import *
-from shinymud.models.spawn import *
-from shinymud.models.area import *
-from shinymud.models.npc import *
-from shinymud.models.item import *
-from shinymud.models.room import *
-from shinymud.commands import *
-from shinymud.lib.db import DB
-from shinymud.models.schema import initialize_database
 from shinytest import ShinyTestCase
 
 class TestSpawn(ShinyTestCase):
     def setUp(self):
-<<<<<<< HEAD:tests/shinytest/models/test_spawn.py
         ShinyTestCase.setUp(self)
-        self.area = Area.create('foo')
-=======
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
+        from shinymud.models.area import Area
         self.area = Area.create({'name':'foo'})
->>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/models/test_spawn.py
         self.room = self.area.new_room()
         self.item = self.area.new_item()
         self.npc = self.area.new_npc()
@@ -111,6 +96,7 @@ class TestSpawn(ShinyTestCase):
         pass
         
     def test_spawn_npc(self):
+        from shinymud.models.npc import Npc
         spawn1 = self.room.new_spawn({'id': self.room.get_spawn_id(), 
                                       'room':self.room, 
                                       'obj': self.npc, 
@@ -119,6 +105,7 @@ class TestSpawn(ShinyTestCase):
         self.assertTrue(isinstance(npc2, Npc))
     
     def test_spawn_item(self):
+        from shinymud.models.item import GameItem
         spawn1 = self.room.new_spawn({'id': self.room.get_spawn_id(), 
                              'room':self.room, 
                              'obj': self.item, 

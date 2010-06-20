@@ -30,10 +30,10 @@ class TestGeneralCommands(ShinyTestCase):
         alice = Player(('alice', 'bar'))
         sam = Player(('sam', 'bar'))
         bob.mode = None
-        bob.playerize({'name':'bob'})
+        bob.playerize({'name':'bob', 'password':'pork'})
         bob.outq = []
         sam.mode = None
-        sam.playerize({'name':'sam'})
+        sam.playerize({'name':'sam', 'password':'pork'})
         sam.outq = []
         self.world.player_add(bob)
         self.world.player_add(sam)
@@ -46,32 +46,34 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertFalse(chat in alice.outq)
         
         sam.channels['chat'] = False
+        print sam.channels
+        print bob.channels
         sam.outq = []
         bob.outq = []
         alice.outq = []
         
         Chat(bob, 'lol, hey guys!', 'chat').run()
+        print sam.channels
+        print sam.outq
+        print bob.channels
+        print bob.outq
         self.assertFalse(chat in sam.outq)
         self.assertTrue(chat in bob.outq)
         self.assertFalse(chat in alice.outq)
     
     def test_give_command(self):
-<<<<<<< HEAD:tests/shinytest/commands/test_commands.py
         from shinymud.models.area import Area
         from shinymud.data import config
         from shinymud.models.player import Player
         from shinymud.commands.commands import Give
-        area = Area.create('blarg')
-=======
         area = Area.create({'name':'blarg'})
->>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/commands/test_commands.py
         room = area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize({'name':'bob'})
+        bob.playerize({'name':'bob', 'password':'pork'})
         alice = Player(('alice', 'bar'))
         alice.mode = None
-        alice.playerize({'name':'alice'})
+        alice.playerize({'name':'alice', 'password':'pork'})
         self.world.player_add(bob)
         self.world.player_add(alice)
         
@@ -101,7 +103,7 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertEqual(len(alice.inventory), 0)
         self.assertEqual(len(npc.inventory), 1)
         to_alice = 'You give a bauble to %s.\r\n' % npc.name
-        alice.log.debug(alice.outq)
+        alice.world.log.debug(alice.outq)
         self.assertTrue(to_alice in alice.outq)
         to_shiny = 'Alice gives you a bauble.'
         self.assertTrue(to_shiny in npc.actionq)
@@ -113,7 +115,7 @@ class TestGeneralCommands(ShinyTestCase):
         from shinymud.commands.commands import Set
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize({'name':'bob'})
+        bob.playerize({'name':'bob', 'password':'pork'})
         
         # Test setting e-mail
         Set(bob, 'email bob@bob.com', 'set').run()
@@ -132,7 +134,7 @@ class TestGeneralCommands(ShinyTestCase):
         Set(bob, 'goto_disappear foo', 'set').run()
         self.assertTrue(eresult in bob.outq)
         
-        bob.permissions = bob.permissions | BUILDER
+        bob.permissions = bob.permissions | config.BUILDER
         
         # Try to set goto_appear and goto_disappear (both should now
         # succeed now that the player has adequate permissions)
@@ -143,31 +145,26 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertEqual('foo', bob.goto_disappear)
     
     def test_goto_command(self):
-<<<<<<< HEAD:tests/shinytest/commands/test_commands.py
         from shinymud.models.area import Area
         from shinymud.data import config
         from shinymud.models.player import Player
         from shinymud.commands.commands import Goto
-        blarg_area = Area.create('blarg')
-        foo_area = Area.create('foo')
-=======
         blarg_area = Area.create({'name':'blarg'})
         foo_area = Area.create({'name':'foo'})
->>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/commands/test_commands.py
         blarg_room = blarg_area.new_room()
         foo_room = foo_area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize({'name':'bob'})
+        bob.playerize({'name':'bob', 'password':'pork'})
         self.world.player_add(bob)
-        bob.permissions = bob.permissions | BUILDER
+        bob.permissions = bob.permissions | config.BUILDER
         generic_fail = 'Type "help goto" for help with this command.\r\n'
         
         # We should fail if we only specify a room number when we aren't in
         # an area 
         Goto(bob, '%s' % foo_room.id, 'goto').run()
         self.assertEqual(bob.location, None)
-        bob.log.debug(bob.outq)
+        bob.world.log.debug(bob.outq)
         self.assertTrue(generic_fail in bob.outq)
         
         # We should fail if we try to go to a room in an area that doesn't 
@@ -175,7 +172,7 @@ class TestGeneralCommands(ShinyTestCase):
         message = 'Area "food" doesn\'t exist.\r\n'
         Goto(bob, '1 food', 'goto').run()
         self.assertEqual(bob.location, None)
-        bob.log.debug(bob.outq)
+        bob.world.log.debug(bob.outq)
         self.assertTrue(message in bob.outq)
         
         # We should fail if we try to go to a room that doesn't exist (in an
@@ -183,7 +180,7 @@ class TestGeneralCommands(ShinyTestCase):
         message = 'Room "4005" doesn\'t exist in area blarg.\r\n'
         Goto(bob, '4005 blarg', 'goto').run()
         self.assertEqual(bob.location, None)
-        bob.log.debug(bob.outq)
+        bob.world.log.debug(bob.outq)
         self.assertTrue(message in bob.outq)
         
         # We should succeed in going to a room and area that exists

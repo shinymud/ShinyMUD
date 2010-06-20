@@ -203,7 +203,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.exits[exit_dict['direction']] = new_exit
     
     def load_exits(self):
-        rows = self.world.db.select("* from room_exit where room_id=? and area=?", [self.id, self.area.name])
+        rows = self.world.db.select("* from room_exit where room=?", [self.dbid])
         for row in rows:
             row['from_room'] = self
             self.exits[row['direction']] = RoomExit(row)
@@ -355,22 +355,22 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             this room; should be a string in the format '<room-id>_<area-name>'
         """
         if char.is_npc():
-            self.npcs.append(npc)
+            self.npcs.append(char)
         else:
-            self.players[player.name] = player
+            self.players[char.name] = char
             self.area.times_visited_since_reset += 1
-            self.fire_event('pc_enter', {'player': player, 'from': prev_room})
+            self.fire_event('pc_enter', {'player': char, 'from': prev_room})
     
     def remove_char(self, char):
         """Removes a character from this room.
         char -- character object to be removed.
         """
         if char.is_npc():
-            if npc in self.npcs:
-                self.npcs.remove(npc)
+            if char in self.npcs:
+                self.npcs.remove(char)
         else:
-            if self.players.get(player.name):
-                del self.players[player.name]
+            if self.players.get(char.name):
+                del self.players[char.name]
     
     def get_player(self, keyword):
         """Get a player from this room if their name is equal to the keyword given."""

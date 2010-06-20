@@ -72,9 +72,9 @@ class TestBuildCommands(ShinyTestCase):
         # edited
         room2 = area.new_room()
         Link(self.bob, 'east exit to room %s' % room2.id, 'link').run()
-        self.bob.log.debug(self.bob.outq)
+        self.bob.world.log.debug(self.bob.outq)
         east = room1.exits.get('east')
-        self.bob.log.debug(east)
+        self.bob.world.log.debug(east)
         self.assertTrue(east)
         self.assertEqual(east.linked_exit, 'west')
         self.assertEqual(east.to_room, room2)
@@ -87,7 +87,7 @@ class TestBuildCommands(ShinyTestCase):
              'west exit to room %s from area %s' % (cake_room.id, 
                                                     cake_room.area.name),
              'link').run()
-        self.bob.log.debug(self.bob.outq)
+        self.bob.world.log.debug(self.bob.outq)
         west = room1.exits.get('west')
         self.assertTrue(west)
         self.assertEqual(west.linked_exit, 'east')
@@ -100,7 +100,7 @@ class TestBuildCommands(ShinyTestCase):
              'west exit to room %s from area %s' % (cake_room.id, 
                                                     cake_room.area.name),
              'link').run()
-        self.bob.log.debug(self.bob.outq)
+        self.bob.world.log.debug(self.bob.outq)
         fail = ("This room's (id: 1) west exit is already linked to room 1, "
                 "area cake.\r\n"
                 "You must unlink it before linking it to a new room.\r\n")

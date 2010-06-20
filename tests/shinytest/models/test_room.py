@@ -2,16 +2,9 @@ from shinytest import ShinyTestCase
 
 class TestRoom(ShinyTestCase):
     def setUp(self):
-<<<<<<< HEAD:tests/shinytest/models/test_room.py
         ShinyTestCase.setUp(self)
         from shinymud.models.area import Area
-        self.area = Area.create('blarg')
-=======
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
         self.area = Area.create({'name':'blarg'})
->>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/models/test_room.py
         self.room = self.area.new_room()
     
     def tearDown(self):
@@ -45,7 +38,7 @@ class TestRoom(ShinyTestCase):
         exp_message1 = ('A room spawn has been added for '
                         '%s number %s.' % ('item', container.id)
                        )
-        self.room.log.debug(self.room.spawns)
+        self.room.world.log.debug(self.room.spawns)
         self.assertEqual(message1, exp_message1)
         message2 = self.room.build_add_spawn('for item %s in spawn %s' % (item.id, 
                                                                     '1'))

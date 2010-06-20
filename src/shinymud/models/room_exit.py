@@ -11,8 +11,7 @@ class RoomExit(Model):
         # I always expect room to be passed in by the function calling this class'
         # constructor. For this reason, I'm not bothering with a more elaborate
         # read function for room_id.
-        Column('room', null=False, write=lambda x: x.id),
-        Column('area', null=False, read=read_area, write=write_area),
+        Column('room', null=False, write=write_model),
         Column('direction', null=False),
         Column('linked_exit'),
         Column('openable', read=to_bool),
@@ -22,7 +21,7 @@ class RoomExit(Model):
         Column('key_area'),
         Column('key_id')
     ]
-    db_extras = Model.db_extras + ['UNIQUE (room, area, direction)']
+    db_extras = Model.db_extras + ['UNIQUE (room, direction)']
     
     def __init__(self, args={}):
         Model.__init__(self, args)
@@ -60,6 +59,8 @@ class RoomExit(Model):
     
     def _set_to_room(self, to_room):
         self._to_room = to_room
+        self.to_area = to_room.area
+        self.to_room_id = to_room.id
     
     to_room = property(_resolve_to_room, _set_to_room)
     

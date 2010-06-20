@@ -55,69 +55,68 @@ class TestShinyTypes(ShinyTestCase):
         self.assertEqual(foo, bar)
         bar.append('d')
         self.assertNotEqual(len(bar), len(foo))
+    
 
-def copy_list(val):
-    return val[:]
-
-def read_area(val):
-    if isinstance(val, basestring):
-        return cls.world.get_area(val)
-    return val
-
-def write_area(val):
-    if isinstance(val, basestring):
-        return val
-    return val.name
-
-def read_json(val):
-    return json.loads(val)
-
-def write_json(val):
-    return json.dumps(val)
-
-def write_model(val):
-    if isinstance(val, int):
-        return val
-    return val.dbid    
-
-def read_int_dict(val):
-    d = {}
-    if val:
-        for a in val.split(','):
-            key, val = a.split('=')
-            d[key] = int(val)
-    return d
-
-def write_int_dict(val):
-    s = []
-    if val:
-        for key, val in val.items():
-            s.append("%s=%s" % (str(key), str(val)))
-    return ",".join(s)
-
-def read_damage(val):
-    dmg = []
-    if val:
-        for d in val.split('|'):
-            dmg.append(Damage(d))
-    return dmg
-
-def write_damage(val):
-    return '|'.join([str(d) for d in val])
-
-def read_channels(val):
-    d = {}
-    for pair in val.split(','):
-        k,v = pair.split('=')
-        d[k] = to_bool(v)
-    return d    
-
-def read_location(val):
-    #loc == 'area,id'
-    loc = val.split(',')
-    return world.get_location(loc[0], loc[1])
-
-def write_location(val):
-    if val:
-        return '%s,%s' % (val.area.name, val.id)
-    return None
+# 
+# def read_area(val):
+#     if isinstance(val, basestring):
+#         return cls.world.get_area(val)
+#     return val
+# 
+# def write_area(val):
+#     if isinstance(val, basestring):
+#         return val
+#     return val.name
+# 
+# def read_json(val):
+#     return json.loads(val)
+# 
+# def write_json(val):
+#     return json.dumps(val)
+# 
+# def write_model(val):
+#     if isinstance(val, int):
+#         return val
+#     return val.dbid    
+# 
+# def read_int_dict(val):
+#     d = {}
+#     if val:
+#         for a in val.split(','):
+#             key, val = a.split('=')
+#             d[key] = int(val)
+#     return d
+# 
+# def write_int_dict(val):
+#     s = []
+#     if val:
+#         for key, val in val.items():
+#             s.append("%s=%s" % (str(key), str(val)))
+#     return ",".join(s)
+# 
+# def read_damage(val):
+#     dmg = []
+#     if val:
+#         for d in val.split('|'):
+#             dmg.append(Damage(d))
+#     return dmg
+# 
+# def write_damage(val):
+#     return '|'.join([str(d) for d in val])
+# 
+# def read_channels(val):
+#     d = {}
+#     for pair in val.split(','):
+#         k,v = pair.split('=')
+#         d[k] = to_bool(v)
+#     return d    
+# 
+# def read_location(val):
+#     #loc == 'area,id'
+#     loc = val.split(',')
+#     return world.get_location(loc[0], loc[1])
+# 
+# def write_location(val):
+#     if val:
+#         return '%s,%s' % (val.area.name, val.id)
+#     return None
