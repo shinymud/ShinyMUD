@@ -11,7 +11,7 @@ class TestPlayer(TestCase):
         self.world = World()
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
-        self.area = Area.create('boo')
+        self.area = Area.create({'name':'boo'})
     
     def tearDown(self):
         World._instance = None

@@ -14,7 +14,7 @@ class TestSpawn(TestCase):
         self.world = World()
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
-        self.area = Area.create('foo')
+        self.area = Area.create({'name':'foo'})
         self.room = self.area.new_room()
         self.item = self.area.new_item()
         self.npc = self.area.new_npc()

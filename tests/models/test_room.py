@@ -12,7 +12,7 @@ class TestRoom(TestCase):
         self.world = World()
         self.world.db = DB(':memory:')
         initialize_database(self.world.db.conn)
-        self.area = Area.create('blarg')
+        self.area = Area.create({'name':'blarg'})
         self.room = self.area.new_room()
     
     def tearDown(self):

@@ -27,7 +27,7 @@ class TestBuildCommands(TestCase):
     
     def test_edit_command(self):
         # create an area 
-        area = Area.create('dessert')
+        area = Area.create({'name':'dessert'})
         
         # Make sure that we don't die with no args!
         Edit(self.bob, '', 'edit').run()
@@ -48,7 +48,7 @@ class TestBuildCommands(TestCase):
         self.assertTrue(success in self.bob.outq)
     
     def test_link_command(self):
-        area = Area.create('pie')
+        area = Area.create({'name':'pie'})
         room1 = area.new_room()
         area.builders.append('bob')
         
@@ -78,7 +78,7 @@ class TestBuildCommands(TestCase):
         
         # Now we're linking to another room in a different area as the one
         # being edited
-        area2 = Area.create('cake')
+        area2 = Area.create({'name':'cake'})
         cake_room = area2.new_room()
         Link(self.bob, 
              'west exit to room %s from area %s' % (cake_room.id, 
@@ -104,7 +104,7 @@ class TestBuildCommands(TestCase):
         self.assertTrue(fail in self.bob.outq)
     
     def test_unlink_command(self):
-        area = Area.create('pie')
+        area = Area.create({'name':'pie'})
         room1 = area.new_room()
         area.builders.append('bob')
         Edit(self.bob, 'area pie', 'edit').run()

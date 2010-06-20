@@ -274,14 +274,12 @@ class InitMode(object):
         elif self.save.get('email') == 'yes_email':
             self.save['email'] = arg
             self.player.playerize(self.save)
-            self.player.dbid = self.world.db.insert_from_dict('player', self.player.to_dict())
-            # self.player.update_output(choose_class_string)
+            self.player.save()
             self.state = self.character_cleanup
             self.newbie = True
         else:
             self.player.playerize(self.save)
-            self.player.dbid = self.world.db.insert_from_dict('player', self.player.to_dict())
-            # self.player.update_output(choose_class_string)
+            self.player.save()
             self.state = self.character_cleanup
             self.newbie = True
     

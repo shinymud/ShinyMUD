@@ -20,6 +20,7 @@ class Room(Model):
     ]
     db_extras = Model.db_extras + ['UNIQUE (area, id)']
     def __init__(self, args={}):
+        Model.__init__(self, args)
         self.items = []
         self.exits = {'north': None,
                       'south': None,
@@ -103,31 +104,13 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             if area:
                 room = area.get_room(room_id)
                 if room:
-                    self.new_exit(direction, room)
+                    self.new_exit({'direction': direction, 'to_room': room})
                     message = 'Exit %s created.' % direction
                 else:
                     message = 'That room doesn\'t exist.'
             else:
                 message = 'That area doesn\'t exist.'
         return message
-    
-    def build_remove_exit(self, args):
-        if not args:
-            return 'Which exit do you want to remove?\n'
-        if not (args in self.exits and self.exits[args]):
-            return '%s is not a valid exit.\n' % args
-        exit = self.exits[args]
-        link = ''
-        if exit.linked_exit:
-            # Clear any exit that is associated with this exit
-            if exit.to_room and exit.to_room.exits[exit.linked_exit]:
-                exit.to_room.exits[exit.linked_exit].destruct()
-                exit.to_room.exits[exit.linked_exit] = None
-            link = '\nThe linked exit in room %s, area %s, has also been removed.' % (exit.to_room.id,
-                                                                                     exit.to_room.area.name)
-        self.exits[args].destruct()
-        self.exits[args] = None
-        return args + ' exit has been removed.' + link
     
     def build_remove_exit(self, args):
         if not args:
@@ -213,13 +196,11 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         return 'Room spawn #%s doesn\'t exist.\n' % spawn_id
     
 #************** Exits Management **************
-    def new_exit(self, direction, to_room, exit_dict={}):
-        if exit_dict:
-            new_exit = RoomExit(exit_dict.update({'room': self,
-                                                  'direction': direction,
-                                                  '': to_room}))
+    def new_exit(self, exit_dict={}):
+        exit_dict['room'] = self
+        new_exit = RoomExit(exit_dict)
         new_exit.save()
-        self.exits[direction] = new_exit
+        self.exits[exit_dict['direction']] = new_exit
     
     def load_exits(self):
         rows = self.world.db.select("* from room_exit where room_id=? and area=?", [self.id, self.area.name])
@@ -247,12 +228,12 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         if this_exit:
             this_exit.to_room = link_room
         else:
-            self.new_exit(direction, link_room)
+            self.new_exit({'direction': direction, 'to_room':link_room})
             this_exit = self.exits[direction]
         if that_exit:
                 that_exit.to_room = self
         else:
-            link_room.new_exit(that_dir, self)
+            link_room.new_exit({'direction': that_dir, 'to_room': self})
             that_exit = link_room.exits[that_dir]
         # Now that the exits have been properly created/set, set the exits to point to each other
         this_exit.linked_exit = that_exit.direction

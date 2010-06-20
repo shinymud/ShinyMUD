@@ -38,9 +38,5 @@ class Script(Model):
         player.mode = TextEditMode(player, self, 'body', self.body, 'script')
         return 'ENTERING TextEditMode: type "@help" for help.\n'
     
-    def destruct(self):
-        if self.dbid:
-            self.world.db.delete('FROM script WHERE dbid=?', [self.dbid])
-    
 
 model_list.register(Script)

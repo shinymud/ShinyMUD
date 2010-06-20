@@ -29,7 +29,7 @@
 [End Rooms]
 
 [Room Exits]
-[{"direction": "north", "locked": false, "room": "1", "area": "foo", "to_area": "cubicle", "key_area": "None", "to_room": null, "to_id": "4", "room_id": "1", "closed": false, "to_room_id": "4", "openable": false, "key_id": "None", "hidden": false, "linked_exit": "south"}]
+[{"direction": "north", "locked": false, "room": "1", "area": "foo", "to_area": "cubicle", "key_area": null, "to_room": null, "to_id": "4", "room_id": "1", "closed": false, "to_room_id": "4", "openable": false, "key_id": null, "hidden": false, "linked_exit": "south"}]
 [End Room Exits]
 
 [Room Spawns]

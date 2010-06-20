@@ -51,20 +51,6 @@ class Area(Model):
             
             self.time_of_last_reset = time.time()
     
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('area', save_dict)
-            else:    
-                self.world.db.update_from_dict('area', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('area', self.to_dict())
-    
-    def destruct(self):
-        if self.dbid:
-            self.world.db.delete('FROM area WHERE dbid=?', [self.dbid])
-    
     def __str__(self):
         """Print out a nice string representation of this area's attributes."""
         
@@ -111,13 +97,13 @@ Description: \n    %s""" % (self.name,
     
 # ***** BuildMode Accessor Functions *****
     @classmethod
-    def create(cls, name, area_dict={}):
+    def create(cls, area_dict={}):
         """Create a new area instance and add it to the world's area list."""
-        if world.get_area(name):
-            return "This area already exists."
+        name = area_dict.get('name')
         if not name:
             return "Invalid area name. Areas must have a name."
-        area_dict['name'] = name
+        if world.get_area(name):
+            return "This area already exists."
         new_area = cls(area_dict)
         new_area.save()
         world.area_add(new_area)
@@ -190,6 +176,7 @@ Description: \n    %s""" % (self.name,
     
     def destroy_room(self, room_id):
         """Destroy a specific room in this area."""
+        self.world.log.debug('Trying to destroy room %s.' % room_id)
         room = self.get_room(room_id)
         if room:
             if room.players:
@@ -312,7 +299,7 @@ Description: \n    %s""" % (self.name,
             script_dict['area'] = self
             new_script = Script(script_dict)
         else:
-            new_script = Script(self, self.get_id('script'))
+            new_script = Script({'area': self, 'id': self.get_id('script')})
         new_script.save()
         self.scripts[str(new_script.id)] = new_script
         return new_script

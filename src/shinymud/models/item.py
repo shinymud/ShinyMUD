@@ -25,32 +25,18 @@ class Item(Model):
             self.keywords = self.name.lower().split()
         self.item_types = {}
     
-    # def to_dict(self):
-    #     d = {}
-    #     d['name'] = self.name
-    #     d['title'] = self.title
-    #     d['description'] = self.description
-    #     d['keywords'] = ','.join(self.keywords)
-    #     d['weight'] = self.weight
-    #     d['base_value'] = self.base_value
-    #     d['carryable'] = str(self.carryable)
-    #     if self.dbid:
-    #         d['dbid'] = self.dbid
-    # 
-    #     return d
-    
     def save(self):
         save_all = False
         if not self.dbid:
             save_all = True
-        Item.save(self)
+        Model.save(self)
         if save_all:
             # First time build item is saved, save item_types.
             for value in self.item_types.values():
                 value.save()
     
     def __str__(self):
-        s = ', '.join(['%s: %s' % (key,val) for key,val in self.to_dict() if key != 'dbid'])
+        s = ', '.join(['%s: %s' % (key,val) for key,val in self.copy_save_attrs() if key != 'dbid'])
         return s
     
     def has_type(self, t):

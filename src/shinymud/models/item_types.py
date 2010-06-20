@@ -9,8 +9,8 @@ import re
 
 class ItemType(Model):
     db_columns = Model.db_columns + [
-        Column('build_item', type="INTEGER", read=int, write=write_model, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
-        Column('game_item', type="INTEGER", read=int, write=write_model, foreign_key=('game_item','dbid'), cascade="ON DELETE")
+        Column('build_item', type="INTEGER", write=write_model, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
+        Column('game_item', type="INTEGER", write=write_model, foreign_key=('game_item','dbid'), cascade="ON DELETE")
     ]
     log = World.get_world().log
     """The base class that must be inherited by all item types.
@@ -18,65 +18,6 @@ class ItemType(Model):
     If you're going to build a new item type, the first stop is to inherit from
     this class and implement its required functions (explained below!).
     """
-    def __init__(self, args={}):
-        """ An ItemType's __init__ function should take a dictionary of keyword
-        arguments which could be empty (if this is a brand new instance), or hold
-        the saved values of your attributes loaded from the database.
-        Your init function should look something like the following:
-         
-        # initialize your class-specific attributes:
-        self.foo = args.get('foo', 'My default foo value.')
-        self.bar = args.get('bar', 'My default bar value.')
-        """
-        raise ItemTypeInterfaceError('You need to implement the init function.')
-    
-    def to_dict(self):
-        """To dict converts all of the item type's attributes that aught to be
-        saved to the database into a dictionary, with the name of the attribute
-        being the key and its value being the value.
-         
-        to_dict takes no arguments, and should return a dictionary.
-        the code for a to_dict function aught to look something like the following:
-         
-        d = {}
-        if self.dbid:
-            d['dbid'] = self.dbid
-        if self.game_item:
-            d['game_item'] self.game_item.dbid
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        # The names of your attributes must be the same as the ones specified
-        # in the schema.
-        d['foo'] = self.foo
-        d['bar'] = self.bar
-        return d
-        """
-        raise ItemTypeInterfaceError('You need to implement the to_dict function.')
-    
-    def save(self, save_dict=None):
-        """The save function saves this ItemType to the database.
-         
-        If passed a save_dict, the save function should only save the data
-        specified in the dictionary to the database. If save_dict is somehow
-        empty or None, the entire instance should be saved to the database.
-        Your save function should look like the following:
-         
-        world = World.get_world()
-        if self.dbid:
-            # This item has a dbid, so it already exists in the database. We just
-            # need to update it.
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('table_name', save_dict)
-            else:    
-                world.db.update_from_dict('table_name', self.to_dict())
-        else:
-            # This ItemType doesn't exist in the database if it doesn't have a dbid
-            # yet, so we need to insert it and save its new dbid
-            self.dbid = world.db.insert_from_dict('table_name', self.to_dict())
-        """
-        raise ItemTypeInterfaceError('You need to implement the save function.')
-    
     def load(self, game_item):
         """The load function makes a copy of a ItemType instance so that it can
         be attached to a GameItem and loaded in-game.
@@ -359,17 +300,15 @@ class Food(ItemType):
     db_table_name = 'food'
     db_columns = ItemType.db_columns + [
         Column('food_type', read=lambda f: f if f in ('food','drink') else 'food'),
-        Column('ro_id', type="INTEGER", read=int, write=int),
+        Column('ro_id'),
         Column('ro_area'),
-        Column('actor_use_message', null=False, default=''),
-        Column('room_use_message', null=False, default=''),
-        
-        
+        Column('actor_use_message', default=''),
+        Column('room_use_message', default=''),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)
         self.effects = {}
-
+    
     def load_extras(self):
         pass
         # rows = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
@@ -413,7 +352,7 @@ class Food(ItemType):
         return string
     
     def load(self, game_item):
-        d = self.to_dict()
+        d = self.copy_save_attrs()
         if 'dbid' in d:
             del d['dbid']
         if 'build_item' in d:
@@ -546,8 +485,8 @@ class Container(ItemType):
     plural = 'containers'
     db_table_name = 'container'
     db_columns = ItemType.db_columns + [
-        Column('weight_capacity', type="NUMBER", read=float),
-        Column('build_item_capacity', type="INTEGER", read=int, write=int),
+        Column('weight_capacity', type="NUMBER", read=float, default=0),
+        Column('build_item_capacity', type="INTEGER", read=int, write=int, default=-1),
         Column('weight_reduction', type="INTEGER", read=int, write=int, default=0),
         Column('openable', read=to_bool, default=False),
         Column('closed', read=to_bool, default=False),
@@ -669,7 +608,7 @@ class Furniture(ItemType):
         # TODO: fix character effects
         Column('sit_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
         Column('sleep_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
-        Column('capacity', type="INTEGER", read=int, write=int),
+        Column('capacity', type="INTEGER", read=int, write=int, default=-1),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)
@@ -692,7 +631,7 @@ class Furniture(ItemType):
         return string
     
     def load(self, game_item):
-        d = self.to_dict()
+        d = self.copy_save_attrs()
         if 'dbid' in d:
             del d['dbid']
         if 'build_item' in d:

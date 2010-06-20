@@ -69,11 +69,15 @@ class Model(object):
             copy_dict[col.name] = col.copy(val) if val else None
         return copy_dict
     
-    def save(self):
+    def create_save_dict(self):
         save_dict = {}
         for col in self.db_columns:
             val = getattr(self, col.name, col.default)
             save_dict[col.name] = col.write(val) if val else None
+        return save_dict
+    
+    def save(self):
+        save_dict = self.create_save_dict()
         if self.dbid:
                 self.world.db.update_from_dict(self.db_table_name, save_dict)
         else:
@@ -81,5 +85,5 @@ class Model(object):
     
     def destruct(self):
         if self.dbid:
-            self.world.db.delete('FROM ? WHERE dbid=?', [self.db_table_name, self.dbid])
+            self.world.db.delete('FROM %s WHERE dbid=?' % self.db_table_name, [self.dbid])
     

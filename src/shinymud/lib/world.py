@@ -200,12 +200,14 @@ class World(object):
         for npc in npc_keys:
             self.log.debug(area.destroy_npc(npc))
         room_keys = area.rooms.keys()
+        self.log.debug('About to destroy the rooms.')
         for room in room_keys:
             self.log.debug(area.destroy_room(room))
+        self.log.debug('Should have destroyed the rooms')
         area.destruct()
         del self.areas[area.name]
         area.name = None
-        self.log.info('%s desroyed area %s.' % (playername, area_name))
+        self.log.info('%s destroyed area %s.' % (playername, area_name))
         return 'Area %s was successfully destroyed. I hope you meant to do that.\n' % area_name
     
 # ************************ Player Functions ************************

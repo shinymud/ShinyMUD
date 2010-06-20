@@ -61,7 +61,7 @@ class TestGeneralCommands(TestCase):
         self.assertFalse(chat in alice.outq)
     
     def test_give_command(self):
-        area = Area.create('blarg')
+        area = Area.create({'name':'blarg'})
         room = area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
@@ -136,8 +136,8 @@ class TestGeneralCommands(TestCase):
         self.assertEqual('foo', bob.goto_disappear)
     
     def test_goto_command(self):
-        blarg_area = Area.create('blarg')
-        foo_area = Area.create('foo')
+        blarg_area = Area.create({'name':'blarg'})
+        foo_area = Area.create({'name':'foo'})
         blarg_room = blarg_area.new_room()
         foo_room = foo_area.new_room()
         bob = Player(('bob', 'bar'))
