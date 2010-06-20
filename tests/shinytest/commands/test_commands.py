@@ -56,11 +56,15 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertFalse(chat in alice.outq)
     
     def test_give_command(self):
+<<<<<<< HEAD:tests/shinytest/commands/test_commands.py
         from shinymud.models.area import Area
         from shinymud.data import config
         from shinymud.models.player import Player
         from shinymud.commands.commands import Give
         area = Area.create('blarg')
+=======
+        area = Area.create({'name':'blarg'})
+>>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/commands/test_commands.py
         room = area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
@@ -139,12 +143,17 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertEqual('foo', bob.goto_disappear)
     
     def test_goto_command(self):
+<<<<<<< HEAD:tests/shinytest/commands/test_commands.py
         from shinymud.models.area import Area
         from shinymud.data import config
         from shinymud.models.player import Player
         from shinymud.commands.commands import Goto
         blarg_area = Area.create('blarg')
         foo_area = Area.create('foo')
+=======
+        blarg_area = Area.create({'name':'blarg'})
+        foo_area = Area.create({'name':'foo'})
+>>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/commands/test_commands.py
         blarg_room = blarg_area.new_room()
         foo_room = foo_area.new_room()
         bob = Player(('bob', 'bar'))

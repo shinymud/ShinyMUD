@@ -13,7 +13,8 @@ class Spawn(Model):
         Column('container', write=lambda container: container.id)
     ]
     def __init__(self, args={}):
-        self.spawn_obj = args.get('obj')
+        Model.__init__(self, args)
+        self.spawn_object = args.get('obj')
         self.nested_spawns = []
     
     def __str__(self):

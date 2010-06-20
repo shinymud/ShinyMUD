@@ -225,8 +225,11 @@ class Player(Character):
                 self.mode = None
     
     def player_logout(self, broken_pipe=False):
+        # If this player doesn't have a dbid, that means this player got
+        # disconnected before they made it through the character creation
+        # process. Don't save the incomplete data.
         if self.dbid:
-            self.world.db.update_from_dict('player', self.to_dict())
+            self.save()
         if not broken_pipe:
             self.conn.send('Bye!\r\n')
             self.world.play_log.info('%s has exited.' % self.fancy_name())

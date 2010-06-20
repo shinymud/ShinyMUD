@@ -36,7 +36,7 @@ class Item(Model):
                 value.save()
     
     def __str__(self):
-        s = ', '.join(['%s: %s' % (key,val) for key,val in self.to_dict() if key != 'dbid'])
+        s = ', '.join(['%s: %s' % (key,val) for key,val in self.copy_save_attrs() if key != 'dbid'])
         return s
     
     def has_type(self, t):

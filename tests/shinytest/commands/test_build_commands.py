@@ -24,7 +24,7 @@ class TestBuildCommands(ShinyTestCase):
         from shinymud.modes.build_mode import BuildMode
 
         # create an area 
-        area = Area.create('dessert')
+        area = Area.create({'name':'dessert'})
         
         # Make sure that we don't die with no args!
         Edit(self.bob, '', 'edit').run()
@@ -51,7 +51,7 @@ class TestBuildCommands(ShinyTestCase):
         from shinymud.commands.build_commands import Edit, Link
         from shinymud.modes.build_mode import BuildMode
 
-        area = Area.create('pie')
+        area = Area.create({'name':'pie'})
         room1 = area.new_room()
         area.builders.append('bob')
         
@@ -81,7 +81,7 @@ class TestBuildCommands(ShinyTestCase):
         
         # Now we're linking to another room in a different area as the one
         # being edited
-        area2 = Area.create('cake')
+        area2 = Area.create({'name':'cake'})
         cake_room = area2.new_room()
         Link(self.bob, 
              'west exit to room %s from area %s' % (cake_room.id, 
@@ -112,7 +112,7 @@ class TestBuildCommands(ShinyTestCase):
         from shinymud.models.area import Area
         from shinymud.commands.build_commands import Edit, Link, Unlink
         from shinymud.modes.build_mode import BuildMode
-        area = Area.create('pie')
+        area = Area.create({'name':'pie'})
         room1 = area.new_room()
         area.builders.append('bob')
         Edit(self.bob, 'area pie', 'edit').run()

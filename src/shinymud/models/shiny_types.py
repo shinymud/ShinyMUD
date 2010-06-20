@@ -29,6 +29,8 @@ def copy_dict(val):
     return dict(val.items())
 
 def read_list(val):
+    if isinstance(val, list):
+        return val
     if not val:
         return []
     return val.split(',')
@@ -43,7 +45,7 @@ def copy_list(val):
 
 def read_area(val):
     if isinstance(val, basestring):
-        return cls.world.get_area(val)
+        return world.get_area(val)
     return val
 
 def write_area(val):

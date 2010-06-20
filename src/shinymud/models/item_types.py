@@ -9,8 +9,8 @@ import re
 
 class ItemType(Model):
     db_columns = Model.db_columns + [
-        Column('build_item', type="INTEGER", read=int, write=write_model, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
-        Column('game_item', type="INTEGER", read=int, write=write_model, foreign_key=('game_item','dbid'), cascade="ON DELETE")
+        Column('build_item', type="INTEGER", write=write_model, foreign_key=('build_item','dbid'), cascade="ON DELETE"),
+        Column('game_item', type="INTEGER", write=write_model, foreign_key=('game_item','dbid'), cascade="ON DELETE")
     ]
     log = World.get_world().log
     """The base class that must be inherited by all item types.
@@ -300,17 +300,15 @@ class Food(ItemType):
     db_table_name = 'food'
     db_columns = ItemType.db_columns + [
         Column('food_type', read=lambda f: f if f in ('food','drink') else 'food'),
-        Column('ro_id', type="INTEGER", read=int, write=int),
+        Column('ro_id'),
         Column('ro_area'),
-        Column('actor_use_message', null=False, default=''),
-        Column('room_use_message', null=False, default=''),
-        
-        
+        Column('actor_use_message', default=''),
+        Column('room_use_message', default=''),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)
         self.effects = {}
-
+    
     def load_extras(self):
         pass
         # rows = world.db.select('* FROM char_effect WHERE item_type=? AND dbid=?',
@@ -354,7 +352,7 @@ class Food(ItemType):
         return string
     
     def load(self, game_item):
-        d = self.to_dict()
+        d = self.copy_save_attrs()
         if 'dbid' in d:
             del d['dbid']
         if 'build_item' in d:
@@ -487,8 +485,8 @@ class Container(ItemType):
     plural = 'containers'
     db_table_name = 'container'
     db_columns = ItemType.db_columns + [
-        Column('weight_capacity', type="NUMBER", read=float),
-        Column('build_item_capacity', type="INTEGER", read=int, write=int),
+        Column('weight_capacity', type="NUMBER", read=float, default=0),
+        Column('build_item_capacity', type="INTEGER", read=int, write=int, default=-1),
         Column('weight_reduction', type="INTEGER", read=int, write=int, default=0),
         Column('openable', read=to_bool, default=False),
         Column('closed', read=to_bool, default=False),
@@ -610,7 +608,7 @@ class Furniture(ItemType):
         # TODO: fix character effects
         Column('sit_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
         Column('sleep_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
-        Column('capacity', type="INTEGER", read=int, write=int),
+        Column('capacity', type="INTEGER", read=int, write=int, default=-1),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)
@@ -633,7 +631,7 @@ class Furniture(ItemType):
         return string
     
     def load(self, game_item):
-        d = self.to_dict()
+        d = self.copy_save_attrs()
         if 'dbid' in d:
             del d['dbid']
         if 'build_item' in d:

@@ -11,8 +11,15 @@ from shinytest import ShinyTestCase
 
 class TestSpawn(ShinyTestCase):
     def setUp(self):
+<<<<<<< HEAD:tests/shinytest/models/test_spawn.py
         ShinyTestCase.setUp(self)
         self.area = Area.create('foo')
+=======
+        self.world = World()
+        self.world.db = DB(':memory:')
+        initialize_database(self.world.db.conn)
+        self.area = Area.create({'name':'foo'})
+>>>>>>> 3c840671ee063783e936451da82987fe516e5346:tests/models/test_spawn.py
         self.room = self.area.new_room()
         self.item = self.area.new_item()
         self.npc = self.area.new_npc()

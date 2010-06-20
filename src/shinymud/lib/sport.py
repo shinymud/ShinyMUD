@@ -7,30 +7,31 @@ from shinymud.data.config import AREAS_IMPORT_DIR, AREAS_EXPORT_DIR, VERSION
 
 import os
 import re
-from resources import simplejson as json
+import json
+import traceback
 
-def sanitize(obj):
-    """Sanitize an object that was built by json.
-    simplejson will sometimes use unicode instead of ascii
-    for dictionary keys, which cause them to fail when being
-    dereferenced for function calls like foo(args).
-    """
-    if isinstance(obj, list) and len(obj):
-        for i in range(len(obj)):
-            obj[i] = sanitize(obj[i])
-        return obj
-    elif isinstance(obj,dict):
-        return dict([(str(k), sanitize(v)) for k,v in obj.items()])
-    else:
-        #integers, strings, floats, etc... fine as they are.
-        return obj
-
+# This should no longer be necessary now that we're switching ShinyMUD to be
+# unicode complient
+# def sanitize(obj):
+#     """Sanitize an object that was built by json.
+#     simplejson will sometimes use unicode instead of ascii
+#     for dictionary keys, which cause them to fail when being
+#     dereferenced for function calls like foo(args).
+#     """
+#     if isinstance(obj, list) and len(obj):
+#         for i in range(len(obj)):
+#             obj[i] = sanitize(obj[i])
+#         return obj
+#     elif isinstance(obj,dict):
+#         return dict([(str(k), sanitize(v)) for k,v in obj.items()])
+#     else:
+#         #integers, strings, floats, etc... fine as they are.
+#         return obj
 
 class SPort(object):
     """Export and import areas (and their objects) to a file."""
     def __init__(self, import_dir=AREAS_IMPORT_DIR,
                  export_dir=AREAS_EXPORT_DIR):
-        # self.world.log = logging.getLogger('SPort')
         self.world = World.get_world()
         self.import_dir = import_dir
         self.export_dir = export_dir
@@ -43,13 +44,13 @@ class SPort(object):
         if error:
             return error
         shiny_area = '[ShinyMUD Version "%s"]\n' % VERSION
-        d = area.to_dict()
+        d = area.create_save_dict()
         del d['dbid']
         shiny_area += '\n[Area]\n' + json.dumps(d) + '\n[End Area]\n'
         
         s_list = []
         for script in area.scripts.values():
-            d = script.to_dict()
+            d = script.create_save_dict()
             del d['dbid']
             s_list.append(d)
         shiny_area += '\n[Scripts]\n' + json.dumps(s_list) + '\n[End Scripts]\n'
@@ -58,11 +59,11 @@ class SPort(object):
         itypes_list = []
         
         for item in area.items.values():
-            d = item.to_dict()
+            d = item.create_save_dict()
             del d['dbid']
             item_list.append(d)
             for key,value in item.item_types.items():
-                d = value.to_dict()
+                d = value.create_save_dict()
                 d['item'] = item.id
                 del d['dbid']
                 d['item_type'] = key
@@ -74,14 +75,14 @@ class SPort(object):
         npc_elist = []
         
         for npc in area.npcs.values():
-            d = npc.to_dict()
+            d = npc.create_save_dict()
             del d['dbid']
             npc_list.append(d)
             event_list = []
             for elist in npc.events.values():
                 event_list.extend(elist)
             for event in event_list:
-                d = event.to_dict()
+                d = event.create_save_dict()
                 del d['dbid']
                 d['prototype'] = npc.id
                 d['script'] = event.script.id
@@ -93,14 +94,14 @@ class SPort(object):
         r_exits = []
         r_spawns = {} # r_spawns is a dictionary of lists of dictionaries!
         for room in area.rooms.values():
-            d = room.to_dict()
+            d = room.create_save_dict()
             # d['room'] = room.id
             del d['dbid']
             r_list.append(d)
             r_spawns[room.id] = []
             for exit in room.exits.values():
                 if exit:
-                    d = exit.to_dict()
+                    d = exit.create_save_dict()
                     d['room'] = room.id
                     d['to_id'] = exit.to_room.id
                     d['to_area'] = exit.to_room.area.name
@@ -108,7 +109,7 @@ class SPort(object):
                     del d['dbid']
                     r_exits.append(d)
             for spawn in room.spawns.values():
-                d = spawn.to_dict()
+                d = spawn.create_save_dict()
                 del d['dbid']
                 r_spawns[room.id].append(d)
         shiny_area += '\n[Rooms]\n' + json.dumps(r_list) + '\n[End Rooms]\n'
@@ -121,26 +122,30 @@ class SPort(object):
         """Import an area from a text file in ShinyAreaFormat."""
         txt = self.get_import_data(areaname + '.txt')
         # Assemble the data structures from the file text
-        area = sanitize(json.loads(self.match_shiny_tag('Area', txt)))
-        scripts = sanitize(json.loads(self.match_shiny_tag('Scripts', txt)))
-        items = sanitize(json.loads(self.match_shiny_tag('Items', txt)))
-        itypes = sanitize(json.loads(self.match_shiny_tag('Item Types', txt)))
-        npcs = sanitize(json.loads(self.match_shiny_tag('Npcs', txt)))
-        npc_events = sanitize(json.loads(self.match_shiny_tag('Npc Events', txt)))
-        rooms = sanitize(json.loads(self.match_shiny_tag('Rooms', txt)))
-        room_exits = sanitize(json.loads(self.match_shiny_tag('Room Exits', txt)))
-        room_spawns = sanitize(json.loads(self.match_shiny_tag('Room Spawns', txt)))
+        area = json.loads(self.match_shiny_tag('Area', txt))
+        scripts = json.loads(self.match_shiny_tag('Scripts', txt))
+        items = json.loads(self.match_shiny_tag('Items', txt))
+        itypes = json.loads(self.match_shiny_tag('Item Types', txt))
+        npcs = json.loads(self.match_shiny_tag('Npcs', txt))
+        npc_events = json.loads(self.match_shiny_tag('Npc Events', txt))
+        rooms = json.loads(self.match_shiny_tag('Rooms', txt))
+        room_exits = json.loads(self.match_shiny_tag('Room Exits', txt))
+        room_spawns = json.loads(self.match_shiny_tag('Room Spawns', txt))
         # Build the area from the assembled dictionary data
         try:
             new_area = Area.create(area)
             for script in scripts:
                 new_area.new_script(script)
+            self.world.log.debug('Finished Scripts.')
             for item in items:
+                self.world.log.debug('In item, %s' % item['id'])
                 new_area.new_item(item)
+            self.world.log.debug('Finished Items.')
             for itype in itypes:
                 # Get this itype's item by that item's id
                 my_item = new_area.get_item(itype['item'])
                 my_item.build_add_type(itype['item_type'], itype)
+            self.world.log.debug('Finished Item types.')
             for npc in npcs:
                 new_area.new_npc(npc)
             for event in npc_events:
@@ -159,16 +164,17 @@ class SPort(object):
                 my_room.new_exit(exit)
         except Exception, e:
             # if anything went wrong, make sure we destroy whatever parts of
-            # the area that got created.  This way, we won't run into problems
+            # the area that got created. This way, we won't run into problems
             # if they try to import it again, and we won't leave orphaned or
             # erroneous data in the db.
-            self.world.log.error(str(e))
+            self.world.log.error(traceback.format_exc())
             self.world.destroy_area(areaname, 'SPort Error')
             raise SPortImportError('There was a horrible error on import! '
                                    'Aborting! Check logfile for details.')
         new_area.reset()
         
         return '%s has been successfully imported.' % new_area.title
+    
     
     def match_shiny_tag(self, tag, text):
         """Match a ShinyTag from the ShinyAreaFormat.
