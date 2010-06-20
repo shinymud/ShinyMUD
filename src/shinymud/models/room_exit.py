@@ -59,8 +59,9 @@ class RoomExit(Model):
     
     def _set_to_room(self, to_room):
         self._to_room = to_room
-        self.to_area = to_room.area
-        self.to_room_id = to_room.id
+        if to_room:
+            self.to_area = to_room.area.name
+            self.to_room_id = to_room.id
     
     to_room = property(_resolve_to_room, _set_to_room)
     

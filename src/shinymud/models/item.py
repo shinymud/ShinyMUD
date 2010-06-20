@@ -60,6 +60,10 @@ class BuildItem(Item):
         Column('id')
     ]
     
+    def __init__(self, args={}):
+        self.item_types = {}
+        Item.__init__(self, args)
+    
     def load_extras(self):
         for key, value in ITEM_TYPES.items():
             row = self.world.db.select('* FROM %s WHERE build_item=?' % key,

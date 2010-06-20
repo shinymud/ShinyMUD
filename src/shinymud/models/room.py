@@ -20,7 +20,6 @@ class Room(Model):
     ]
     db_extras = Model.db_extras + ['UNIQUE (area, id)']
     def __init__(self, args={}):
-        Model.__init__(self, args)
         self.items = []
         self.exits = {'north': None,
                       'south': None,
@@ -31,6 +30,8 @@ class Room(Model):
         self.npcs = []
         self.spawns = {}
         self.players = {}
+        Model.__init__(self, args)
+
     
     def load_extras(self):
         self.load_exits()
@@ -205,7 +206,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
     def load_exits(self):
         rows = self.world.db.select("* from room_exit where room=?", [self.dbid])
         for row in rows:
-            row['from_room'] = self
+            row['room'] = self
             self.exits[row['direction']] = RoomExit(row)
     
     def link_exits(self, direction, link_room):

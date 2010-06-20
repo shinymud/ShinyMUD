@@ -25,14 +25,15 @@ class Npc(Character):
         Column('title')
     ]
     def __init__(self, args={}):
+        self.spawn_id = None
+        self.events = {}
+        self.ai_packs = {}
         self.characterize(args)
         if not self.title:
             self.title = args.get('title', '%s is here.' % self.name)
         if not self.keywords:
             self.keywords = [name.lower() for name in self.name.split()]
-        self.spawn_id = None
-        self.events = {}
-        self.ai_packs = {}
+
     
     def load_extras(self):
         self.load_events()

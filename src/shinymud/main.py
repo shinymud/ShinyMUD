@@ -205,7 +205,7 @@ def clean():
 def setup_stub_world():
     world = World()
     from shinymud.lib.setup import initialize_database
-    initialize_database(world.db.conn)
+    initialize_database()
     return world
 
 # Then we check input for 'start' 'restart' and 'stop' (maybe 'help' later?)
