@@ -1,22 +1,15 @@
-from shinymud.lib.world import *
-from shinymud.models.player import *
-from shinymud.models.room import *
-from shinymud.models.area import *
-from shinymud.commands import *
-from unittest import TestCase
-from shinymud.lib.db import DB
-from shinymud.models.schema import initialize_database
+from shinytest import ShinyTestCase
 
-class TestRoom(TestCase):
+class TestRoom(ShinyTestCase):
     def setUp(self):
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
+        ShinyTestCase.setUp(self)
+        from shinymud.models.area import Area
         self.area = Area.create('blarg')
         self.room = self.area.new_room()
     
     def tearDown(self):
-        World._instance = None
+        del self.room
+        del self.area
     
     def test_add_spawn_item_inroom(self):
         """Test adding a spawn for an item, with a spawn point 'in room'."""

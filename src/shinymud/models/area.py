@@ -5,6 +5,7 @@ from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
 from shinymud.models.script import Script
 from shinymud.modes.text_edit_mode import TextEditMode
+from shinymud.lib.world import World
 import time
 
 class Area(Model):
@@ -13,7 +14,7 @@ class Area(Model):
         Column('name', null=False, unique=True),
         Column('title', default='New Area'),
         Column('builders', read=read_list, 
-               write=write_list, copy=copy_list),
+               write=write_list, copy=copy_list, default=[]),
         Column('level_range', default='All'),
         Column('description', default='No Description'),
         
@@ -51,20 +52,6 @@ class Area(Model):
             
             self.time_of_last_reset = time.time()
     
-    def save(self, save_dict=None):
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                self.world.db.update_from_dict('area', save_dict)
-            else:    
-                self.world.db.update_from_dict('area', self.to_dict())
-        else:
-            self.dbid = self.world.db.insert_from_dict('area', self.to_dict())
-    
-    def destruct(self):
-        if self.dbid:
-            self.world.db.delete('FROM area WHERE dbid=?', [self.dbid])
-    
     def __str__(self):
         """Print out a nice string representation of this area's attributes."""
         
@@ -94,8 +81,7 @@ Description: \n    %s""" % (self.name,
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
         if id_type in ['room', 'build_item', 'npc', 'script']:
-            world = World.get_world()
-            rows = world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
+            rows = self.world.db.select("max(id) as id from " + id_type +" where area=?", [self.dbid])
             max_id = rows[0]['id']
             if max_id:
                 your_id = int(max_id) + 1
@@ -113,6 +99,7 @@ Description: \n    %s""" % (self.name,
     @classmethod
     def create(cls, name, area_dict={}):
         """Create a new area instance and add it to the world's area list."""
+        world = World.get_world()
         if world.get_area(name):
             return "This area already exists."
         if not name:
@@ -132,7 +119,7 @@ Description: \n    %s""" % (self.name,
     def build_set_levelrange(self, lvlrange, player=None):
         """Set this area's level range."""
         self.level_range = lvlrange
-        self.save({'level_range': self.level_range})
+        self.save()
         return 'Area levelrange set.'
     
     def build_set_title(self, title, player=None):
@@ -140,7 +127,7 @@ Description: \n    %s""" % (self.name,
         if not title:
             return 'Type "help areas" for help setting area attributes.'
         self.title = title
-        self.save({'title': self.title})
+        self.save()
         return 'Area title set.'
     
     def build_add_builder(self, playername):

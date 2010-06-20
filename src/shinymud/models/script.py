@@ -29,7 +29,7 @@ class Script(Model):
         if not name:
             return 'Set the name of the the script to what?'
         self.name = name
-        self.save({'name': self.name})
+        self.save()
         return 'Script %s\'s name has been set to "%s".' % (self.id, self.name)
     
     def build_set_body(self, body, player=None):

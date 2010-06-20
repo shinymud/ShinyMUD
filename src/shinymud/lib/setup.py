@@ -10,9 +10,9 @@ for module in model_files:
 from shinymud.models import model_list
 
 EXISTING_TABLES = {}
-world = World.get_world()
 
-def initialize_database(conn=None):
+def initialize_database():
+    world = World.get_world()
     db_table_names = [x['name'] for x in world.db.select("name from sqlite_master where type='table'")]
     for table_name in db_table_names:
         columns = world.db.select("* from %s limit 1" % table_name)
@@ -21,13 +21,13 @@ def initialize_database(conn=None):
     
     for mod in model_list.values():
         if mod.db_table_name not in EXISTING_TABLES:
-            create_table(mod, conn)
+            create_table(mod)
     for mod in model_list.values():
         for col in mod.db_columns:
             if col.name not in EXISTING_TABLES[mod.db_table_name]:
-                add_column(mod, col.name, conn)
+                add_column(mod, col.name)
 
-def create_table(model, conn=None):
+def create_table(model):
     if model.db_table_name in EXISTING_TABLES:
         return
     # check for dependencies
@@ -37,9 +37,9 @@ def create_table(model, conn=None):
         if not M:
             raise Exception('Dependency on unknown model: %s' % str(mod))
         if M.db_table_name not in EXISTING_TABLES:
-            create_table(M, conn)
+            create_table(M)
         elif col not in EXISTING_TABLES[M.db_table_name]:
-            add_column(M, col, conn)
+            add_column(M, col)
     # generate create table string
     table_string = []
     table_string.append('CREATE TABLE IF NOT EXISTS %s (' % model.db_table_name)
@@ -51,15 +51,15 @@ def create_table(model, conn=None):
     table_string.append(','.join(columns_string))
     table_string.append(')')
     create_stmt = "".join(table_string)
-    cursor = conn.cursor() if conn else World.get_world().db.conn.cursor()
-    world.log.debug('\n' + create_stmt + '\n')
+    cursor = World.get_world().db.conn.cursor()
+    World.get_world().log.debug('\n' + create_stmt + '\n')
     cursor.execute(create_stmt)
     EXISTING_TABLES[model.db_table_name] = [col.name for col in model.db_columns]
 
-def add_column(mod, col, conn):
+def add_column(mod, col):
     # check for dependencies
     if mod.db_table_name not in EXISTING_TABLES:
-        create_table(mod, conn)
+        create_table(mod)
     else:
         if col in EXISTING_TABLES[mod.db_table_name]:
             return # Column already exists!?
@@ -74,12 +74,11 @@ def add_column(mod, col, conn):
             m, c = column.foreign_key
             M = model_list.get(m)
             if M.db_table_name not in EXISTING_TABLES:
-                create_table(M, conn)
+                create_table(M)
             elif c not in EXISTING_TABLES[M.db_table_name]:
-                add_column(M, c, conn)
+                add_column(M, c)
         alter_stmt = 'ALTER TABLE %s ADD COLUMN %s' % (mod.db_table_name, str(column))
-        world = World.get_world()
-        cursor = conn.cursor() if conn else World.get_world().db.conn.cursor()
-        world.log.debug('\n' + alter_stmt + '\n')
+        cursor = World.get_world().db.conn.cursor()
+        World.get_world().log.debug('\n' + alter_stmt + '\n')
         cursor.execute(alter_stmt)
         EXISTING_TABLES[mod.db_table_name].append(col)

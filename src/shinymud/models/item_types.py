@@ -18,65 +18,6 @@ class ItemType(Model):
     If you're going to build a new item type, the first stop is to inherit from
     this class and implement its required functions (explained below!).
     """
-    def __init__(self, args={}):
-        """ An ItemType's __init__ function should take a dictionary of keyword
-        arguments which could be empty (if this is a brand new instance), or hold
-        the saved values of your attributes loaded from the database.
-        Your init function should look something like the following:
-         
-        # initialize your class-specific attributes:
-        self.foo = args.get('foo', 'My default foo value.')
-        self.bar = args.get('bar', 'My default bar value.')
-        """
-        raise ItemTypeInterfaceError('You need to implement the init function.')
-    
-    def to_dict(self):
-        """To dict converts all of the item type's attributes that aught to be
-        saved to the database into a dictionary, with the name of the attribute
-        being the key and its value being the value.
-         
-        to_dict takes no arguments, and should return a dictionary.
-        the code for a to_dict function aught to look something like the following:
-         
-        d = {}
-        if self.dbid:
-            d['dbid'] = self.dbid
-        if self.game_item:
-            d['game_item'] self.game_item.dbid
-        if self.build_item:
-            d['build_item'] = self.build_item.dbid
-        # The names of your attributes must be the same as the ones specified
-        # in the schema.
-        d['foo'] = self.foo
-        d['bar'] = self.bar
-        return d
-        """
-        raise ItemTypeInterfaceError('You need to implement the to_dict function.')
-    
-    def save(self, save_dict=None):
-        """The save function saves this ItemType to the database.
-         
-        If passed a save_dict, the save function should only save the data
-        specified in the dictionary to the database. If save_dict is somehow
-        empty or None, the entire instance should be saved to the database.
-        Your save function should look like the following:
-         
-        world = World.get_world()
-        if self.dbid:
-            # This item has a dbid, so it already exists in the database. We just
-            # need to update it.
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('table_name', save_dict)
-            else:    
-                world.db.update_from_dict('table_name', self.to_dict())
-        else:
-            # This ItemType doesn't exist in the database if it doesn't have a dbid
-            # yet, so we need to insert it and save its new dbid
-            self.dbid = world.db.insert_from_dict('table_name', self.to_dict())
-        """
-        raise ItemTypeInterfaceError('You need to implement the save function.')
-    
     def load(self, game_item):
         """The load function makes a copy of a ItemType instance so that it can
         be attached to a GameItem and loaded in-game.
@@ -205,7 +146,7 @@ class Equippable(ItemType):
         """Set the equip location for this item."""
         if loc in EQUIP_SLOTS.keys():
             self.equip_slot = loc
-            self.save({'equip_slot': self.equip_slot})
+            self.save()
             return 'Item equip location set.\n'
         else:
             return 'That equip location doesn\'t exist.\n'
@@ -225,12 +166,12 @@ class Equippable(ItemType):
     
     def build_set_hit(self, params):
         self.hit = self.parse_value(params) or 0
-        self.save({'hit': self.hit})
+        self.save()
         return "set hit to " + str(self.hit)
     
     def build_set_evade(self, params):
         self.evade = self.parse_value(params) or 0
-        self.save({'evade': self.evade})
+        self.save()
         return "set evade to " + str(self.evade)
     
     def build_add_absorb(self, params):
@@ -497,14 +438,14 @@ class Food(ItemType):
         if not use or (use.lower().strip() not in ['food', 'drink']):
             return 'Valid values for food_type are "food" or "drink".'
         self.food_type = use.lower().strip()
-        self.save({'food_type': self.food_type})
+        self.save()
         return 'Food_type is now set to %s.' % use
     
     def build_set_replace(self, replace, player=None):
         world = World.get_world()
         if not replace or (replace.strip().lower() == 'none'):
             self.replace_obj = None
-            self.save({'ro_id': '', 'ro_area': ''})
+            self.save()
             return 'Replace item reset to none.'
         exp = r'((to)|(with)[ ]?)?(item[ ]+)?(?P<id>\d+)([ ]+from)?([ ]+area)?([ ]+(?P<area_name>\w+))?'
         match = re.match(exp, replace, re.I)
@@ -523,20 +464,20 @@ class Food(ItemType):
         if not item:
             'Item %s doesn\'t exist.' % item_id
         self.replace_obj = item
-        self.save({'ro_id': item.id, 'ro_area': item.area.name})
+        self.save()
         return '%s will be replaced with %s when consumed.' %\
                 (self.build_item.name.capitalize(), item.name)
     
     def build_set_actor_message(self, message, player=None):
         self.actor_use_message = message or ''
-        self.save({'actor_use_message': self.actor_use_message})
+        self.save()
         if not message:
             return 'Use message (actor) has been reset to the default.'
         return 'Use message (actor) has been set.'
     
     def build_set_room_message(self, message, player=None):
         self.room_use_message = message or ''
-        self.save({'room_use_message': self.room_use_message})
+        self.save()
         if not message:
             return 'Use message (room) has been reset to the default.'
         return 'Use message (room) has been set.'
@@ -611,7 +552,7 @@ class Container(ItemType):
         self.inventory.append(item)
         if self.game_item.dbid and (item.container != self.game_item):
             item.container = self.game_item
-            item.save({'container': item.container.dbid})
+            item.save()
         return True
     
     def item_remove(self, item):
@@ -619,7 +560,7 @@ class Container(ItemType):
             self.inventory.remove(item)
             item.container = None
             if self.game_item.dbid:
-                item.save({'container':item.container})
+                item.save()
     
     def get_item_by_kw(self, keyword):
         for item in self.inventory:
@@ -643,7 +584,7 @@ class Container(ItemType):
             return 'Acceptable values for this attribute are true or false.'
         else:
             self.openable = boolean
-            self.save({'openable': self.openable})
+            self.save()
             return 'Openable has been set to %s.' % boolean
     
     def build_set_closed(self, args, player=None):
@@ -652,7 +593,7 @@ class Container(ItemType):
             return 'Acceptable values for this attribute are true or false.'
         else:
             self.closed = boolean
-            self.save({'closed': self.closed})
+            self.save()
             return 'Closed has been set to %s.' % boolean
     
     def build_set_key(self, args, player=None):
@@ -775,26 +716,26 @@ class Portal(ItemType):
         if not room:
             return 'That room doesn\'t exist.\n'
         self.location = room
-        self.save({'to_room': self.location.id, 'to_area': self.location.area.name})
+        self.save()
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
     
     def build_set_leave(self, message, player=None):
         """Set this portal's leave message."""
         self.leave_message = message
-        self.save({'leave_message': self.leave_message})
+        self.save()
         return 'Leave message set.'
     
     def build_set_entrance(self, message, player=None):
         """Set this portal's entrance message."""
         self.entrance_message = message
-        self.save({'entrance_message': self.entrance_message})
+        self.save()
         return 'Entrance message set.'
     
     def build_set_emerge(self, message, player=None):
         """Set this portal's emerge message."""
         self.emerge_message = message
-        self.save({'emerge_message': self.emerge_message})
+        self.save()
         return 'Emerge message set.'
     
 

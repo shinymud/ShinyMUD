@@ -56,7 +56,7 @@ class PassChangeMode(object):
             passwd = hashlib.sha1(p).hexdigest()
             if passwd == self.password:
                 self.player.password = passwd
-                self.player.save({'password': self.player.password})
+                self.player.save()
                 self.player.update_output(CLEAR + 'Password change successful. Don\'t forget it!')
                 self.active = False
             else:

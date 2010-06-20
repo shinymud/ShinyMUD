@@ -20,6 +20,7 @@ class Room(Model):
     ]
     db_extras = Model.db_extras + ['UNIQUE (area, id)']
     def __init__(self, args={}):
+        Model.__init__(self, args)
         self.items = []
         self.exits = {'north': None,
                       'south': None,
@@ -71,7 +72,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             return 'Set the name to what?'
         name = ' '.join([name.strip().capitalize() for name in name.split()])
         self.name = name
-        self.save({'name': self.name})
+        self.save()
         return 'Room %s name set.' % self.id
     
     def build_set_description(self, args, player=None):

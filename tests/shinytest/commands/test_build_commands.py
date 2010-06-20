@@ -1,31 +1,28 @@
-from shinymud.lib.world import *
-from shinymud.data.config import *
-from shinymud.models.player import *
-from shinymud.models.area import *
-from shinymud.lib.db import DB
-from shinymud.models.schema import initialize_database
-from shinymud.commands.build_commands import *
-from shinymud.modes.build_mode import *
+from shinytest import ShinyTestCase
 
-from unittest import TestCase
-
-class TestBuildCommands(TestCase):
+class TestBuildCommands(ShinyTestCase):
     def setUp(self):
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
+        ShinyTestCase.setUp(self)
         # add a builder
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import build_list
+        from shinymud.modes.build_mode import BuildMode
         self.bob = Player(('bob', 'bar'))
         self.bob.mode = None
-        self.bob.playerize(name='bob')
+        self.bob.playerize({'name':'bob'})
         self.world.player_add(self.bob)
         self.bob.mode = BuildMode(self.bob)
-        self.bob.permissions = self.bob.permissions | BUILDER
-    
-    def tearDown(self):
-        World._instance = None
-    
+        self.bob.permissions = self.bob.permissions | config.BUILDER
+        
     def test_edit_command(self):
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import Edit
+        from shinymud.modes.build_mode import BuildMode
+
         # create an area 
         area = Area.create('dessert')
         
@@ -48,6 +45,12 @@ class TestBuildCommands(TestCase):
         self.assertTrue(success in self.bob.outq)
     
     def test_link_command(self):
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import Edit, Link
+        from shinymud.modes.build_mode import BuildMode
+
         area = Area.create('pie')
         room1 = area.new_room()
         area.builders.append('bob')
@@ -104,6 +107,11 @@ class TestBuildCommands(TestCase):
         self.assertTrue(fail in self.bob.outq)
     
     def test_unlink_command(self):
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import Edit, Link, Unlink
+        from shinymud.modes.build_mode import BuildMode
         area = Area.create('pie')
         room1 = area.new_room()
         area.builders.append('bob')

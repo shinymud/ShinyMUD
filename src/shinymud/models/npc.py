@@ -125,12 +125,12 @@ description:
     def build_set_name(self, name, player=None):
         """Set the name of this NPC."""
         self.name = name
-        self.save({'name': self.name})
+        self.save()
         return 'Npc name saved.\n'
     
     def build_set_title(self, title, player=None):
         self.title = title
-        self.save({'title': self.title})
+        self.save()
         return 'Npc title saved.\n'
     
     def build_set_keywords(self, keywords, player=None):
@@ -140,12 +140,12 @@ description:
         if keywords:
             word_list = keywords.split(',')
             self.keywords = [word.strip().lower() for word in word_list]
-            self.save({'keywords': ','.join(self.keywords)})
+            self.save()
             return 'Npc keywords have been set.'
         else:
             self.keywords = [name.lower() for name in self.name.split()]
             self.keywords.append(self.name.lower())
-            self.save({'keywords': ','.join(self.keywords)})
+            self.save()
             return 'Npc keywords have been reset.'
     
     def build_set_gender(self, gender, player=None):
@@ -155,7 +155,7 @@ description:
         if gender.lower() not in ['female', 'male', 'neutral']:
             return 'Valid genders are: female, male, neutral.'
         self.gender = gender.lower()
-        self.save({'gender': self.gender})
+        self.save()
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
     
 # ***** Event functions *****

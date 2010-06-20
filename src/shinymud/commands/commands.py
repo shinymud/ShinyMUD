@@ -2141,7 +2141,7 @@ To buy an item from a merchant:
             self.pc.update_output(str(e))
         else:
             self.pc.currency -= price
-            self.pc.save({'currency': self.pc.currency})
+            self.pc.save()
             self.pc.item_add(item)
             self.pc.update_output('You buy %s from %s for %s %s.' % (item.name,
                                             merchant.name, str(price), CURRENCY))
@@ -2246,7 +2246,7 @@ before you sell it:
             # player-sold items later
             item.destruct()
             self.pc.currency += sale_price
-            self.pc.save({'currency': self.pc.currency})
+            self.pc.save()
             self.pc.update_output('You sell %s for %s %s to %s.' % (item.name,
                                                               str(sale_price),
                                                               CURRENCY, 

@@ -57,24 +57,6 @@ class Character(Model):
             return True
         return False
     
-    # def save(self, save_dict=None):
-    #     """Save the character to the database."""
-    #     if self.dbid:
-    #         if save_dict:
-    #             save_dict['dbid'] = self.dbid
-    #             self.world.db.update_from_dict(self.char_type, save_dict)
-    #         else:    
-    #             self.world.db.update_from_dict(self.char_type, self.to_dict())
-    #     else:
-    #         self.dbid = self.world.db.insert_from_dict(self.char_type, 
-    #                                                    self.to_dict())
-    # 
-    # def destruct(self):
-    #     """Remove the character from the database."""
-    #     if self.dbid:
-    #         self.world.db.delete('FROM %s WHERE dbid=?' % self.char_type, 
-    #                              [self.dbid])
-    
     def item_add(self, item):
         """Add an item to the character's inventory."""
         item.owner = self
@@ -85,7 +67,7 @@ class Character(Model):
         """Remove an item from the character's inventory."""
         if item in self.inventory:
             item.owner = None
-            item.save({'owner': item.owner})
+            item.save()
             self.inventory.remove(item)
     
     def has_item(self, build_item):

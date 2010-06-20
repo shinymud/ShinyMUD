@@ -99,7 +99,7 @@ class TextEditMode(object):
         self.active = False
         save_text = self._format()
         setattr(self.edit_object, self.edit_attribute, save_text)
-        self.edit_object.save({self.edit_attribute: save_text})
+        self.edit_object.save()
     
     def cancel_edit(self, **args):
         self.pc.update_output('Reverting to original %s. Any changes have been discarded.' %

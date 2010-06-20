@@ -4,8 +4,14 @@ import sqlite3
 import re
 
 class DB(object):
-    def __init__(self, logger, db_name=None, conn=None):
-        self.conn = conn or sqlite3.Connection(db_name or DB_NAME)
+    def __init__(self, logger, conn=None):
+        if conn:
+            if isinstance(conn, basestring):
+                self.conn = sqlite3.Connection(conn)
+            else:
+                self.conn = conn
+        else:
+            self.conn = sqlite3.Connection(DB_NAME)
         self.log = logger
     
     def insert(self, query, params=None):
@@ -20,13 +26,18 @@ class DB(object):
         """
         cursor = self.conn.cursor()
         self.log.debug(query + ' ' + repr(params))
-        if params:
-            cursor.execute("insert " + query, params)
+        try:
+            if params:
+                cursor.execute("insert " + query, params)
+            else:
+                cursor.execute("insert " + query)
+        except Exception, e:
+            self.conn.rollback()
+            raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:
-            cursor.execute("insert " + query)
-        new_id = cursor.lastrowid
-        self.conn.commit()
-        return new_id
+            new_id = cursor.lastrowid
+            self.conn.commit()
+            return new_id
     
     def insert_from_dict(self, table, d):
         query = "INTO " + table + " "
@@ -70,12 +81,17 @@ class DB(object):
         If there is a problem with the query, it will raise an exception.
         """
         cursor = self.conn.cursor()
-        if params:
-            cursor.execute("update " + query, params)
+        try:
+            if params:
+                cursor.execute("update " + query, params)
+            else:
+                cursor.execute("update " + query)
+        except Exception, e:
+            self.conn.rollback()
+            raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:
-            cursor.execute("update " + query)
-        self.conn.commit()
-        return cursor.rowcount
+            self.conn.commit()
+            return cursor.rowcount
     
     def update_from_dict(self, table, d):
         if 'dbid' in d:
@@ -99,10 +115,15 @@ class DB(object):
         If there is a problem with the query, it will raise an exception.
         """
         cursor = self.conn.cursor()
-        if params:
-            cursor.execute("delete " + query, params)
+        try:
+            if params:
+                cursor.execute("delete " + query, params)
+            else:
+                cursor.execute("delete " + query)
+        except Exception, e:
+            self.conn.rollback()
+            raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:
-            cursor.execute("delete " + query)
-        self.conn.commit()
-        return cursor.rowcount
+            self.conn.commit()
+            return cursor.rowcount
     

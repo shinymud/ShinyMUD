@@ -5,14 +5,9 @@ from shinymud.commands import *
 from shinymud.lib.db import DB
 from shinymud.data.config import *
 from shinymud.models.schema import initialize_database
-from unittest import TestCase
+from shinytest import ShinyTestCase
 
-class TestReset(TestCase):
-    def setUp(self):
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
-    
+class TestReset(ShinyTestCase):
     def test_tell_players(self):
         bob = Player(('bob', 'bar'))
         alice = Player(('alice', 'bar'))

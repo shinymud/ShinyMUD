@@ -7,21 +7,16 @@ from shinymud.models.room import *
 from shinymud.commands import *
 from shinymud.lib.db import DB
 from shinymud.models.schema import initialize_database
-from unittest import TestCase
+from shinytest import ShinyTestCase
 
-class TestSpawn(TestCase):
+class TestSpawn(ShinyTestCase):
     def setUp(self):
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
+        ShinyTestCase.setUp(self)
         self.area = Area.create('foo')
         self.room = self.area.new_room()
         self.item = self.area.new_item()
         self.npc = self.area.new_npc()
-    
-    def tearDown(self):
-        World._instance = None
-    
+        
     def test_add_nested_spawn(self):
         spawn1 = self.room.new_spawn({'id': self.room.get_spawn_id(), 
                              'room':self.room, 
@@ -107,14 +102,7 @@ class TestSpawn(TestCase):
     
     def test_save(self):
         pass
-    
-    def test_to_dict(self):
-        spawn = self.room.new_spawn({'id': self.room.get_spawn_id(), 
-                                     'room':self.room, 
-                                     'obj': self.item, 
-                                     'spawn_type': 'item'})
-        d = spawn.to_dict()
-    
+        
     def test_spawn_npc(self):
         spawn1 = self.room.new_spawn({'id': self.room.get_spawn_id(), 
                                       'room':self.room, 

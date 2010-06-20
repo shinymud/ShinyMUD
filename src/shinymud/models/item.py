@@ -25,25 +25,11 @@ class Item(Model):
             self.keywords = self.name.lower().split()
         self.item_types = {}
     
-    # def to_dict(self):
-    #     d = {}
-    #     d['name'] = self.name
-    #     d['title'] = self.title
-    #     d['description'] = self.description
-    #     d['keywords'] = ','.join(self.keywords)
-    #     d['weight'] = self.weight
-    #     d['base_value'] = self.base_value
-    #     d['carryable'] = str(self.carryable)
-    #     if self.dbid:
-    #         d['dbid'] = self.dbid
-    # 
-    #     return d
-    
     def save(self):
         save_all = False
         if not self.dbid:
             save_all = True
-        Item.save(self)
+        Model.save(self)
         if save_all:
             # First time build item is saved, save item_types.
             for value in self.item_types.values():
@@ -132,12 +118,12 @@ class BuildItem(Item):
                     title = title + '.'
                 title = title[0].capitalize() + title[1:]
         self.title = title
-        self.save({'title': self.title})
+        self.save()
         return 'Item title set.'
     
     def build_set_name(self, name, player=None):
         self.name = name
-        self.save({'name': self.name})
+        self.save()
         return 'Item name set.\n'
     
     def build_set_weight(self, weight, player=None):
@@ -148,7 +134,7 @@ class BuildItem(Item):
             return 'Item weight must be a number.\n'
         else:
             self.weight = weight
-            self.save({'weight': self.weight})
+            self.save()
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item weight set.\n'
     
@@ -160,7 +146,7 @@ class BuildItem(Item):
             return 'Item value must be a number.\n'
         else:
             self.base_value = value
-            self.save({'base_value': self.base_value})
+            self.save()
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item base_value has been set.\n'
     
@@ -175,7 +161,7 @@ class BuildItem(Item):
             self.keywords = [name.lower() for name in self.name.split()]
             self.keywords.append(self.name.lower())
             
-        self.save({'keywords': ','.join(self.keywords)})
+        self.save()
         return 'Item keywords have been set.'
     
     def build_set_carryable(self, boolean, player=None):
@@ -186,7 +172,7 @@ class BuildItem(Item):
             return str(e)
         else:
             self.carryable = val
-            self.save({'carryable': self.carryable})
+            self.save()
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     

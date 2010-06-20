@@ -35,24 +35,6 @@ class CharacterEffect(Model):
             d['dbid'] = self.dbid
         return d
     
-    def save(self, save_dict=None):    
-        world = World.get_world()
-        if self.dbid:
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('char_effect', save_dict)
-            else:    
-                world.db.update_from_dict('char_effect', self.to_dict())
-        else:
-            self.dbid = world.db.insert_from_dict('char_effect', self.to_dict())
-    
-    def destruct(self):
-        """Remove this instance from the database."""
-        world = World.get_world()
-        if self.dbid:
-            world.db.delete('FROM char_effect WHERE dbid=?', [self.dbid])
-    
-
 EFFECTS = CommandRegister()
 class Drunk(CharacterEffect):
     """A drunkeness effect."""

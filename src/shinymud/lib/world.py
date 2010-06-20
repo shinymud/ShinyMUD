@@ -16,6 +16,9 @@ class World(object):
         return cls._instance
     
     def __init__(self, conn=None):
+        if getattr(self, '_initialized', False):
+            return # don't overwrite old values!
+        self._initialized = True
         self.configure_logs()
         self.player_list = {}
         self.player_delete = []

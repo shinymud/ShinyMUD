@@ -1,24 +1,14 @@
-from shinymud.lib.world import *
-from shinymud.models.area import *
-from shinymud.data.config import *
-from shinymud.models.player import *
-from shinymud.commands import *
-from unittest import TestCase
-from shinymud.lib.db import DB
-from shinymud.models.schema import initialize_database
+from shinytest import ShinyTestCase
 
 # Test all of the general commands!
 
-class TestGeneralCommands(TestCase):
-    def setUp(self):
-        self.world = World()
-        self.world.db = DB(':memory:')
-        initialize_database(self.world.db.conn)
-    
-    def tearDown(self):
-        World._instance = None
-    
+class TestGeneralCommands(ShinyTestCase):
     def test_command_register(self):
+        from shinymud.models.area import Area
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.commands import CommandRegister
+
         cmds = CommandRegister()
         self.assertEqual(cmds['supercalifragilisticexpieladocious'], None, 
                     "Command Register is returning things it doesn't have!")
@@ -31,21 +21,26 @@ class TestGeneralCommands(TestCase):
                          "Registered aliases 'bob' and 'sam' did not return same function.")
     
     def test_chat_command(self):
+        from shinymud.models.area import Area
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.commands.commands import Chat
+
         bob = Player(('bob', 'bar'))
         alice = Player(('alice', 'bar'))
         sam = Player(('sam', 'bar'))
         bob.mode = None
-        bob.playerize(name='bob')
+        bob.playerize({'name':'bob'})
         bob.outq = []
         sam.mode = None
-        sam.playerize(name='sam')
+        sam.playerize({'name':'sam'})
         sam.outq = []
         self.world.player_add(bob)
         self.world.player_add(sam)
         self.world.player_add(alice)
         
         Chat(bob, 'lol, hey guys!', 'chat').run()
-        chat = chat_color + 'Bob chats, "lol, hey guys!"' + clear_fcolor + '\r\n'
+        chat = config.chat_color + 'Bob chats, "lol, hey guys!"' + config.clear_fcolor + '\r\n'
         self.assertTrue(chat in sam.outq)
         self.assertTrue(chat in bob.outq)
         self.assertFalse(chat in alice.outq)
@@ -61,14 +56,18 @@ class TestGeneralCommands(TestCase):
         self.assertFalse(chat in alice.outq)
     
     def test_give_command(self):
+        from shinymud.models.area import Area
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.commands.commands import Give
         area = Area.create('blarg')
         room = area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize(name='bob')
+        bob.playerize({'name':'bob'})
         alice = Player(('alice', 'bar'))
         alice.mode = None
-        alice.playerize(name='alice')
+        alice.playerize({'name':'alice'})
         self.world.player_add(bob)
         self.world.player_add(alice)
         
@@ -104,9 +103,13 @@ class TestGeneralCommands(TestCase):
         self.assertTrue(to_shiny in npc.actionq)
     
     def test_set_command(self):
+        from shinymud.models.area import Area
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.commands.commands import Set
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize(name='bob')
+        bob.playerize({'name':'bob'})
         
         # Test setting e-mail
         Set(bob, 'email bob@bob.com', 'set').run()
@@ -136,13 +139,17 @@ class TestGeneralCommands(TestCase):
         self.assertEqual('foo', bob.goto_disappear)
     
     def test_goto_command(self):
+        from shinymud.models.area import Area
+        from shinymud.data import config
+        from shinymud.models.player import Player
+        from shinymud.commands.commands import Goto
         blarg_area = Area.create('blarg')
         foo_area = Area.create('foo')
         blarg_room = blarg_area.new_room()
         foo_room = foo_area.new_room()
         bob = Player(('bob', 'bar'))
         bob.mode = None
-        bob.playerize(name='bob')
+        bob.playerize({'name':'bob'})
         self.world.player_add(bob)
         bob.permissions = bob.permissions | BUILDER
         generic_fail = 'Type "help goto" for help with this command.\r\n'

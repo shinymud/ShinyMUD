@@ -20,7 +20,7 @@ def to_bool(val):
 def read_dict(val):
     # val is a string like "foo=bar,name=fred"
     # return {'foo':'bar', 'name':'fred'}
-    return dict([thing.split('=') for thing in x.split(',')]),
+    return dict([thing.split('=') for thing in val.split(',')])
 
 def write_dict(val):
     return ",".join('='.join([str(k),str(v)]) for k,v in val.items())

@@ -169,7 +169,7 @@ class RoomExit(Model):
                 self.to_room.exits[self.linked_exit].closed = boolean
                 self.to_room.exits[self.linked_exit]._closed = boolean
                 self.to_room.exits[self.linked_exit].save()
-            self.save({'closed': self.closed})
+            self.save()
             return 'Exit attribute "closed" is now %s.' % str(boolean)
     
     def build_set_openable(self, args):
@@ -178,7 +178,7 @@ class RoomExit(Model):
             return 'Acceptable values are true or false.'
         else:
             self.openable = boolean
-            self.save({'openable': str(self.openable)})
+            self.save()
             if self.linked_exit:
                 self.to_room.exits[self.linked_exit].openable = boolean
                 self.to_room.exits[self.linked_exit].save()
@@ -191,7 +191,7 @@ class RoomExit(Model):
             return str(e)
         else:
             self.hidden = boolean
-            self.save({'hidden': str(self.hidden)})
+            self.save()
             return 'Exit attribute "hidden" is now %s.\n' % str(boolean)
     
     def build_set_locked(self, args):
@@ -202,7 +202,7 @@ class RoomExit(Model):
         else:
             self.locked = boolean
             self._locked = boolean
-            self.save({'locked' : str(self.locked)})
+            self.save()
             if self.linked_exit:
                 self.to_room.exits[self.linked_exit].locked = boolean
                 self.to_room.exits[self.linked_exit]._locked = boolean
@@ -230,7 +230,7 @@ class RoomExit(Model):
             return 'That room doesn\'t exist.\n'
         if not room.linked_exit:
             self.to_room = room
-            self.save({'to_room_id': self.to_room.id, 'to_area':self.to_room.area.name})
+            self.save()
             return ' The %s exit now goes to room %s in area %s.\n' % (self.direction,
                                                                        self.to_room.id,
                                                                        self.to_room.area.name)

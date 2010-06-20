@@ -261,7 +261,7 @@ class Player(Character):
         if not email:
             return 'What do you want to set your email address to?'
         self.email = email
-        self.save({'email': self.email})
+        self.save()
         return 'Your e-mail address is now "%s".' % email
     
     def set_description(self, description):
@@ -277,7 +277,7 @@ class Player(Character):
             return ('That\'s too long for a title. '
                     'Try something under 30 characters.')
         self.title = title
-        self.save({'title': self.title})
+        self.save()
         return 'Your title is now "%s".' % self.title
     
     def set_goto_appear(self, appear):
@@ -285,7 +285,7 @@ class Player(Character):
             if not appear:
                 return 'What do you want to set your goto_appear message to?'
             self.goto_appear = appear
-            self.save({'goto_appear': self.goto_appear})
+            self.save()
             return 'Goto-appear message set.'
         else:
             return 'You don\'t have the permissions to set that.'
@@ -295,7 +295,7 @@ class Player(Character):
             if not disappear:
                 return 'What do you want to set your goto_disappear message to?'
             self.goto_disappear = disappear
-            self.save({'goto_disappear': self.goto_disappear})
+            self.save()
             return 'Goto-disappear message set.'
         else:
             return 'You don\'t have the permissions to set that.'
