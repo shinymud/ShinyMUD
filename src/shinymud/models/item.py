@@ -59,7 +59,8 @@ class BuildItem(Item):
         Column('area', foreign_key=('area', 'name'), read=read_area, write=write_area),
         Column('id')
     ]
-    
+    db_extras = [
+        "UNIQUE (area, id)"]
     def __init__(self, args={}):
         self.item_types = {}
         Item.__init__(self, args)
