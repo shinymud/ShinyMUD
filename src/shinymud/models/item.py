@@ -241,6 +241,7 @@ class GameItem(Item):
     ]
     def __init__(self, args={}, spawn_id=None):
         self.spawn_id = spawn_id
+        self.item_types = {}
         Item.__init__(self, args)
     
     def load_extras(self):
