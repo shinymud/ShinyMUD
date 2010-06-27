@@ -81,25 +81,6 @@ class Player(Character):
                 self.load_contents(new_item)
             container.item_add(new_item)
     
-    # def to_dict(self):
-    #     d = Character.to_dict(self)
-    #     d['channels'] = ",".join([str(key) + '=' + str(val) for key, val in self.channels.items()])
-    #     d['name'] = self.name
-    #     d['password'] = self.password
-    #     d['description'] = self.description
-    #     d['permissions'] = self.permissions
-    #     d['goto_appear'] = self.goto_appear
-    #     d['goto_disappear'] = self.goto_disappear
-    #     d['title'] = self.title
-    #     if self.email:
-    #         d['email'] = self.email
-    #     if self.dbid:
-    #         d['dbid'] = self.dbid
-    #     if self.location:
-    #         d['location'] = '%s,%s' % (self.location.area.name, self.location.id)
-    #     
-    #     return d
-    
     def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the player's output queue."""
         if strip_nl:

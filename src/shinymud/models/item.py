@@ -44,6 +44,12 @@ class Item(Model):
         """
         return t in self.item_types
     
+    def destruct(self):
+        Model.destruct(self)
+        for item in self.item_types.values():
+            item.destruct()
+        self.item_types.clear()
+    
 
 class BuildItem(Item):
     """BuildItem represents a prototype item created in BuildMode.

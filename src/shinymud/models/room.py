@@ -31,7 +31,6 @@ class Room(Model):
         self.spawns = {}
         self.players = {}
         Model.__init__(self, args)
-
     
     def load_extras(self):
         self.load_exits()

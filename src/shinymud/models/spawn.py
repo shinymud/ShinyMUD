@@ -64,12 +64,12 @@ class Spawn(Model):
         if spawn in self.nested_spawns:
             self.nested_spawns.remove(spawn)
     
-    def destruct(self):
-        world = World.get_world()
-        if self.dbid:
-            world.db.delete('FROM room_spawns WHERE dbid=?', [self.dbid])
-            for spawn in self.nested_spawns:
-                spawn.destruct()
+    # def destruct(self):
+    #     world = World.get_world()
+    #     if self.dbid:
+    #         world.db.delete('FROM room_spawns WHERE dbid=?', [self.dbid])
+    #         for spawn in self.nested_spawns:
+    #             spawn.destruct()
     
     def spawn(self):
         """load the object"""

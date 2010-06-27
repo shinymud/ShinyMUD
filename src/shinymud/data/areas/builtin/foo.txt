@@ -5,19 +5,19 @@
 [End Area]
 
 [Scripts]
-[{"body": "\nload item 2 foo\naward coin to #target_name + \n'A man slips a coin to you.':+\n'A man slips a coin to #target_name.'\nif remember #target_name\nsay 'Do I know you? hmm... Probably not.'\nendif\nsay 'Give this to Maurice and tell him I..aaayyyyy owe him Nothin! -Hic-", "id": "1", "name": "Luz_action", "area": 2}, {"body": "say 'That Maurice was a good man. A Good Man! But he won't let me come back until I clean up.'\nsay 'You... -hic- You should pay him back for me.'\nload item 2\ngive coin to #target_name", "id": "2", "name": "Luz_maurice", "area": 2}]
+[{"body": "\nload item 2 foo\naward coin to #target_name + \n'A man slips a coin to you.':+\n'A man slips a coin to #target_name.'\nif remember #target_name\nsay 'Do I know you? hmm... Probably not.'\nendif\nsay 'Give this to Maurice and tell him I..aaayyyyy owe him Nothin! -Hic-", "id": "1", "name": "Luz_action", "area": 3}, {"body": "say 'That Maurice was a good man. A Good Man! But he won't let me come back until I clean up.'\nsay 'You... -hic- You should pay him back for me.'\nload item 2\ngive coin to #target_name", "id": "2", "name": "Luz_maurice", "area": 3}]
 [End Scripts]
 
 [Items]
-[{"description": "This couch is in a horrid condition.  It looks as if someone had left\nit out here weeks ago, and it has been rotting ever since.", "weight": 0, "title": "A raggid couch sits next to the dumster here.", "carryable": "False", "area": 2, "keywords": "couch", "base_value": 0, "id": "1", "name": "a couch"}, {"description": "It is an oddly smooth gold coin, in mint condition.", "weight": 0, "title": "A gold coin.", "carryable": "True", "area": 2, "keywords": "coin,gold coin", "base_value": 20, "id": "2", "name": "a gold coin"}]
+[{"description": "This couch is in a horrid condition.  It looks as if someone had left\nit out here weeks ago, and it has been rotting ever since.", "weight": 0, "title": "A raggid couch sits next to the dumster here.", "carryable": "False", "area": 3, "name": "a couch", "keywords": "couch", "id": "1", "base_value": 0}, {"description": "A stylish hat signaling the end of one triumph and the beginning of\nanother.", "weight": 0, "title": "A stylish graduation cap sits here.", "carryable": "True", "area": 3, "name": "a gradumacation hat", "keywords": "hat,graduate,gradumatation,cap", "id": "3", "base_value": 1000}, {"description": "It is an oddly smooth gold coin, in mint condition.", "weight": 0, "title": "A gold coin.", "carryable": "True", "area": 3, "name": "a gold coin", "keywords": "coin,gold coin", "id": "2", "base_value": 20}]
 [End Items]
 
 [Item Types]
-[{"sit_effects": "", "item": "1", "sleep_effects": "", "item_type": "furniture"}]
+[{"sit_effects": "", "build_item": 18, "sleep_effects": "", "item": "1", "item_type": "furniture"}, {"build_item": 20, "hit": 0, "dmg": "", "absorb": "", "is_equipped": "None", "evade": 0, "item": "3", "item_type": "equippable", "equip_slot": "head"}]
 [End Item Types]
 
 [Npcs]
-[{"name": "Luz", "area": 2, "gender": "male", "hp": 0, "title": "A very drunk man sits on the couch mumbling.", "mp": 0, "max_hp": 20, "keywords": "man,luz,luz,drunk", "max_mp": 0, "id": "1", "description": "You see nothing special about this person. The man is wearing tattered\ncloths that match well with the alley. He looks content enough sitting\non the couch, mumbling to himself. In his slurred speech, you can\nalmost catch the words, 'damn russian' and something about owing\nmoney. Mabe you should ask him about the russain..."}]
+[{"name": "Luz", "area": 3, "gender": "male", "hp": 0, "title": "A very drunk man sits on the couch mumbling.", "mp": 0, "max_hp": 20, "keywords": "man,luz,luz,drunk", "max_mp": 0, "id": "1", "description": "You see nothing special about this person. The man is wearing tattered\ncloths that match well with the alley. He looks content enough sitting\non the couch, mumbling to himself. In his slurred speech, you can\nalmost catch the words, 'damn russian' and something about owing\nmoney. Mabe you should ask him about the russain..."}]
 [End Npcs]
 
 [Npc Events]
@@ -25,13 +25,13 @@
 [End Npc Events]
 
 [Rooms]
-[{"description": "This alley seems almost unnaturally dark. Apartment buildings tower\nover you, shutting out any ambient light. Either way in the alley\nrecedes into darkness. There is a dumpster to your right, which barely\ncontains all of the trash littered everywhere. Larger pieces of broken\nfurniture have been abandoned around the dumpster.", "id": "1", "name": "Alley", "area": 2}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 2}]
+[{"description": "This alley seems almost unnaturally dark. Apartment buildings tower\nover you, shutting out any ambient light. Either way in the alley\nrecedes into darkness. There is a dumpster to your right, which barely\ncontains all of the trash littered everywhere. Larger pieces of broken\nfurniture have been abandoned around the dumpster.", "id": "1", "name": "Alley", "area": 3}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": 3}]
 [End Rooms]
 
 [Room Exits]
-[{"direction": "north", "locked": false, "room": "1", "area": "foo", "to_area": "cubicle", "key_area": null, "to_room": null, "to_id": "4", "room_id": "1", "closed": false, "to_room_id": "4", "openable": false, "key_id": null, "hidden": false, "linked_exit": "south"}]
+[{"direction": "north", "locked": false, "room": "1", "area": "foo", "to_area": "cubicle", "key_area": "None", "to_room": null, "to_id": "4", "room_id": "1", "closed": false, "to_room_id": "4", "openable": false, "key_id": "None", "hidden": false, "linked_exit": "south"}]
 [End Room Exits]
 
 [Room Spawns]
-{"1": [{"spawn_type": "npc", "room": 9, "spawn_object_id": "1", "spawn_object_area": "foo", "id": 5}, {"spawn_type": "item", "room": 9, "spawn_object_id": "1", "spawn_object_area": "foo", "id": 6}], "2": []}
+{"1": [{"spawn_type": "npc", "room": 21, "spawn_object_id": "1", "spawn_object_area": "foo", "id": 5}, {"spawn_type": "item", "room": 21, "spawn_object_id": "1", "spawn_object_area": "foo", "id": 6}], "2": []}
 [End Room Spawns]

@@ -169,6 +169,7 @@ class World(object):
         """Destroy an entire area! TODO: whoa nelly, they want to destroy a
         whole area! We should really make sure that's what they want by adding
         an extra game state that blocks all actions until they confirm. """
+        self.log.warning('%s is attempting to destroy area %s.' % (playername, area_name))
         area = self.get_area(area_name)
         if not area:
             return 'Area %s doesn\'t exist.\n' % area_name

@@ -10,8 +10,8 @@ class Script(Model):
     db_table_name = 'script'
     db_columns = Model.db_columns + [
         Column('area', type="INTEGER", read=read_area, write=write_area),
-        Column('name', default='New Script', null=False),
-        Column('body', default='', null=False),
+        Column('name', default='New Script'),
+        Column('body', default=''),
         Column('id')
     ]        
     def __str__(self):

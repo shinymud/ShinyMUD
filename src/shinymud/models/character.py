@@ -36,15 +36,6 @@ class Character(Model):
         self.effects = {}
         self.position = ('standing', None)
     
-    # def to_dict(self):
-    #     d = {}
-    #     d['gender'] = self.gender
-    #     d['hp'] = self.hp
-    #     d['mp'] = self.mp
-    #     d['max_mp'] = self.max_mp
-    #     d['max_hp'] = self.max_hp
-    #     return d
-    
     def __str__(self):
         return self.fancy_name()
     
