@@ -9,7 +9,7 @@ class NPCEvent(Model):
         Column('script', write=lambda script: script.id),
         Column('event_trigger'),
         Column('condition'),
-        Column('probability', read=int, write=int, default=100, type='INTEGER')
+        Column('probability', read=read_int, write=int, default=100, type='INTEGER')
     ]
     def __str__(self):
         string = '%s' % self.event_trigger

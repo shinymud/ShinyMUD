@@ -105,3 +105,17 @@ def write_location(val):
     if val:
         return '%s,%s' % (val.area.name, val.id)
     return None
+
+def read_int(val):
+    try:
+        r = int(val)
+    except ValueError:
+        r = 0
+    return r
+
+def read_float(val):
+    try:
+        r = float(val)
+    except ValueError:
+        r = 0.0
+    return r

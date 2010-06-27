@@ -229,7 +229,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         Column('npc', foreign_key=('npc', 'dbid'), null=False, type='INTEGER',
                write=lambda npc: npc.dbid),
         Column('buyer', read=to_bool, default=True),
-        Column('markup', read=float, type='NUMBER', default=1),
+        Column('markup', read=read_float, type='NUMBER', default=1),
         Column('buys_types', read=read_list, write=write_list),
         Column('sale_items', read=MerchandiseList,
                write=lambda ml: ml.save if ml else None)

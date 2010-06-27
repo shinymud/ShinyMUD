@@ -101,8 +101,8 @@ class Equippable(ItemType):
     db_table_name = 'equippable'    
     db_columns = ItemType.db_columns + [
         Column('equip_slot'),
-        Column('hit', type="INTEGER", read=int, write=int, default=0),
-        Column('evade', type="INTEGER", read=int, write=int, default=0),
+        Column('hit', type="INTEGER", read=read_int, write=int, default=0),
+        Column('evade', type="INTEGER", read=read_int, write=int, default=0),
         Column('absorb', read=read_int_dict, write=write_int_dict, copy=copy_dict),
         Column('dmg', read=read_damage, write=write_damage, copy=lambda d: [Damage(str(x)) for x in d ]),
         Column('is_equipped', read=to_bool, default=False)
@@ -485,9 +485,9 @@ class Container(ItemType):
     plural = 'containers'
     db_table_name = 'container'
     db_columns = ItemType.db_columns + [
-        Column('weight_capacity', type="NUMBER", read=float, default=0),
-        Column('build_item_capacity', type="INTEGER", read=int, write=int, default=-1),
-        Column('weight_reduction', type="INTEGER", read=int, write=int, default=0),
+        Column('weight_capacity', type="NUMBER", read=read_float, default=0),
+        Column('build_item_capacity', type="INTEGER", read=read_int, write=int, default=-1),
+        Column('weight_reduction', type="INTEGER", read=read_int, write=int, default=0),
         Column('openable', read=to_bool, default=False),
         Column('closed', read=to_bool, default=False),
         Column('locked', read=to_bool, defult=False),
@@ -608,7 +608,7 @@ class Furniture(ItemType):
         # TODO: fix character effects
         Column('sit_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
         Column('sleep_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
-        Column('capacity', type="INTEGER", read=int, write=int, default=-1),
+        Column('capacity', type="INTEGER", read=read_int, write=int, default=-1),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)

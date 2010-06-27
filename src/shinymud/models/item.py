@@ -14,8 +14,8 @@ class Item(Model):
         Column('title', default='A shiny new object sparkles happily'),
         Column('description', default='This is a shiny new object'),
         Column('keywords', read=read_list, write=write_list, copy=copy_list, default=[]),
-        Column('weight', type="INTEGER", read=int, write=int, default=0),
-        Column('base_value', type="INTEGER", read=int, write=int, default=0),
+        Column('weight', type="INTEGER", read=read_int, write=int, default=0),
+        Column('base_value', type="INTEGER", read=read_int, write=int, default=0),
         Column('carryable', read=to_bool, default=True)
     ]
     

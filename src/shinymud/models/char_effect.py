@@ -7,7 +7,7 @@ import random
 
 class CharacterEffect(Model):
     db_columns = Model.db_columns + [
-        Column('duration', type="INTEGER", read=int, write=int),
+        Column('duration', type="INTEGER", read=read_int, write=int),
         Column('item'),
         Column('item_type')
     ]

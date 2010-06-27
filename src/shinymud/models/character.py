@@ -11,11 +11,11 @@ class Character(Model):
     """
     db_columns = Model.db_columns + [
         Column('gender', default='neutral'),
-        Column('hp', type="INTEGER", default=20, read=int, write=int),
-        Column('mp', type="INTEGER", default=5, read=int, write=int),
-        Column('max_mp', type="INTEGER", default=5, read=int, write=int),
-        Column('max_hp', type="INTEGER", default=20, read=int, write=int),
-        Column('currency', type="INTEGER", default=0, read=int, write=int),
+        Column('hp', type="INTEGER", default=20, read=read_int, write=int),
+        Column('mp', type="INTEGER", default=5, read=read_int, write=int),
+        Column('max_mp', type="INTEGER", default=5, read=read_int, write=int),
+        Column('max_hp', type="INTEGER", default=20, read=read_int, write=int),
+        Column('currency', type="INTEGER", default=0, read=read_int, write=int),
         Column('description', default="You see nothing special about this person.")
     ]
     def characterize(self, args={}):
