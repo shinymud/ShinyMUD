@@ -551,21 +551,23 @@ config file. To import an area that has been exported to a text file, see
     )
     def execute(self):
         if not self.args:
-            self.pc.update_output('Try: "export <area-name>"')
+            self.pc.update_output('Try: "export <area/char> <name>", or see "help export".')
         else:
-            if self.args.startswith('area '):
-                self.args = self.args[5:]
-            area = self.world.get_area(self.args)
-            if area:
+            exp = r'(?P<type>(area|char))[ ]+(?P<name>\w)'
+            match = re.match(exp, self.args, re.I)
+            if not match:
+                self.pc.update_output('Try: "export <area/char> <name>", or see "help export".')
+                return
+            itype, name = match.group('type', 'name')
+            if itype == 'area':
+                area = self.world.get_area(self.args)
+                if not area:
+                    self.pc.update_output('Area "%s" doesn\'t exist.' % self.args)
+                    return
                 self.pc.update_output('Exporting area %s. This may take a moment.' % area.name)
-                try:
-                    result = SPort().export_to_shiny(area)
-                except SPortExportError, e:
-                    self.pc.update_output(e)
-                else:
-                    self.pc.update_output(result)
+                self.pc.update_output(export(itype, area))
             else:
-                self.pc.update_output('That area doesn\'t exist.')
+                self.pc.update_output('That functionality doesn\'t exist yet.')
     
 
 build_list.register(Export, ['export'])
@@ -593,27 +595,27 @@ To export areas to text-files, see "help export".
     )
     def execute(self):
         if not self.args:
-            self.pc.update_output(SPort.list_importable_areas())
+            self.pc.update_output(list_importable_areas())
         elif self.args.startswith('built-in'):
             # Import all of areas in the PREPACK directory
             self.pc.update_output(' Importing Built-In Areas '.center(50, '-'))
-            result = SPort(PREPACK).import_list('all')
+            result = SPort(PREPACK).import_batch('all')
             self.pc.update_output(result + ('-' * 50))
         else:
+            exp = r'(?P<type>(area|char))[ ]+(?P<name>\w)'
+            match = re.match(exp, self.args, re.I)
+            if not match:
+                self.pc.update_output('See "help import" for help on using the Import command.')
+                return
+            itype, name = match.group('type', 'name')
             # Import the desired area
-            if self.args.startswith('area '):
-                self.args = self.args[5:]
-            area = self.world.get_area(self.args)
-            if area:
-                self.pc.update_output('That area already exists in your world.\n' +\
-                                        'You\'ll need to destroy it in-game before you try importing it.\n')
-            else:
-                try:
-                    result = SPort().import_from_shiny(self.args)
-                except SPortImportError, e:
-                    self.pc.update_output(str(e))
-                else:
-                    self.pc.update_output(result)
+            if itype == 'area':
+                area = self.world.get_area(self.args)
+                if area:
+                    self.pc.update_output('That area already exists in your world.\n' +\
+                                            'You\'ll need to destroy it in-game before you try importing it.\n')
+                    return
+            self.pc.update_output(inport(itype, name))
     
 
 build_list.register(Import, ['import'])

@@ -274,7 +274,7 @@ class Equippable(ItemType):
         self.dmg_ids = []
         self.is_equipped = False
         self.save()
-        
+    
     def build_remove_damage(self, index):
         if len(self.dmg) == 0:
             return "this item does not do any damage"

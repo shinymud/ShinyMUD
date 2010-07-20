@@ -50,8 +50,6 @@ class Player(Character):
             self.goto_appear = '%s appears in the room.' % str(self)
         if not self.goto_disappear:
             self.goto_disappear = '%s disappears in a cloud of smoke.' % str(self)
-    
-    def load_extras(self):
         self.load_inventory()
     
     def load_inventory(self):

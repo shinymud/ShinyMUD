@@ -1,0 +1,2 @@
+class SportError(Exception):
+    pass
