@@ -20,10 +20,10 @@ class Item(Model):
     ]
     
     def __init__(self, args={}):
+        self.item_types = {}
         Model.__init__(self, args)
         if not self.keywords and self.name:
             self.keywords = self.name.lower().split()
-        self.item_types = {}
     
     def save(self):
         save_all = False
@@ -68,7 +68,6 @@ class BuildItem(Item):
     db_extras = [
         "UNIQUE (area, id)"]
     def __init__(self, args={}):
-        self.item_types = {}
         Item.__init__(self, args)
     
     def load_extras(self):
@@ -241,7 +240,6 @@ class GameItem(Item):
     ]
     def __init__(self, args={}, spawn_id=None):
         self.spawn_id = spawn_id
-        self.item_types = {}
         Item.__init__(self, args)
     
     def load_extras(self):

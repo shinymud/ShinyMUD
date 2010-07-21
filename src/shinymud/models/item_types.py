@@ -608,7 +608,7 @@ class Furniture(ItemType):
         # TODO: fix character effects
         Column('sit_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
         Column('sleep_effects', read=lambda x: [], write=write_list, copy=lambda x: []),
-        Column('capacity', type="INTEGER", read=read_int, write=int, default=-1),
+        Column('capacity', type="INTEGER", read=read_int, write=int, default=1),
     ]
     def __init__(self, args={}):
         ItemType.__init__(self, args)
@@ -640,9 +640,12 @@ class Furniture(ItemType):
         return Furniture(d)
     
     def player_add(self, player):
-        if self.capacity:
+        if self.capacity == -1:
             pass
-        else:
+        elif self.capacity == 0:
+            self.players.append(player)
+            return True
+        elif len(self.players) < self.capacity:
             self.players.append(player)
             return True
     
@@ -650,6 +653,24 @@ class Furniture(ItemType):
         if player in self.players:
             self.players.remove(player)
     
+    def build_set_capacity(self, caps, player=None):
+        if str(caps).lower() == 'disabled':
+            self.capacity = -1
+        elif str(caps).lower() == 'all' or str(caps).lower() == 'unlimited':
+            self.capacity = 0
+        else:
+            try:
+                caps = int(caps.strip())
+            except:
+                return 'Capacity must be "disabled" (-1), "unlimited" (0), or the number of people it can hold.'
+            else:
+                self.capacity = caps
+        self.save()
+        if self.capacity == -1:
+            return 'Capacity set to disabled (no one may sit/sleep on it).'
+        if self.capacity == 0:
+            return 'Capacity set to unlimited (everyone can sit/sleep on it).'
+        return 'Capacity set to %d.' % self.capacity
 
 class Portal(ItemType):
     plural = 'portals'
@@ -685,7 +706,7 @@ class Portal(ItemType):
         return string
     
     def _resolve_location(self):
-        if getattr(self, '_location'):
+        if getattr(self, '_location', None):
             return self._location
         try:
             self.location = self.world.get_area(str(self.to_area)).get_room(str(self.to_room))
