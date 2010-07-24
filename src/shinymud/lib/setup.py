@@ -52,7 +52,6 @@ def create_table(model):
     table_string.append(')')
     create_stmt = "".join(table_string)
     cursor = World.get_world().db.conn.cursor()
-    World.get_world().log.debug('\n' + create_stmt + '\n')
     cursor.execute(create_stmt)
     EXISTING_TABLES[model.db_table_name] = [col.name for col in model.db_columns]
 
@@ -79,6 +78,5 @@ def add_column(mod, col):
                 add_column(M, c)
         alter_stmt = 'ALTER TABLE %s ADD COLUMN %s' % (mod.db_table_name, str(column))
         cursor = World.get_world().db.conn.cursor()
-        World.get_world().log.debug('\n' + alter_stmt + '\n')
         cursor.execute(alter_stmt)
         EXISTING_TABLES[mod.db_table_name].append(col)
