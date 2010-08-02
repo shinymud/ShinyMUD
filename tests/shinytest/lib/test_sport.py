@@ -1,5 +1,8 @@
 from shinytest import ShinyTestCase
 
+import os
+import shutil
+
 class TestSport(ShinyTestCase):
     def test_shiny_area_format(self):
         """Make sure the read/write formatters for ShinyAreaFormat work correctly.
@@ -83,4 +86,50 @@ class TestSport(ShinyTestCase):
         
         return area
     
-
+    def _clean_test_file(self, path):
+        try:
+            os.remove(path)
+        except Exception, e:
+            self.world.log.debug('Error removing test file:' + str(e))
+    
+    def test_list_areas(self):
+        from shinymud.models.area import Area
+        from shinymud.lib.sport import export, list_importable
+        from shinymud.data.config import AREAS_EXPORT_DIR, AREAS_IMPORT_DIR
+        a = Area.create({'name': 'supertestred'})
+        b = Area.create({'name': 'supertestblue'})
+        export('area', a)
+        export('area', b)
+        self.world.destroy_area('supertestred', 'test')
+        self.world.destroy_area('supertestblue', 'test')
+        txt = list_importable('area')
+        self.assertNotEqual(txt.find('supertestred'), -1)
+        self.assertNotEqual(txt.find('supertestblue'), -1)
+        self.world.log.debug(txt)
+        
+        self._clean_test_file(AREAS_EXPORT_DIR + '/supertestblue_area.shiny_format')
+        self._clean_test_file(AREAS_EXPORT_DIR + '/supertestred_area.shiny_format')
+    
+    def test_inport_dir(self):
+        from shinymud.models.area import Area
+        from shinymud.lib.sport import export, inport_dir
+        from shinymud.data.config import AREAS_EXPORT_DIR
+        epath = AREAS_EXPORT_DIR + '/test'
+        
+        a = Area.create({'name': 'supertestfooarea'})
+        b = Area.create({'name': 'supertestbararea'})
+        c = Area.create({'name': 'supertestbazarea'})
+        export('area', a, dest_path=epath)
+        export('area', b, dest_path=epath)
+        export('area', c, dest_path=epath)
+        self.world.destroy_area('supertestfooarea', 'test')
+        self.world.destroy_area('supertestbararea', 'test')
+        self.world.destroy_area('supertestbazarea', 'test')
+        
+        txt = inport_dir('area', source_path=epath)
+        self.world.log.debug(txt)
+        self.assertTrue(self.world.area_exists('supertestfooarea'))
+        self.assertTrue(self.world.area_exists('supertestbararea'))
+        self.assertTrue(self.world.area_exists('supertestbazarea'))
+        
+        shutil.rmtree(epath, True)

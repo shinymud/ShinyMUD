@@ -139,12 +139,11 @@ def setup():
               "you can already do that in-game (see 'help import')."
     else:
         world = setup_stub_world()
-        from shinymud.lib.sport import SPort
+        from shinymud.lib.sport import inport_dir
         
         print "\nWelcome to the ShinyMUD setup wizard! First, we'll have you create a \n" +\
               "God character (a character with full in-game priviliges).\n"
         create_god(world)
-        r = SPort.list_importable_areas()
         if os.path.exists(PREPACK):
             print "\nDo you want to import our pre-packaged starting areas?"
             print "You can always delete them later in-game if you don't want them anymore."
@@ -152,7 +151,7 @@ def setup():
             if choice.lower().startswith('y'):
                 try:
                     print ' Importing Built-in Areas '.center(50, '-')
-                    result = SPort(PREPACK).import_list('all')
+                    result = inport_dir('area', source_path=PREPACK)
                     print result
                 except Exception, e:
                     print "Oops, there was an error importing our areas.\n" +\

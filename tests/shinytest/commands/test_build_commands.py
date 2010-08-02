@@ -1,5 +1,7 @@
 from shinytest import ShinyTestCase
 
+import os
+
 class TestBuildCommands(ShinyTestCase):
     def setUp(self):
         ShinyTestCase.setUp(self)
@@ -15,7 +17,13 @@ class TestBuildCommands(ShinyTestCase):
         self.world.player_add(self.bob)
         self.bob.mode = BuildMode(self.bob)
         self.bob.permissions = self.bob.permissions | config.BUILDER
-        
+    
+    def _clean_test_file(self, path):
+        try:
+            os.remove(path)
+        except Exception, e:
+            self.world.log.debug('Error removing test file:' + str(e))
+    
     def test_edit_command(self):
         from shinymud.data import config
         from shinymud.models.player import Player
@@ -126,5 +134,79 @@ class TestBuildCommands(ShinyTestCase):
         Unlink(self.bob, 'north', 'unlink').run()
         self.assertEqual(room1.exits.get('north'), None)
         self.assertEqual(room2.exits.get('south'), None)
-        
     
+    def test_export_command(self):
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import Export
+        from shinymud.data.config import AREAS_EXPORT_DIR
+        a = Area.create({'name': 'superlongtestfoo'})
+        
+        # Make sure we fail if the area doesn't actually exist
+        Export(self.bob, 'area bar', 'export').run()
+        self.world.log.debug(self.bob.outq)
+        self.assertTrue('Area "bar" doesn\'t exist.\r\n' in self.bob.outq)
+        
+        # We should fail if the player gives us incorrect syntax
+        error = 'Try: "export <area/player> <name>", or see "help export".\r\n'
+        Export(self.bob, 'lol', 'export').run()
+        self.assertTrue(error in self.bob.outq)
+        
+        # Character exporting doesn't exist yet, but make sure the player gets
+        # the correct logic branch if they try it
+        error = 'Invalid type "char". See "help export".\r\n'
+        Export(self.bob, 'char bob', 'export').run()
+        self.assertTrue(error in self.bob.outq)
+        
+        # Make sure exporting actually works
+        self.assertTrue(self.world.area_exists('superlongtestfoo'))
+        Export(self.bob, 'area superlongtestfoo', 'export').run()
+        self.world.log.debug(self.bob.outq)
+        self.assertTrue(self.bob.outq[-1].startswith('Export complete!'))
+        # make sure the file got created
+        self.assertTrue(os.path.exists(AREAS_EXPORT_DIR + '/superlongtestfoo_area.shiny_format'))
+        self._clean_test_file(AREAS_EXPORT_DIR + '/superlongtestfoo_area.shiny_format')
+    
+    def test_import_command(self):
+        from shinymud.models.area import Area
+        from shinymud.commands.build_commands import Import, Export
+        from shinymud.data.config import AREAS_EXPORT_DIR, AREAS_IMPORT_DIR
+        
+        Area.create({'name': 'superlongtestbar', 'description': 'superlongtestbar is cool.'})
+        Area.create({'name': 'superlongtestexistenz'})
+        Export(self.bob, 'area superlongtestbar', 'import').run()
+        self.assertTrue(os.path.exists(AREAS_EXPORT_DIR + '/superlongtestbar_area.shiny_format'))
+        self.world.destroy_area('superlongtestbar', 'test')
+        self.assertFalse(self.world.area_exists('superlongtestbar'))
+        
+        # Make sure we fail if the area file doesn't actually exist
+        Import(self.bob, 'area superlongtestfoo', 'import').run()
+        self.world.log.debug(self.bob.outq)
+        self.assertTrue('Error: file superlongtestfoo_area.shiny_format does not exist.\r\n' in self.bob.outq)
+        
+        # Make sure we fail if the player gives incorrect syntax
+        Import(self.bob, 'superlongtestbar', 'import').run()
+        error = 'Invalid type "superlongtestbar". See "help export".\r\n'
+        self.assertTrue(error in self.bob.outq)
+        
+        # Make sure we fail if the area already exists in the MUD
+        Import(self.bob, 'area superlongtestexistenz', 'import').run()
+        error = 'Area "superlongtestexistenz" already exists in your game.\r\n'
+        self.assertTrue(error in self.bob.outq)
+        
+        # Make sure the import command actually works
+        Import(self.bob, 'area superlongtestbar', 'import').run()
+        b = self.world.get_area('superlongtestbar')
+        self.world.log.debug(self.bob.outq)
+        self.assertTrue(b)
+        self.assertEqual(b.description, 'superlongtestbar is cool.')
+        
+        
+        self.world.destroy_area('superlongtestbar', 'test')
+        Import(self.bob, 'area superlongtestbar from email', 'import').run()
+        error = 'Cannot find transport: load_email\r\n'
+        self.world.log.debug(self.bob.outq)
+        self.assertTrue(error in self.bob.outq)
+        
+        self._clean_test_file(AREAS_EXPORT_DIR + '/superlongtestbar_area.shiny_format')
+    
+

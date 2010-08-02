@@ -6,7 +6,7 @@ from shinymud.lib.world import World
 import hashlib
 import re
 
-BAD_PASSWORDS = ['cancel', '@cancel']
+BAD_PASSWORDS = ['cancel', '@cancel', 'password', 'passwd']
 
 # choose_class_string = """Choose a class, or pick custom:
 # Fighter    Thief      Wizard     Custom

@@ -6,7 +6,11 @@ import json
 import re
 
 def format(world, raw_data):
-    """Import an area from a text file in ShinyAreaFormat."""
+    """Deserialize an area saved in ShinyAreaFormat and adds it to the world.
+    
+    raw_data - the data to be deserialized into a Shiny Area object.
+    world - The World instance
+    """
     area = json.loads(_match_shiny_tag('Area', raw_data))
     scripts = json.loads(_match_shiny_tag('Scripts', raw_data))
     items = json.loads(_match_shiny_tag('Items', raw_data))
@@ -53,7 +57,7 @@ def format(world, raw_data):
         # if they try to import it again, and we won't leave orphaned or
         # erroneous data in the db.
         world.log.error(traceback.format_exc())
-        world.destroy_area(areaname, 'SPort Error')
+        world.destroy_area(area.get('name'), 'SPort Error')
         raise SportError('There was a horrible error on import! '
                          'Aborting! Check logfile for details.')
     new_area.reset()

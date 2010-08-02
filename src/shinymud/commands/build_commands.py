@@ -3,11 +3,11 @@ from shinymud.models.room import Room
 from shinymud.models.item import BuildItem
 from shinymud.models.npc import Npc
 from shinymud.lib.world import World
-from shinymud.lib.sport import *
 from shinymud.lib.registers import CommandRegister
 from shinymud.commands import *
 from shinymud.data.config import EQUIP_SLOTS, DAMAGE_TYPES
 
+import shinymud.lib.sport as Sport
 import re
 
 build_list = CommandRegister()
@@ -543,7 +543,7 @@ class Export(BaseCommand):
     """<title>Export (Build Command)</title>
 The Export Command allows Builders to export their areas to text files.
 \nUSAGE:
-  export [area] <area-name>
+  export area <area-name>
 \nExported areas can be found in your AREAS_EXPORT_DIR, which is listed in your
 config file. To import an area that has been exported to a text file, see
 "help import".
@@ -551,30 +551,51 @@ config file. To import an area that has been exported to a text file, see
     )
     def execute(self):
         if not self.args:
-            self.pc.update_output('Try: "export <area/char> <name>", or see "help export".')
+            self.pc.update_output('Try: "export <area/player> <name>", or see "help export".')
         else:
-            exp = r'(?P<type>(area|char))[ ]+(?P<name>\w)'
+            exp = r'(?P<type>\w+)([ ]+((?P<name>\w+)))' +\
+                  r'([ ]+(to[ ]+)(?P<trans>\w+))?([ ]+(in[ ]+)(?P<format>\w[\w ]*))?$'
             match = re.match(exp, self.args, re.I)
             if not match:
-                self.pc.update_output('Try: "export <area/char> <name>", or see "help export".')
+                self.pc.update_output('Try: "export <area/player> <name>", or see "help export".')
                 return
-            itype, name = match.group('type', 'name')
-            if itype == 'area':
-                area = self.world.get_area(self.args)
-                if not area:
-                    self.pc.update_output('Area "%s" doesn\'t exist.' % self.args)
-                    return
-                self.pc.update_output('Exporting area %s. This may take a moment.' % area.name)
-                self.pc.update_output(export(itype, area))
+            t, name, trans, format = match.group('type', 'name', 'trans', 'format')
+            if t == 'player':
+                # Player is a special case because the world does not keep track
+                # of offline players in its get_player list
+                obj = self.get_player(name)
             else:
-                self.pc.update_output('That functionality doesn\'t exist yet.')
+                try:
+                    obj = getattr(self.world, 'get_' + t)(name)
+                except AttributeError:
+                    self.pc.update_output('Invalid type "%s". See "help export".' % t)
+                    return
+            if not obj:
+                self.pc.update_output('%s "%s" doesn\'t exist.' % (t.capitalize(), name))
+            else:
+                self.pc.update_output('Exporting %s %s. This may take a moment.' % (t, obj.name))
+                self.pc.update_output(Sport.export(t, obj, format, trans))
+    
+    def get_player(self, name):
+        """Take a player's name, return a player instance if there's a character
+        associated with that name, None if there isn't.
+        """
+        from shinymud.models.player import Player
+        
+        p = self.world.get_player(name)
+        if not p:
+            row = self.world.db.select('* from player where name=?', [name])
+            if row:
+                p = Player(('foo', 'bar'))
+                p.playerize(row[0])
+        return p
     
 
 build_list.register(Export, ['export'])
 command_help.register(Export.help, ['export'])
 
 class Import(BaseCommand):
-    required_permissions = BUILDER
+    required_permissions = BUILDER | ADMIN
     help = (
     """<title>Import (BuildCommand)</title>
 The Import command allows Builders to import areas from text files.
@@ -582,7 +603,7 @@ The Import command allows Builders to import areas from text files.
 To get a list of areas in your area-import-directory:
   import
 To import an area:
-  import [area] <area-name>
+  import area <area-name>
 To import the built-in areas that came pre-packaged with this MUD:
   import built-in
 \n The <area-name> should be the same as the file-name without the
@@ -595,27 +616,26 @@ To export areas to text-files, see "help export".
     )
     def execute(self):
         if not self.args:
-            self.pc.update_output(list_importable_areas())
+            self.pc.update_output(Sport.list_importable('area'))
         elif self.args.startswith('built-in'):
             # Import all of areas in the PREPACK directory
             self.pc.update_output(' Importing Built-In Areas '.center(50, '-'))
-            result = SPort(PREPACK).import_batch('all')
+            result = Sport.inport_dir('area', source_path=PREPACK)
             self.pc.update_output(result + ('-' * 50))
         else:
-            exp = r'(?P<type>(area|char))[ ]+(?P<name>\w)'
+            exp = r'(?P<list>list[ ]+)?(?P<type>\w+)([ ]+((?P<name>\w+)))?' +\
+                  r'([ ]+(from[ ]+)(?P<trans>\w+))?([ ]+(in[ ]+)(?P<format>\w[\w ]*))?$'
             match = re.match(exp, self.args, re.I)
             if not match:
-                self.pc.update_output('See "help import" for help on using the Import command.')
+                self.pc.update_output('Try "import area <area-name>", or see "help import".')
                 return
-            itype, name = match.group('type', 'name')
-            # Import the desired area
-            if itype == 'area':
-                area = self.world.get_area(self.args)
-                if area:
-                    self.pc.update_output('That area already exists in your world.\n' +\
-                                            'You\'ll need to destroy it in-game before you try importing it.\n')
-                    return
-            self.pc.update_output(inport(itype, name))
+            l, t, name, trans, format = match.group('list', 'type', 'name', 'trans', 'format')
+            if l:
+                # List the areas available for import
+                self.pc.update_output(Sport.list_importable(t, format, trans))
+            else:
+                # Import an area
+                self.pc.update_output(Sport.inport(t, name, format, trans))
     
 
 build_list.register(Import, ['import'])

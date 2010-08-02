@@ -236,6 +236,15 @@ class World(object):
             return True
         return False
     
+    def player_exists(self, player_name):
+        """ See if a player's character exists in the database. Return True if
+        it exists, false if it does not.
+        """
+        row = self.db.select('* from player where name=?', [player_name])
+        if row:
+            return True
+        return False
+    
     def get_player(self, name):
         """Return a player if that player's name exists in the player list."""
         return self.player_list.get(name)

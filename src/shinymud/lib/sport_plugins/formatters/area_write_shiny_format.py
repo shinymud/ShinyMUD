@@ -1,13 +1,12 @@
-"""ShinyAreaFormat Write
-"""
 from shinymud.lib.sport_plugins import SportError
 from shinymud.data.config import VERSION
 
 import json
 
 def format(area):
-    """Export an area to a text file in ShinyAreaFormat.
-    area -- the area object to be exported
+    """Serialize an area into ShinyAreaFormat.
+    
+    area -- the area object to be serialized.
     """
     area_txt = ('[ShinyMUD Version "%s"]\n' % VERSION +
                   _pack_area(area) +

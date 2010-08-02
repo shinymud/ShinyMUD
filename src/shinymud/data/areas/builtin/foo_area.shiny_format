@@ -1,0 +1,37 @@
+[ShinyMUD Version "0.6"]
+
+[Area]
+{"description": "This area is all about being able to experiment. Anything goes!", "title": "Construction Zone", "level_range": "Builders Only", "builders": "surrey,vash,murph,blue", "name": "foo"}
+[End Area]
+
+[Scripts]
+[{"body": "\nload item 2 foo\naward coin to #target_name + \n'A man slips a coin to you.':+\n'A man slips a coin to #target_name.'\nif remember #target_name\nsay 'Do I know you? hmm... Probably not.'\nendif\nsay 'Give this to Maurice and tell him I..aaayyyyy owe him Nothin! -Hic-", "id": "1", "name": "Luz_action", "area": "foo"}, {"body": "say 'That Maurice was a good man. A Good Man! But he won't let me come back until I clean up.'\nsay 'You... -hic- You should pay him back for me.'\nload item 2\ngive coin to #target_name", "id": "2", "name": "Luz_maurice", "area": "foo"}]
+[End Scripts]
+
+[Items]
+[{"description": "This couch is in a horrid condition.  It looks as if someone had left\nit out here weeks ago, and it has been rotting ever since.", "weight": null, "title": "A raggid couch sits next to the dumster here.", "carryable": null, "area": "foo", "keywords": "couch", "base_value": null, "id": "1", "name": "a couch"}, {"description": "A stylish hat signaling the end of one triumph and the beginning of\nanother.", "weight": null, "title": "A stylish graduation cap sits here.", "carryable": "True", "area": "foo", "keywords": "hat,graduate,gradumatation,cap", "base_value": 1000, "id": "3", "name": "a gradumacation hat"}, {"description": "It is an oddly smooth gold coin, in mint condition.", "weight": null, "title": "A gold coin.", "carryable": "True", "area": "foo", "keywords": "coin,gold coin", "base_value": 20, "id": "2", "name": "a gold coin"}]
+[End Items]
+
+[Item Types]
+[{"build_item": 18, "sleep_effects": null, "capacity": 1, "item_type": "furniture", "item": "1", "game_item": null, "sit_effects": null}, {"build_item": 20, "absorb": null, "hit": null, "dmg": null, "is_equipped": null, "evade": null, "item": "3", "item_type": "equippable", "game_item": null, "equip_slot": "head"}]
+[End Item Types]
+
+[Npcs]
+[{"gender": "male", "description": "You see nothing special about this person. The man is wearing tattered\ncloths that match well with the alley. He looks content enough sitting\non the couch, mumbling to himself. In his slurred speech, you can\nalmost catch the words, 'damn russian' and something about owing\nmoney. Mabe you should ask him about the russain...", "area": "foo", "hp": 20, "title": "A very drunk man sits on the couch mumbling.", "currency": null, "mp": 5, "max_hp": 20, "keywords": "man,luz,luz,drunk", "max_mp": 5, "id": "1", "name": "Luz"}]
+[End Npcs]
+
+[Npc Events]
+[{"probability": 50, "script": "1", "prototype": "1", "event_trigger": "pc_enter", "condition": null}, {"probability": 100, "script": "2", "prototype": "1", "event_trigger": "hears", "condition": "russian"}]
+[End Npc Events]
+
+[Rooms]
+[{"description": "This alley seems almost unnaturally dark. Apartment buildings tower\nover you, shutting out any ambient light. Either way in the alley\nrecedes into darkness. There is a dumpster to your right, which barely\ncontains all of the trash littered everywhere. Larger pieces of broken\nfurniture have been abandoned around the dumpster.", "id": "1", "name": "Alley", "area": "foo"}, {"description": "It's so dark here you can barely make out the brickwork forming the\ndead end to the alley. You can't see anything else.", "id": "2", "name": "Alley - Dead End", "area": "foo"}]
+[End Rooms]
+
+[Room Exits]
+[{"direction": "north", "locked": null, "room": "1", "to_area": "cubicle", "key_area": null, "to_room": null, "to_id": "4", "closed": null, "to_room_id": "4", "openable": null, "key_id": null, "hidden": null, "linked_exit": "south"}]
+[End Room Exits]
+
+[Room Spawns]
+{"1": [{"spawn_type": "npc", "container": null, "room": 21, "spawn_object_id": "1", "spawn_object_area": "foo", "id": "5"}, {"spawn_type": "item", "container": null, "room": 21, "spawn_object_id": "1", "spawn_object_area": "foo", "id": "6"}], "2": []}
+[End Room Spawns]

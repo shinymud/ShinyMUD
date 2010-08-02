@@ -3,14 +3,15 @@ from shinymud.lib.sport_plugins import SportError
 import os
 
 def transport(world, shinydata, filename, path):
-    """Write out the file contents under the given file_name."""
+    """Write shinydata to a file under the given file_name.
+    """
     if not os.path.exists(path):
         try:
             os.mkdir(path)
         except Exception, e:
             world.log.error('EXPORT FAILED: ' + str(e))
             raise SportError('Error accessing the export directory for areas.')
-    filepath = os.path.join(path, file_name)
+    filepath = os.path.join(path, filename)
     try:
         f = open(filepath, 'w')
     except IOError, e:
