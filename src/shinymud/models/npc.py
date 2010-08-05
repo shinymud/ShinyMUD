@@ -165,17 +165,7 @@ description:
         events = self.world.db.select('* FROM npc_event WHERE prototype=?', [self.dbid])
         self.world.log.debug(events)
         for event in events:
-            #TODO: Change me!
-            s_id = self.world.db.select('id FROM script WHERE dbid=?', 
-                                        [event['script']])
-            s = self.area.get_script(str(s_id[0].get('id')))
-            if s:
-                # Only load this event if its script exists
-                event['script'] = s
-                self.new_event(event)
-            else:
-                self.world.log.error('The script this event points to is gone! '
-                               'NPC (id:%s, area:%s)' % (self.id, self.area.name))
+            self.new_event(event)
     
     def perform(self, command_string):
         """Parse the command and add its corresponding command object to this
@@ -262,8 +252,11 @@ description:
         if event_name in self.events.keys():
             args['obj'] = self
             for e in self.events[event_name]:
-                args.update(e.get_args())
-                EVENTS[event_name](args).run()
+                if e.script:
+                    args.update(e.get_args())
+                    EVENTS[event_name](args).run()
+                else:
+                    self.update_output('Cannot resolve script %s:%s for %s event.' % (e.script_id, e.script_area, event_name))
             self.world.npc_subscribe(self)
     
 # ***** ai pack functions *****
