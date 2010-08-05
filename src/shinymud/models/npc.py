@@ -185,24 +185,32 @@ description:
         # add event listen_for 'stuff' call script 1
         # add event given_item call script 3
         help_message = 'Type "help events" for help with this command.'
-        exp = r'(?P<trigger>\w+)([ ]+(?P<condition>\'(.*?)\'))?([ ]+call)([ ]+script)?([ ]+(?P<id>\d+))([ ]+(?P<prob>\d+))?'
+        exp = r'(?P<trigger>\w+)([ ]+\'(?P<condition>(.*?))\')?([ ]+call)' +\
+              r'([ ]+script)?([ ]+(?P<id>\d+))([ ]+(?P<area>\w+))?([ ]+(?P<prob>\d+))?'
         if not args:
             return help_message
         match = re.match(exp, args, re.I)
         if not match:
             return help_message
-        trigger, condition, script_id, prob = match.group('trigger', 
-                                                          'condition',
-                                                          'id',
-                                                          'prob')
+        trigger, condition, script_id, s_area, prob = match.group('trigger', 
+                                                                  'condition',
+                                                                  'id',
+                                                                  'area',
+                                                                  'prob')
+        # Verify Trigger
         if not EVENTS[trigger]:
             return '%s is not a valid event trigger. Type "help event triggers" for help.' % trigger
-        script = self.area.get_script(script_id)
+        # Verify script
+        if s_area:
+            a = self.world.get_area(s_area)
+            if not a:
+                return 'Area "%s" doesn\'t exist.' % s_area
+            script = a.get_script(script_id)
+        else:
+            script = self.area.get_script(script_id)
         if not script:
             return 'Script %s doesn\'t exist.' % script_id
-        # Replace any old events that had the same trigger
-        if condition:
-            condition = condition.strip('\'')
+        # Verify probability
         if not prob:
             prob = 100
         else:
@@ -252,6 +260,8 @@ description:
         if event_name in self.events.keys():
             args['obj'] = self
             for e in self.events[event_name]:
+                # Make sure the script can be resolved before trying to run the
+                # event
                 if e.script:
                     args.update(e.get_args())
                     EVENTS[event_name](args).run()
