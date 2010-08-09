@@ -36,7 +36,7 @@ class Item(Model):
                 value.save()
     
     def __str__(self):
-        s = ', '.join(['%s: %s' % (key,val) for key,val in self.copy_save_attrs() if key != 'dbid'])
+        s = ', '.join(['%s: %s' % (key,val) for key,val in self.copy_save_attrs().items() if key != 'dbid'])
         return s
     
     def has_type(self, t):
@@ -235,7 +235,7 @@ class GameItem(Item):
     db_columns = Item.db_columns + [
         Column('build_area'),
         Column('build_id'),
-        Column('container', type="INTEGER", read=int, write=int, foreign_key=(db_table_name, 'dbid'), cascade="ON DELETE"),
+        Column('container', type="INTEGER", write=write_model, foreign_key=(db_table_name, 'dbid'), cascade="ON DELETE"),
         Column('owner', type="INTEGER", write=write_model, foreign_key=('player', 'dbid'), cascade='ON DELETE')
     ]
     def __init__(self, args={}, spawn_id=None):

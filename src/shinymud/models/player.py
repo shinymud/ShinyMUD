@@ -65,19 +65,8 @@ class Player(Character):
                         self.isequipped.append(item)
                         equip_type.on_equip()
                 if item.has_type('container'):
-                    self.load_contents(item)
+                    item.item_types['container'].load_inventory()
                 self.inventory.append(item)
-    
-    def load_container_contents(self, container):
-        """Load this game_item's contents.
-        """
-        rows = World.get_world().db.select("* FROM game_item WHERE container=?", [container.dbid])
-        self.world.log.debug(rows)
-        for row in rows:
-            new_item = GameItem(row)
-            if new_item.has_type('container'):
-                self.load_contents(new_item)
-            container.item_add(new_item)
     
     def update_output(self, data, terminate_ln=True, strip_nl=True):
         """Helpfully inserts data into the player's output queue."""
@@ -358,6 +347,11 @@ class Player(Character):
         self.world.log.debug("%s has died." % self.fancy_name())
         self.update_output('You Died.')
         self.go(self.world.get_location(DEFAULT_LOCATION[0], DEFAULT_LOCATION[1]))
+    
+    def destruct(self):
+        for item in self.inventory:
+            item.destruct()
+        Character.destruct(self)
     
 
 model_list.register(Player)

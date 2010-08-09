@@ -84,6 +84,8 @@ class Model(object):
         if self.dbid:
                 self.world.db.update_from_dict(self.db_table_name, save_dict)
         else:
+            if 'dbid' in save_dict:
+                del save_dict['dbid']
             self.dbid = self.world.db.insert_from_dict(self.db_table_name, save_dict)
     
     def destruct(self):

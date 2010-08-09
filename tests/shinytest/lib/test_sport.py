@@ -133,3 +133,114 @@ class TestSport(ShinyTestCase):
         self.assertTrue(self.world.area_exists('supertestbazarea'))
         
         shutil.rmtree(epath, True)
+    
+    def test_shiny_player_format(self):
+        from shinymud.lib.sport_plugins.formatters.player_write_shiny_format import format as writeshiny
+        from shinymud.lib.sport_plugins.formatters.player_read_shiny_format import format as readshiny
+        from shinymud.models.player import Player
+        #create a playa
+        sven = Player(('foo', 'bar'))
+        sven.playerize({'name': 'sven', 'password': 'foo'})
+        sven.permissions = 17
+        sven.description = "I'm pretty adorable."
+        sven.title = 'Super Sven'
+        sven.save()
+        area = self._create_area()
+        sven.item_add(area.get_item('1').load())
+        
+        txt = writeshiny(sven)
+        self.world.log.debug(txt)
+        
+        sven.destruct()
+        # Sven should have been taken out of the database...
+        row = self.world.db.select('* from player where name=?', ['sven'])
+        self.assertFalse(row)
+        row = self.world.db.select('* from game_item where owner=?', [sven.dbid])
+        self.assertFalse(row)
+        
+        result = readshiny(self.world, txt)
+        self.world.log.debug(result)
+        self.assertEqual(result, 'Character "Sven" has been successfully imported.')
+        
+        # Sven should now be in the database, but not online
+        row = self.world.db.select('* from player where name=?', ['sven'])[0]
+        self.assertTrue(row)
+        self.assertFalse(self.world.get_player('sven'))
+        
+        isven = Player(('foo', 'bar'))
+        isven.playerize(row)
+        
+        row = self.world.db.select('* from game_item where owner=?', [isven.dbid])
+        self.assertTrue(row)
+        
+        # Make sure that all attributes we set got imported correctly
+        self.assertEqual(sven.password, isven.password)
+        self.assertEqual(sven.description, isven.description)
+        self.assertEqual(sven.name, isven.name)
+        self.assertEqual(sven.title, isven.title)
+        self.assertEqual(sven.permissions, isven.permissions)
+        
+        # Make sure that the inventory was correctly loaded
+        self.assertEqual(len(sven.inventory), len(isven.inventory))
+        item = isven.inventory[0]
+        self.world.log.debug(item.create_save_dict())
+        self.world.log.debug(item.item_types)
+        self.assertFalse(sven.inventory[0] is isven.inventory[0])
+        self.assertEqual(item.name, 'chair')
+        self.assertTrue(item.has_type('furniture'))
+        self.assertEqual(item.item_types['furniture'].capacity, 5)
+    
+    def test_shiny_player_format_containers(self):
+        """Make sure shiny player format still works when player has containers
+        in their inventory.
+        """
+        from shinymud.lib.sport_plugins.formatters.player_write_shiny_format import format as writeshiny
+        from shinymud.lib.sport_plugins.formatters.player_read_shiny_format import format as readshiny
+        from shinymud.models.player import Player
+        sven = Player(('foo', 'bar'))
+        sven.playerize({'name': 'sven', 'password': 'foo'})
+        sven.save()
+        area = self._create_area()
+        item1 = area.new_item()
+        item1.build_set_keywords('item1')
+        item1.build_add_type('container')
+        game1 = item1.load()
+        
+        item2 = area.new_item()
+        item2.build_set_keywords('item2')
+        item2.build_add_type('container')
+        game2 = item2.load()
+        self.assertTrue(game1.item_types['container'].item_add(game2))
+        
+        item3 = area.new_item()
+        item3.build_set_keywords('item3')
+        game3 = item3.load()
+        self.assertTrue(game2.item_types['container'].item_add(game3))
+        
+        sven.item_add(game1)
+        
+        txt = writeshiny(sven)
+        self.world.log.debug(txt)
+        
+        sven.destruct()
+        
+        row = self.world.db.select('* from player where name=?', ['sven'])
+        self.assertFalse(row)
+        row = self.world.db.select('* from game_item where owner=?', [sven.dbid])
+        self.assertFalse(row)
+        
+        result = readshiny(self.world, txt)
+        self.world.log.debug(result)
+        self.assertEqual(result, 'Character "Sven" has been successfully imported.')
+        row = self.world.db.select('* from player where name=?', ['sven'])[0]
+        isven = Player(('foo', 'bar'))
+        isven.playerize(row)
+        
+        self.assertEqual(len(isven.inventory), 1)
+        s1 = isven.inventory[0]
+        self.assertEqual(s1.keywords, ['item1'])
+        s2 = s1.item_types['container'].get_item_by_kw('item2')
+        self.assertEqual(s2.keywords, ['item2'])
+        s3 = s2.item_types['container'].get_item_by_kw('item3')
+        self.assertEqual(s3.keywords, ['item3'])
+    

@@ -13,6 +13,7 @@ EXISTING_TABLES = {}
 
 def initialize_database():
     world = World.get_world()
+    world.db.conn.cursor().execute('PRAGMA foreign_keys = true')
     db_table_names = [x['name'] for x in world.db.select("name from sqlite_master where type='table'")]
     for table_name in db_table_names:
         columns = world.db.select("* from %s limit 1" % table_name)

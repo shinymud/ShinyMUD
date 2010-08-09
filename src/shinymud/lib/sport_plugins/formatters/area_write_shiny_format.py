@@ -1,3 +1,48 @@
+"""write formatter: area_write_shiny_format.py
+
+Resulting serialized output will look like the following string (but obviously
+with actual data in the place of <data>):
+
+[ShinyMUD Version "X.X"]
+
+[Area]
+<data>
+[End Area]
+
+[Scripts]
+<data>
+[End Scripts]
+
+[Items]
+<data>
+[End Items]
+
+[Item Types]
+<data>
+[End Item Types]
+
+[Npcs]
+<data>
+[End Npcs]
+
+[Npc Events]
+<data>
+[End Npc Events]
+
+[Rooms]
+<data>
+[End Rooms]
+
+[Room Exits]
+<data>
+[End Room Exits]
+
+[Room Spawns]
+<data>
+[End Room Spawns]
+
+"""
+
 from shinymud.lib.sport_plugins import SportError
 from shinymud.data.config import VERSION
 

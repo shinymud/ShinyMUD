@@ -525,7 +525,7 @@ class Container(ItemType):
                  '  locked: ' + str(self.locked) + '\n' +\
                  '  key: ' + key + '\n'
         return string
-        
+    
     def save(self):
         ItemType.save(self)
         for item in self.inventory:
@@ -542,9 +542,26 @@ class Container(ItemType):
         d['game_item'] = game_item
         return Container(d)
     
+    def destruct(self):
+        self.destroy_inventory()
+        ItemType.destruct(self)
+    
     def destroy_inventory(self):
         for item in self.inventory:
             item.destruct()
+    
+    def load_inventory(self):
+        # Only game items should load inventory items - if this is not connected
+        # to a game item, just return without doing anything
+        if not self.game_item:
+            return
+        from shinymud.models.item import GameItem
+        rows = self.world.db.select('* from game_item where container=?', [self.game_item.dbid])
+        for row in rows:
+            new_item = GameItem(row)
+            self.inventory.append(new_item)
+            if new_item.has_type('container'):
+                new_item.item_types['container'].load_inventory()
     
     def item_add(self, item):
         self.inventory.append(item)

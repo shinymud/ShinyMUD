@@ -50,15 +50,21 @@ class Character(Model):
     
     def item_add(self, item):
         """Add an item to the character's inventory."""
-        item.owner = self
-        item.save()
+        if not self.is_npc():
+            # Don't save this item if it's added to an npc
+            item.owner = self
+            item.save()
         self.inventory.append(item)
     
     def item_remove(self, item):
         """Remove an item from the character's inventory."""
         if item in self.inventory:
-            item.owner = None
-            item.save()
+            if not self.is_npc():
+                # items don't get saved when they're added to npc inventories
+                # Don't bother removing the owner if we're taking it out of
+                # an npc's inventory
+                item.owner = None
+                item.save()
             self.inventory.remove(item)
     
     def has_item(self, build_item):
