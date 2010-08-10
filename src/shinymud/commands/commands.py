@@ -899,7 +899,7 @@ The Who command returns a list of all the players currently in the game.
     """
     )
     def execute(self):
-        persons = [per for per in self.world.player_list.values() if isinstance(per.name, str)]
+        persons = [per for per in self.world.player_list.values() if isinstance(per.name, basestring)]
         message = 'Currently Online'.center(50, '-') + '\n'
         for per in persons:
             if per.permissions > PLAYER:
