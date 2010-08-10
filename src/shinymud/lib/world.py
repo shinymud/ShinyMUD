@@ -251,14 +251,14 @@ class World(object):
     
     def player_add(self, player):
         key = player.name
-        if isinstance(key, str):
+        if isinstance(key, basestring):
             key = key.lower()
         self.player_list[key] = player
     
     def player_remove(self, playername):
         """Add a player's name to the world's delete list so they get removed
         from the playerlist on the next turn."""
-        if isinstance(playername, str):
+        if isinstance(playername, basestring):
             playername = playername.lower()
         self.player_delete.append(playername)
     
