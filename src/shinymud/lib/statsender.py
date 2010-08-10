@@ -17,7 +17,7 @@ class StatSender(threading.Thread):
     The string of game information sent to clients is formatted with each of the
     player's names separated by commas, and the reset date separated from the
     name list by a colon like the following example:
-        Player1,Player2,PlayerN:ResetDate
+        ResetDate:Player1,Player2,PlayerN:
      
     The ResetDate is given as a floating point number expressed in seconds since
     the epoch, in UTC (as returned by Python's time.time() function). See the
@@ -38,14 +38,16 @@ class StatSender(threading.Thread):
         self.listener.listen(5)
         while 1:
             try:
+                # Wrap the whole thing in a try block so that if any part of the
+                # request causes an exception to be thrown we can just quietly
+                # ignore it and it won't crash the server.
                 conn, info = self.listener.accept()
-            except Exception, e:
-                self.world.log.debug(str(e))
-            else:
                 # Send them the game-stats!
-                plist = ','.join([name for name in self.world.player_list if isinstance(name, str)])
-                conn.send(plist + ':' + str(self.world.uptime))
+                plist = ','.join([name for name in self.world.player_list if isinstance(name, basestring)])
+                conn.send(str(self.world.uptime) + ':' + plist)
                 # conn.send(str(self.world.uptime))
                 conn.close()
+            except Exception, e:
+                self.world.log.error('StatSender ERROR: ' + str(e))
     
 
