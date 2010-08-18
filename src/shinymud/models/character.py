@@ -108,7 +108,7 @@ class Character(Model):
                     if tell_new:
                         self.location.tell_room(tell_new, [self.name])
             else:
-                self.log.debug('We gave %s a nonexistant room.' % self.name)
+                self.world.log.debug('We gave %s a nonexistant room.' % self.name)
         else:
             self.update_output('You better stand up first.')
     
@@ -120,7 +120,7 @@ class Character(Model):
         if furniture:
             furniture.item_types['furniture'].player_add(self)
         self.position = (pos, furniture)
-        # self.log.debug(pos + ' ' + str(furniture))
+        # self.world.log.debug(pos + ' ' + str(furniture))
     
     # Battle specific commands
     def _get_battle_target(self):
@@ -131,7 +131,7 @@ class Character(Model):
         if self._battle_target:
             if not self._battle_target in other_team:
                 self._battle_target = other_team[0]
-            self.log.debug("%s attack target: %s" % (self.fancy_name(), self._battle_target.fancy_name()))
+            self.world.log.debug("%s attack target: %s" % (self.fancy_name(), self._battle_target.fancy_name()))
             return self._battle_target
     
     def _set_battle_target(self, target):
@@ -141,9 +141,9 @@ class Character(Model):
     
     def _get_next_action(self):
         if len(self._attack_queue):
-            self.log.debug("next action: %s" % self._attack_queue[0].__class__.__name__)
+            self.world.log.debug("next action: %s" % self._attack_queue[0].__class__.__name__)
             return self._attack_queue.pop(0)
-        self.log.debug('next action: Attack')
+        self.world.log.debug('next action: Attack')
         return Action_list['attack'](self, self.battle_target, self.battle)
     
     def _queue_attack(self, attack):
@@ -153,13 +153,13 @@ class Character(Model):
     
     def next_action_cost(self):
         if len(self._attack_queue):
-            self.log.debug("next action cost: %s" % str(self._attack_queue[0].cost ))
+            self.world.log.debug("next action cost: %s" % str(self._attack_queue[0].cost ))
             return self._attack_queue[0].cost
-        self.log.debug("next action cost %s:" % str(Action_list['attack'].cost))
+        self.world.log.debug("next action cost %s:" % str(Action_list['attack'].cost))
         return Action_list['attack'].cost
     
     def attack(self):
-        self.log.debug(self.fancy_name() + " is attacking:")
+        self.world.log.debug(self.fancy_name() + " is attacking:")
         current_attack = self.next_action
         current_attack.roll_to_hit()
     
@@ -174,7 +174,7 @@ class Character(Model):
             d = (damage - absorb.get(damage_type, 0))
             if d >0:
                 total += d
-        self.log.debug("%s hit for %s damage" % (self.fancy_name(), str(total)))
+        self.world.log.debug("%s hit for %s damage" % (self.fancy_name(), str(total)))
         self.hp -= total
         if attacker:
             self.update_output("%s hit you for %s damage." % (attacker, str(total)))
