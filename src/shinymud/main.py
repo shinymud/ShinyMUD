@@ -48,7 +48,6 @@ def check_running():
     return False
 
 def start():
-    # if 'start':
     #   Fork new process, that calls "python shiny_server.py"
     #   write the Process Id in shinymud/data/.shinypid
     #   close the file, and we are done
@@ -59,26 +58,18 @@ def start():
         f = open(os.path.join(path, 'shinymud/data/.shinypid'), 'w')
         f.write(str(pid))
         f.close()
-        print "%s is now running on port %s." % (GAME_NAME, str(PORT))
+        return "%s is now running on port %s." % (GAME_NAME, str(PORT))
     else:
-        print "%s is already running!" % GAME_NAME
+        return "%s is already running!" % GAME_NAME
 
 def stop():
-    # if 'stop':
-    #   if .shinypid file:
-    #       open the .shinypid file and read out the Process Id.
-    #       call os.kill() on that process id
-    #       remove the .shinypid file
-    #       done
-    #   else:
-    #       error: shinymud not running
     pid = check_running()
     if pid:
         os.kill(pid, signal.SIGKILL)
         os.remove(os.path.join(path, 'shinymud/data/.shinypid'))
-        print '%s has been stopped.' % GAME_NAME
+        return '%s has been stopped.' % GAME_NAME
     else:
-        print "%s is not running!" % GAME_NAME
+        return "%s is not running!" % GAME_NAME
 
 def create_god(world):
     """Create a god character and save it to this MUD's db."""
@@ -207,32 +198,35 @@ def setup_stub_world():
     initialize_database()
     return world
 
+def main():
 # Then we check input for 'start' 'restart' and 'stop' (maybe 'help' later?)
-if len(sys.argv) == 2:
-    option = sys.argv[1].lower()
-    if option == 'start':
-        start()
-    elif option == 'stop':
-        stop()
-    elif option == 'restart':
-        stop()
-        print "Restarting in a sec!"
-        for i in range(3):
-            print "."
-            time.sleep(1)
-        start()
-    elif option == 'setup':
-        setup()
-    elif option == 'create_god':
-        if check_running():
-            print "%s is currently running. " % GAME_NAME +\
-                  "You'll have to stop it to create a God character."
+    if len(sys.argv) == 2:
+        option = sys.argv[1].lower()
+        if option == 'start':
+            print start()
+        elif option == 'stop':
+            print stop()
+        elif option == 'restart':
+            stop()
+            print "Restarting in a sec!"
+            for i in range(3):
+                print "."
+                time.sleep(1)
+            start()
+        elif option == 'setup':
+            setup()
+        elif option == 'create_god':
+            if check_running():
+                print "%s is currently running. " % GAME_NAME +\
+                      "You'll have to stop it to create a God character."
+            else:
+                create_god(setup_stub_world())
+        elif option == 'clean':
+            clean()
         else:
-            create_god(setup_stub_world())
-    elif option == 'clean':
-        clean()
+            print "options: start | stop | restart | setup | create_god | clean\n"
     else:
         print "options: start | stop | restart | setup | create_god | clean\n"
-else:
-    print "options: start | stop | restart | setup | create_god | clean\n"
 
+if __name__ == '__main__':
+    main()
