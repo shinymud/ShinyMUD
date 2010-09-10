@@ -404,19 +404,19 @@ object you're editing.
             else:
                 func, _, arg = match.groups()
                 if hasattr(obj, 'build_add_' + func):
-                    self.pc.update_output(getattr(obj, 'build_add_' + func)(arg))
+                    self.pc.update_output(getattr(obj, 'build_add_' + func)(arg, self.pc))
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the add function in the object's native add functions,
                     # but the object is of type BuildItem, then we should search the add functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'build_add_' + func):
-                            message = getattr(iType, 'build_add_' + func)(arg)
+                            message = getattr(iType, 'build_add_' + func)(arg, self.pc)
                             break
                 elif obj.__class__.__name__ == 'Npc':
                     for ai in obj.ai_packs.values():
                         if hasattr(ai, 'build_add_' + func):
-                            message = getattr(ai, 'build_add_' + func)(arg)
+                            message = getattr(ai, 'build_add_' + func)(arg, self.pc)
                             break
                     self.pc.update_output(message)
     
@@ -449,19 +449,19 @@ help file for the object you're editing for more details.
             else:
                 func, _, args = match.groups()
                 if hasattr(obj, 'build_remove_' + func):
-                    self.pc.update_output(getattr(obj, 'build_remove_' + func)(args))
+                    self.pc.update_output(getattr(obj, 'build_remove_' + func)(args, self.pc))
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the remove function in the object's native remove functions,
                     # but the object is of type BuildItem, then we should search the remove functions
                     # of that item's item_types (if it has any)
                     for iType in obj.item_types.values():
                         if hasattr(iType, 'build_remove_' + func):
-                            message = getattr(iType, 'build_remove_' + func)(args)
+                            message = getattr(iType, 'build_remove_' + func)(args, self.pc)
                             break
                 elif obj.__class__.__name__ == 'Npc':
                     for ai in obj.ai_packs.values():
                         if hasattr(ai, 'build_remove_' + func):
-                            message = getattr(ai, 'build_remove_' + func)(args)
+                            message = getattr(ai, 'build_remove_' + func)(args, self.pc)
                             break
                     self.pc.update_output(message)
     

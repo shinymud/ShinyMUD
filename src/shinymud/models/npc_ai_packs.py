@@ -329,7 +329,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Buys items has been set to %s.' % str(self.buyer)
     
-    def build_add_type(self, itype):
+    def build_add_type(self, itype, player=None):
         """Add an item type that this merchant should specialize in buying."""
         if not self.buyer:
             return 'This merchant is not a buyer.\n' +\
@@ -347,7 +347,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Merchant will now buy items of type %s from players.' % itype
     
-    def build_remove_type(self, itype):
+    def build_remove_type(self, itype, player=None):
         """Remove an item type that this merchant should specialize in buying."""
         if not self.buyer:
             return 'This merchant is not a buyer.\n' +\
@@ -365,7 +365,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             return 'Merchant no longer buys items of type %s.' % itype
         return 'Merchant already doesn\'t buy items of type %s.' % itype
     
-    def build_add_item(self, args):
+    def build_add_item(self, args, player=None):
         """Add an item for this merchant to sell."""
         if not args:
             return 'Try "add item <item-id> from area <area-name> price <price>" or see "help merchant".'
@@ -397,7 +397,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Merchant now sells %s.' % item.name
     
-    def build_remove_item(self, item):
+    def build_remove_item(self, item, player=None):
         """Remove one of this merchant's sale items."""
         if not item:
             return 'Try "remove item <item-id>", or see "help merchant".'
@@ -410,7 +410,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         self.save()
         return 'Merchant no longer sells %s.' % item_name
     
-    def build_remove_missing(self, args):
+    def build_remove_missing(self, args, player=None):
         """Remove any 'dead' items from this merchant's sale_items.
         """
         self.sale_items.reset_dead()

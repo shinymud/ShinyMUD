@@ -130,13 +130,13 @@ Description: \n    %s""" % (self.name,
         self.save()
         return 'Area title set.'
     
-    def build_add_builder(self, playername):
+    def build_add_builder(self, playername, player=None):
         """Add a player to the builder's list."""
         self.builders.append(playername)
         self.save()
         return '%s has been added to the builder\'s list for this area.\n' % playername.capitalize()
     
-    def build_remove_builder(self, playername):
+    def build_remove_builder(self, playername, player=None):
         """Remove a player from the builder's list."""
         if playername in self.builders:
             self.builders.remove(playername)

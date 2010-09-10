@@ -94,7 +94,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         else:
             return 'That exit doesn\'t exist.'
     
-    def build_add_exit(self, args):
+    def build_add_exit(self, args, player=None):
         exp = r'(?P<direction>(north)|(south)|(east)|(west)|(up)|(down))([ ]+to)?([ ]+(?P<room_id>\d+))([ ]+(?P<area_name>\w+))?'
         match = re.match(exp, args, re.I)
         message = 'Type "help exits" to get help using this command.'
@@ -112,7 +112,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                 message = 'That area doesn\'t exist.'
         return message
     
-    def build_remove_exit(self, args):
+    def build_remove_exit(self, args, player=None):
         if not args:
             return 'Which exit do you want to remove?\n'
         if not (args in self.exits and self.exits[args]):
@@ -130,7 +130,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         self.exits[args] = None
         return args + ' exit has been removed.' + link
     
-    def build_add_spawn(self, args):
+    def build_add_spawn(self, args, player=None):
         if not args:
             return 'Type "help room spawns" to get help using this command.'
         exp = r'((for[ ]+)?(?P<obj_type>(item)|(npc))([ ]+(?P<obj_id>\d+))' +\
@@ -167,7 +167,7 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
             return 'A room spawn has been added for %s number %s.' % (obj_type, obj_id)
         return 'Type "help room spawns" to get help using this command.'
     
-    def build_remove_spawn(self, args):
+    def build_remove_spawn(self, args, player=None):
         exp = r'(?P<spawn_num>\d+)'
         match = re.match(exp, args, re.I)
         if not match:

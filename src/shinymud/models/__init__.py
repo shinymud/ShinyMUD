@@ -29,8 +29,10 @@ class Column(object):
                 sql_string.append("REFERENCES %s(%s)" % (self.foreign_key[0], self.foreign_key[1]))
             if self.unique: 
                 sql_string.append('UNIQUE')
-            if not self.null:
-                sql_string.append('NOT NULL')
+            # Don't bother setting this in the database -- we'll just enforce
+            # it in code.
+            # if not self.null:
+            #     sql_string.append('NOT NULL')
             if self.cascade:
                 sql_string.append('%s CASCADE' % str(self.cascade))
         return unicode(" ".join(sql_string))

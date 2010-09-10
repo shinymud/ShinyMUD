@@ -151,7 +151,7 @@ class Equippable(ItemType):
         else:
             return 'That equip location doesn\'t exist.\n'
     
-    def build_add_damage(self, params):
+    def build_add_damage(self, params, player=None):
         #Currently broken will be fixed when the add class in commands is updated.
         if not params:
             return 'What damage would you like to add?\n'
@@ -164,17 +164,17 @@ class Equippable(ItemType):
         except Exception, e:
             return str(e)
     
-    def build_set_hit(self, params):
+    def build_set_hit(self, params, player=None):
         self.hit = self.parse_value(params) or 0
         self.save()
         return "set hit to " + str(self.hit)
     
-    def build_set_evade(self, params):
+    def build_set_evade(self, params, player=None):
         self.evade = self.parse_value(params) or 0
         self.save()
         return "set evade to " + str(self.evade)
     
-    def build_add_absorb(self, params):
+    def build_add_absorb(self, params, player=None):
         # params should be of the form "absorb_type amount"
         exp = r'(?P<absorb_type>\w+)[ ]+(?P<amount>[^ ]+)'
         m = re.match(exp, params)
@@ -374,7 +374,7 @@ class Food(ItemType):
         e = [effect.copy() for effect in self.effects.values()]
         return e
     
-    def build_add_effect(self, args):
+    def build_add_effect(self, args, player=None):
         """Add an effect to this food item that will be transferred to the
         player when the item is eaten.
         """
@@ -399,7 +399,7 @@ class Food(ItemType):
         self.effects[e] = eff
         return '%s effect added.' % e.capitalize()
     
-    def build_remove_effect(self, args):
+    def build_remove_effect(self, args, player=None):
         """Remove an effect from this item."""
         # TODO: fix character effects
         return "sorry, we're still working on effects."
@@ -688,6 +688,7 @@ class Furniture(ItemType):
         if self.capacity == 0:
             return 'Capacity set to unlimited (everyone can sit/sleep on it).'
         return 'Capacity set to %d.' % self.capacity
+    
 
 class Portal(ItemType):
     plural = 'portals'

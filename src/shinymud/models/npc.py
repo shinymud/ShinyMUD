@@ -3,7 +3,7 @@ from shinymud.modes.text_edit_mode import TextEditMode
 from shinymud.models import Model, Column, model_list
 from shinymud.models.shiny_types import *
 from shinymud.lib.event_handler import EVENTS
-from shinymud.commands import PLAYER, DM
+from shinymud.commands import get_permission_names, PERMS
 from shinymud.commands.commands import command_list
 from shinymud.models.npc_event import NPCEvent
 from shinymud.models.npc_ai_packs import NPC_AI_PACKS
@@ -22,7 +22,9 @@ class Npc(Character):
         Column('name', default='Shiny McShinerson'),
         Column('keywords', read=read_list,
                write=write_list, copy=copy_list),
-        Column('title')
+        Column('title'),
+        Column('permissions', type="INTEGER", read=int, write=int, default=5)
+        
     ]
     def __init__(self, args={}):
         self.spawn_id = None
@@ -48,6 +50,7 @@ class Npc(Character):
     def __str__(self):
         string = ('NPC %s from Area %s' % (self.id, self.area.name)
                    ).center(50, '-') + '\n'
+        perms = ', '.join(get_permission_names(self.permissions))
         events = ''
         for trigger, e_list in self.events.items():
             events += '\n  %s:' % trigger
@@ -63,9 +66,10 @@ title: %s
 gender: %s
 keywords: %s
 ai packs: %s
+permissions: %s
 description:
     %s\n""" % (self.name, self.title, self.gender, str(self.keywords), 
-                     ai_packs, self.description)
+                     ai_packs, perms, self.description)
         for ai in self.ai_packs.values():
             string += str(ai)
         string += 'NPC EVENTS:\n' + events
@@ -82,7 +86,7 @@ description:
         new_npc.spawn_id = spawn_id
         new_npc.events = self.events
         new_npc.ai_packs = self.ai_packs
-        new_npc.permissions = PLAYER | DM
+        new_npc.permissions = self.permissions
         new_npc.location = None
         new_npc.inventory = []
         new_npc.actionq = []
@@ -158,6 +162,35 @@ description:
         self.gender = gender.lower()
         self.save()
         return '%s\'s gender has been set to %s.' % (self.name, self.gender)
+    
+    def build_add_permission(self, args, player=None):
+        if player and not (player.permissions & PERMS['god']):
+            return "You need to be GOD in order to edit an npc's permissions."
+        s = 'WARNING: giving npcs wider permissions can be dangerous. See "help bestow".\n'
+        if not args:
+            return 'Try: "add permission <permission group>". See "help permissions".'
+        args = args.strip().lower()
+        if args in PERMS:
+            self.permissions = self.permissions | PERMS.get(args)
+            self.save()
+            s += "%s now has %s permissions." % (self.name, args)
+        else:
+            s += '%s is not a valid permission group. Valid permissions are: \n' % (
+                  args, ', '.join(PERMS.keys()))
+        return s
+    
+    def build_remove_permission(self, args, player=None):
+        if player and not (player.permissions & PERMS['god']):
+            return "You need to be GOD in order to edit an npc's permissions."
+        if not args:
+            return 'Try: "remove permission <permission group>", or see "help permissions".'
+        args = args.strip().lower()
+        if (args in PERMS) and (self.permissions & PERMS.get(args)):
+            self.permissions = self.permissions ^ PERMS.get(args)
+            self.save()
+            return "%s no longer has %s permissions." % (self.name, args)
+            
+        return '%s doesn\'t have %s permissions.' % (self.name, args)
     
 # ***** Event functions *****
     def load_events(self):
