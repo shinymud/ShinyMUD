@@ -641,47 +641,6 @@ To export areas to text-files, see "help export".
 build_list.register(Import, ['import'])
 command_help.register(Import.help, ['import'])
 
-class Log(BaseCommand):
-    help = (
-    """<title>Log (BuildCommand)</title>
-Npcs receive the same feedback for preforming actions (commands) as a player
-character, but since they can't read, their feedback gets accumulated in an
-action log rather than being output to a screen. The Log command allows you to
-read the action log (and memory) of an npc to help you debug scripting errors.
-\nUSAGE:
-  log <npc-name>
-You must be in the same room as an npc to log it.
-    """
-    )
-    def execute(self):
-        if not self.args:
-            self.pc.update_output('Type "help log" for help with this command.')
-            return
-        if not self.pc.location:
-            self.pc.update_output('There aren\'t any npcs in the void to log.')
-            return
-        npc = self.pc.location.get_npc_by_kw(self.args.lower().strip())
-        if not npc:
-            self.pc.update_output('That npc doesn\'t exist.')
-            return
-        string = (' Log for %s ' % npc.name).center(50, '-') + '\n'
-        if npc.remember:
-            string += 'REMEMBERS: '
-            string += ', '.join(npc.remember) + '\n'
-        else:
-            string += 'REMEMBERS: This npc doesn\'t remember any players.\n'
-        string += 'ACTION LOG:\n'
-        if npc.actionq:
-            string += '\n'.join([a.strip('\n').strip('\r') for a in npc.actionq])
-        else:
-            string += 'Action log is empty.'
-        string += '\n' + ('-' * 50)
-        self.pc.update_output(string)
-    
-
-build_list.register(Log, ['log'])
-command_help.register(Log.help, ['log'])
-
 # Defining Extra Build-related help pages:
 
 command_help.register(("<title>Build Commands (BuildMode)</title>"
