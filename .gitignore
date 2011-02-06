@@ -8,3 +8,4 @@
 *.db
 .shinypid
 src/shinymud/data/config.py
+src/shinymud/data/logs/*

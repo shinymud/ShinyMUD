@@ -69,6 +69,10 @@ DM = 4
 ADMIN = 8
 GOD = 16
 
+# Should import and use this instead, and phase the above method of constants
+# out
+PERMS = {'player': 1, 'builder': 2, 'dm': 4, 'admin': 8, 'god': 16}
+
 EQUIP_SLOTS =    {  'main-hand': 'You wield #item in your main-hand.',
                     'off-hand': 'You wield #item in your off-hand.',
                     'head': 'You place #item on your head.',
