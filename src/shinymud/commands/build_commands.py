@@ -38,7 +38,7 @@ To create a new object:
                 if not len(args) > 1:
                     self.pc.update_output('You can\'t create a new area without a name.\n')
                 else:
-                    new_area = Area.create(args[1])
+                    new_area = Area.create({'name': args[1]})
                     if type(new_area) == str:
                         self.pc.update_output(new_area)
                     else:
