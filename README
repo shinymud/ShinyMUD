@@ -8,7 +8,7 @@ To run ShinyMUD you'll need:
 * A Unix-based operating system (Linux, MacOSX)
 
 If you're developing ShinyMUD, you'll also want Nose for running unit tests.
-See http://shiny.game-host.org/wiki/UnitTesting for more details.
+See http://shiny.incendiarysoftware.com/wiki/UnitTesting for more details.
 
 -- Starting ShinyMUD --
 
