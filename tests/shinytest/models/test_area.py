@@ -84,6 +84,15 @@ class TestArea(ShinyTestCase):
         self.assertTrue(room2 is area.get_room(room2.id))
         self.assertEqual(room2.name, 'awesome room')
         self.assertEqual(room2.description, 'food')
+        
+    def test_ten_new_rooms(self):
+        from shinymud.models.area import Area
+        from shinymud.models.room import Room
+        area = Area.create({'name': 'foo'})
+        for i in range(11):
+            area.new_room()
+        self.assertEqual(len(area.rooms.keys()), 11)
+        
     
     def test_destroy_room(self):
         from shinymud.models.area import Area

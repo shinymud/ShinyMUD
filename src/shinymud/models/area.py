@@ -81,7 +81,7 @@ Description: \n    %s""" % (self.name,
     def get_id(self, id_type):
         """Generate a new id for an item, npc, or room associated with this area."""
         if id_type in ['room', 'build_item', 'npc', 'script']:
-            rows = self.world.db.select("max(id) as id from " + id_type +" where area=?", [self.name])
+            rows = self.world.db.select("max(CAST(id AS INT)) as id from " + id_type +" where area=?", [self.name])
             max_id = rows[0]['id']
             if max_id:
                 your_id = int(max_id) + 1
