@@ -9,15 +9,19 @@ VERSION = '0.6' # The codebase version (don't change this)
 
 GAME_NAME = 'ShinyMUD' # Replace this with the name of your game!
 CURRENCY = 'bottlecaps' # The units for the in-game currency
-
 HOST = ''
-PORT = 4111
+
+# Comment out any connection handlers you don't want running.
+# Connection handlers live in shinymud.lib.connection_handlers.con_handlers.py
+# Format is: (port, 'connection_handler')
+CONNECTIONS = [
+    (4111, 'TelnetHandler'),
+    (4112, 'StatSender'),
+    #(4113, 'WebsocketHandler') # Uncomment to enable Websocket ConnectionHandler
+]
 
 RESET_INTERVAL = 320 # Amount of time (in seconds) that should pass before an area resets
 DEFAULT_LOCATION = ('library', '4') # The area, room_id that newbies should start in
-
-STATS_ENABLED = False # Whether the StatSender thread should be enabled
-STATS_PORT = 4112 # The port that StatSender should listen on
 
 # *********** LOGGING CONFIGURATION *************** #
 
