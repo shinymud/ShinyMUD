@@ -90,6 +90,7 @@ class Player(Character):
         """Gets raw input from the player and queues it for later processing."""
         try:
             new_stuff = self.conn.recv(256)
+            self.world.log.debug(new_stuff)
             # Get rid of the \r \n line terminators
             new_stuff = new_stuff.replace('\n', '').replace('\r', '')
             # See if the input is a notice of window size change

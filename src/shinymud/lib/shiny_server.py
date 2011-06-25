@@ -1,11 +1,10 @@
 from shinymud.lib.world import World
 # Initialize the World
 world = World()
-from shinymud.lib.connection_handler import ConnectionHandler
-from shinymud.lib.statsender import StatSender
 from shinymud.lib.setup import initialize_database
 from shinymud.models.area import Area
 from shinymud.data.config import *
+from shinymud.lib.connection_handlers import con_handlers
 
 import traceback
 import datetime
@@ -22,13 +21,12 @@ for area in world.areas.values():
 
 world.default_location = world.get_location(DEFAULT_LOCATION[0],
                                             DEFAULT_LOCATION[1])
-# Start listening for connections on a different thread
-conn_handler = ConnectionHandler(PORT, HOST, world)
-conn_handler.start()
 
-if STATS_ENABLED:
-    stat_sender = StatSender(STATS_PORT, HOST, world)
-    stat_sender.start()
+# Start up all of our connection handlers
+for port, conn_handler in CONNECTIONS:
+    handler_class = getattr(con_handlers, conn_handler)
+    handler_obj = handler_class(port, HOST, world)
+    handler_obj.start()
 
 world.log.info('Started the connection handler. Now listening for Players.')
 world.log.debug('The world is about to start turning.')

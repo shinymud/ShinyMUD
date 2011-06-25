@@ -58,7 +58,8 @@ def start():
         f = open(os.path.join(path, 'shinymud/data/.shinypid'), 'w')
         f.write(str(pid))
         f.close()
-        return "%s is now running on port %s." % (GAME_NAME, str(PORT))
+        conns = [(str(p[0]) + ' (' + p[1] + ')') for p in CONNECTIONS]
+        return "%s is now running on port(s) %s." % (GAME_NAME, ', '.join(conns))
     else:
         return "%s is already running!" % GAME_NAME
 
