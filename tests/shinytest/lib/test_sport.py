@@ -196,6 +196,7 @@ class TestSport(ShinyTestCase):
         """
         from shinymud.lib.sport_plugins.formatters.player_write_shiny_format import format as writeshiny
         from shinymud.lib.sport_plugins.formatters.player_read_shiny_format import format as readshiny
+        from shinymud.lib.connection_handlers.shiny_connections import ShinyConnection
         from shinymud.models.player import Player
         sven = Player(('foo', 'bar'))
         sven.playerize({'name': 'sven', 'password': 'foo'})

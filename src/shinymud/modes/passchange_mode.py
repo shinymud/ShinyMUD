@@ -15,15 +15,15 @@ class PassChangeMode(object):
         self.password = None
         self.intro = 'Type your current password, or "cancel" to cancel.\n' +\
                      'Current password: ' + CONCEAL
-        header = ' Password Change '.center(self.player.win_size[0], '-') + '\n'
-        self.player.update_output(header + self.intro, False)
+        header = ' Password Change '.center(60, '-') + '\n'
+        self.player.update_output(header + self.intro)
     
     def get_input(self):
         """Get the player's input if there is any.
         """
         if len(self.player.inq) > 0:
             # We've got something to work with!
-            arg = self.player.inq[0].strip().replace('\r', '').replace('\n', '')
+            arg = self.player.inq[0].strip()
             del self.player.inq[0]
             self.next_state(arg)
     
@@ -37,7 +37,7 @@ class PassChangeMode(object):
         else:
             passwd = hashlib.sha1(p).hexdigest()
             if passwd == self.player.password:
-                self.player.update_output(CLEAR + 'New password: ' + CONCEAL, False)
+                self.player.update_output(CLEAR + 'New password: ' + CONCEAL)
                 self.next_state = self.new_password
             else:
                 if self.verify_count >= 3:
@@ -45,7 +45,7 @@ class PassChangeMode(object):
                     self.active = False
                 else:
                     self.player.update_output(CLEAR + 'Incorrect password.')
-                    self.player.update_output(self.intro, False)
+                    self.player.update_output(self.intro)
                     self.verify_count += 1
     
     def new_password(self, p):
@@ -60,9 +60,9 @@ class PassChangeMode(object):
                 self.player.update_output(CLEAR + 'Password change successful. Don\'t forget it!')
                 self.active = False
             else:
-                self.player.update_output(CLEAR + 'Those passwords didn\'t match.\nNew password: ' + CONCEAL, False)
+                self.player.update_output(CLEAR + 'Those passwords didn\'t match.\nNew password: ' + CONCEAL)
                 self.password = None
         else:
             self.password = hashlib.sha1(p).hexdigest()
-            self.player.update_output(CLEAR + 'Type new password again to confirm: ' + CONCEAL, False)
+            self.player.update_output(CLEAR + 'Type new password again to confirm: ' + CONCEAL)
     

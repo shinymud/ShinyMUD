@@ -71,12 +71,17 @@ class InitMode(object):
         PREV STATE: None (this should be the first state function in InitMode)
         NEXT STATE: self.verify_playername
         """
-        if self.player.win_size[0] < 80:
-            self.player.update_output("Welcome to %s!\r\n" % GAME_NAME, strip_nl=False)
+        if self.player.conn.__class__.__name__ == "TelnetConnection":            
+            if self.player.conn.win_size[0] < 80:
+                self.player.update_output("Welcome to %s!" % GAME_NAME)
+            else:
+                self.player.update_output(self.world.login_greeting)
         else:
-            self.player.update_output(self.world.login_greeting + '\r\n', strip_nl=False)
+            self.player.update_output(self.world.login_greeting)
         
-        intro_message = 'Type "new" if you\'re a new player. Otherwise, enter your name.'
+        intro_message = ['Type "new" if you\'re a new player. Otherwise, enter your name.',
+                         'Name: '
+                        ]
         self.player.update_output(intro_message)
         self.state = self.get_input
         self.next_state = self.verify_playername
@@ -94,7 +99,7 @@ class InitMode(object):
         if playername:
             if playername.lower() == 'new':
                 self.next_state = self.new_playername
-                self.player.update_output('Please choose a name. It should be a single word, using only letters.')
+                self.player.update_output(['Please choose a name. It should be a single word, using only letters.', 'Name: '])
             else:
                 self.playername = playername
                 row = self.world.db.select('password,dbid FROM player WHERE name=?', [self.playername])
@@ -103,12 +108,13 @@ class InitMode(object):
                     self.password = row[0]['password']
                     self.dbid = row[0]['dbid']
                     # self.state = self.verify_password
-                    self.player.update_output("Enter password: " + CONCEAL, False)
+                    self.player.update_output("Enter password: " + CONCEAL)
                     self.next_state = self.verify_password
                 else:
                     # The player entered a name that doesn't exist.. they should create
                     # a new character or try entering the name again.
-                    self.player.update_output('That player doesn\'t exist. Would you like to create a new character by the name of %s? (Yes/No)' % self.playername)
+                    self.player.update_output(['That player doesn\'t exist. Would you like to create a new character by the name of %s?' % self.playername,
+                                               '(Yes/No): '])
                     self.next_state = self.verify_new_character
     
     def verify_password(self, arg):
@@ -125,11 +131,12 @@ class InitMode(object):
             self.player.playerize(self.world.db.select('* FROM player WHERE dbid=?', [self.dbid])[0])
             # Make sure that we clear the concealed text effect that we 
             # initiated when we moved to the password state
-            self.player.update_output(CLEAR, False)
+            self.player.update_output(CLEAR)
             self.state = self.character_cleanup
         else:
             self.next_state = self.verify_playername
-            self.player.update_output(CLEAR + "\r\nBad playername or password. Enter playername:")
+            self.player.update_output(CLEAR)
+            self.player.update_output("Bad playername or password. Enter playername:")
     
     def join_world(self):
         """The final stop in our InitMode state machine! 
@@ -137,13 +144,17 @@ class InitMode(object):
         entered the world!
         """
         self.active = False
-        self.player.update_output('\nYou have entered the world of %s.\n' % GAME_NAME, strip_nl=False)
+        self.player.update_output(['', 'You have entered the world of %s.' % GAME_NAME, ''])
         if self.newbie:
-            nl = '*' + (' ' * 67) + '*\n'
-            newb = ' Welcome, new player! '.center(69, '*') + '\n' + nl
-            newb += ('* If you would like some help playing the game, type "help newbie". *').center(69, ' ') + '\n' + nl
-            newb += ('*' * 69)
-            self.player.update_output(newb, strip_nl=False)
+            nl = '*' + (' ' * 67) + '*'
+            newb = [ ' Welcome, new player! '.center(69, '*'),
+                     nl,
+                     ('* If you would like some help playing the game, type "help newbie". *').center(69, ' '),
+                     nl,
+                     '*' * 69,
+                     ''
+                   ]
+            self.player.update_output(newb)
             self.world.tell_players("%s, a new player, has entered the world." % self.player.fancy_name())
             self.world.play_log.info('New player "%s" created.' % self.player.name)
         else:
@@ -151,7 +162,7 @@ class InitMode(object):
         if self.player.location:
             self.player.update_output(self.player.look_at_room())
             self.player.location.add_char(self.player)
-        self.world.play_log.info('Player "%s" logging in from: %s.' % (self.player.fancy_name(), str(self.player.addr)))
+        self.world.play_log.info('Player "%s" logging in from: %s.' % (self.player.fancy_name(), str(self.player.conn.addr)))
     
     def character_cleanup(self):
         """This is the final stage before the player enters the world, where any
@@ -183,12 +194,13 @@ class InitMode(object):
         if arg.strip().lower().startswith('y'):
             if self.playername.isalpha():
                 self.save['name'] = self.playername.lower()
-                self.player.update_output('Please choose a password: ' + CONCEAL, False)
+                self.player.update_output('Please choose a password: ' + CONCEAL)
                 self.password = None
                 self.next_state = self.create_password
             else:
-                self.player.update_output("Invalid name. Names should be a single word, using only letters.\r\n" +\
-                "Choose a name: ", False)
+                self.player.update_output([ "Invalid name. Names should be a single word, using only letters.",
+                                            "Choose a name: "
+                                         ])
                 self.next_state = self.new_playername
         else:
             self.player.update_output('Type "new" if you\'re a new player. Otherwise, enter your playername.')
@@ -203,7 +215,7 @@ class InitMode(object):
         if arg.isalpha():
             row = self.world.db.select("dbid from player where name=?", [arg.lower()])
             if row:
-                self.player.update_output('That playername is already taken.\r\n')
+                self.player.update_output('That playername is already taken.')
                 self.player.update_output('Please choose a playername. It should be a single word, using only letters.')
             else:
                 #verify here!
@@ -224,18 +236,19 @@ class InitMode(object):
         """
         if not self.password:
             if arg in BAD_PASSWORDS:
-                self.player.update_output(CLEAR + '\r\nThat\'s a reserved word. Pick a different password: ' + CONCEAL, False)
+                self.player.update_output(CLEAR + '\r\nThat\'s a reserved word. Pick a different password: ' + CONCEAL)
             else:    
                 self.password = hashlib.sha1(arg).hexdigest()
-                self.player.update_output(CLEAR + '\r\nRe-enter your password to confirm: ' + CONCEAL, False)
+                self.player.update_output(CLEAR + 'Re-enter your password to confirm: ' + CONCEAL)
         else:
             if self.password == hashlib.sha1(arg).hexdigest():
                 self.save['password'] = self.password
                 self.next_state = self.choose_gender
-                self.player.update_output(CLEAR + "\r\nWhat gender shall your character be? Choose from: neutral, female, or male.")
+                self.player.update_output(CLEAR + "What gender shall your character be? Choose from: neutral, female, or male.")
+                self.player.update_output('Gender: ')
             else:
-                self.player.update_output(CLEAR + '\r\nPasswords did not match.' +\
-                                        '\r\nPlease choose a password: ' + CONCEAL, False)
+                self.player.update_output(CLEAR + 'Passwords did not match.')
+                self.player.update_output('Please choose a password: ' + CONCEAL)
                 self.password = None
             
     
@@ -249,14 +262,16 @@ class InitMode(object):
         if arg[0].lower() in 'mfn':
             genders = {'m': 'male', 'f': 'female', 'n': 'neutral'}
             self.save['gender'] = genders.get(arg[0])
-            self.player.update_output('If you add an e-mail to this account, we can help you reset ' +\
-                                    'your password if you forget it (otherwise, you\'re out of luck ' +\
-                                    'if you forget!).\n' +\
-                                    'Would you like to add an e-mail address to this character? ' +\
-                                    '(Y/N)')
+            self.player.update_output([
+                'If you add an e-mail to this account, we can help you reset ' +\
+                'your password if you forget it (otherwise, you\'re out of luck ' +\
+                'if you forget!).',
+                'Would you like to add an e-mail address to this character?',
+                '(Y/N): '
+            ])
             self.next_state = self.add_email
         else:
-            self.player.update_output('Please choose from male, female, or neutral:')
+            self.player.update_output('Please choose from male, female, or neutral: ')
     
     def add_email(self, arg):
         """The player is adding (or not adding!) an email address to their new
@@ -267,8 +282,8 @@ class InitMode(object):
         """
         if arg.lower().startswith('y'):
             self.save['email'] = 'yes_email'
-            self.player.update_output('We promise not to use your e-mail for evil!\n' +\
-                                    'Please enter your e-mail address:')
+            self.player.update_output('We promise not to use your e-mail for evil!')
+            self.player.update_output('Please enter your e-mail address: ')
         # We should only get to this state if the player said they want to enter their e-mail
         # address to be saved
         elif self.save.get('email') == 'yes_email':

@@ -31,9 +31,8 @@ class Player(Character):
         Column('title',default='a %s player.' % GAME_NAME)
     ]
     
-    win_change_regexp = re.compile(r"\xff\xfa\x1f(?P<size>.*?)\xff\xf0")
-    def __init__(self, conn_info):
-        self.conn, self.addr = conn_info
+    def __init__(self, connection):
+        self.conn = connection
         self.win_size = (None, None)
         self.name = self.conn
         self.inq = []
@@ -68,91 +67,55 @@ class Player(Character):
                     item.item_types['container'].load_inventory()
                 self.inventory.append(item)
     
-    def update_output(self, data, terminate_ln=True, strip_nl=True):
+    def update_output(self, data):
         """Helpfully inserts data into the player's output queue."""
-        if strip_nl:
-            # Since we need to terminate with lf and cr for telnet anyway,
-            # we might as well strip all extra newlines off the end of
-            # everything anyway. If for some reason the output needs to have
-            # extra newlines at the end, pass strip_nl=False
-            data = data.rstrip('\n')
-        # Replace all of the \n with \r\n so that we're understood by telnet
-        # clients everywhere
-        data = data.replace('\n', '\r\n')
-        if terminate_ln:
-            # If you want the player to enter input on the same line as the
-            # last output, pass terminate_ln=False. Otherwise the line will
-            # be terminated and a prompt will be added.
-            data += '\r\n'
-        self.outq.append(data)
+        if isinstance(data, basestring):
+            self.outq.append(data)
+        
+        elif isinstance(data, list):
+            self.outq += data
     
     def get_input(self):
         """Gets raw input from the player and queues it for later processing."""
-        try:
-            new_stuff = self.conn.recv(256)
-            self.world.log.debug(new_stuff)
-            # Get rid of the \r \n line terminators
-            new_stuff = new_stuff.replace('\n', '').replace('\r', '')
-            # See if the input is a notice of window size change
-            self.parse_winchange(new_stuff)
-            # Ignore any other telnet negotiations
-            new_stuff = re.sub(r"\xff((\xfa.*?\xf0)|(..))", '', new_stuff)
-            if new_stuff:
-                self.inq.append(new_stuff)
-        except Exception, e:
-            pass
-    
-    def parse_winchange(self, data):
-        """Parse and set the terminal size of the player."""
-        match = self.win_change_regexp.match(data)
-        if match:
-            size = match.group('size')
-            self.win_size = (ord(size[1]), ord(size[3]))
-            if not self.mode:
-                m = "You've changed the size of your terminal. It's now: %s by %s." % (str(self.win_size[0]), str(self.win_size[1]))
-                self.update_output(m)
+        data = self.conn.recv()
+        if data:
+            self.inq.append(data)
     
     def send_output(self):
         """Sends all data from the player's output queue to the player."""
-        try:
-            sent_output = ''
-            if len(self.outq) > 0:
-                # Start output with a newline so we don't start half-way
-                # through the line their last prompt is on.
-                # self.conn.send('\r\n')
-                pass
-            while len(self.outq) > 0:
-                self.conn.send(self.outq[0])
-                sent_output = self.outq[0]
-                del self.outq[0]
-            if sent_output.endswith('\r\n'):
-                self.conn.send(self.get_prompt())
-        except socket_error:
-            # If we die here, it's probably because we got a broken pipe.
-            # In this case, we should disconnect the player
-            self.player_logout(True)
+        if (len(self.outq) > 0):
+            self.enqueue_prompt()
+            alive = self.conn.send(self.outq)
+        
+            if not alive:
+                # Sending failed - the connection is no longer alive. We should log
+                # the player out
+                self.player_logout(True)
     
-    def get_prompt(self):
+    def enqueue_prompt(self):
+        """Get a prompt for the player."""
         if hasattr(self, 'hp'):
-            default = '<HP:%s/%s MP:%s/%s>' % (str(self.hp), str(self.max_hp), str(self.mp), str(self.max_mp))
+            default = '<HP:%s/%s MP:%s/%s> ' % (str(self.hp), str(self.max_hp), str(self.mp), str(self.max_mp))
         else:
-            default = '>'
+            default = '> '
+            
         if not self.mode:
-            return default
+            self.outq.append(default)
+        
         elif self.mode.name == 'BuildMode':
             prompt = '<Build'
             if self.mode.edit_area:
                 prompt += ' ' + self.mode.edit_area.name
             if self.mode.edit_object:
                 prompt += ' ' + self.mode.edit_object.__class__.__name__ + ' ' + str(self.mode.edit_object.id)
-            prompt += '>'
-            return prompt
+            prompt += '> '
+            self.outq.append(prompt)
+            
         elif self.mode.name == 'TextEditMode':
-            return '>'
+            self.outq.append('> ')
         elif self.mode.name == 'PassChangeMode':
-            return '>'
-        else:
-            return default
+            self.outq.append('> ')
+    
     
     def parse_command(self):
         """Parses the lines in the player's input buffer and then calls
@@ -200,7 +163,6 @@ class Player(Character):
         if self.dbid:
             self.save()
         if not broken_pipe:
-            self.conn.send('Bye!\r\n')
             self.world.play_log.info('%s has exited.' % self.fancy_name())
         else:
             self.world.play_log.info('%s has been disconnected (broken pipe).' % self.fancy_name())

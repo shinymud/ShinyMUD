@@ -28,8 +28,9 @@ for port, conn_handler in CONNECTIONS:
     handler_obj = handler_class(port, HOST, world)
     handler_obj.start()
 
-world.log.info('Started the connection handler. Now listening for Players.')
+world.log.info('Started the connection handlers. Now listening for Players.')
 world.log.debug('The world is about to start turning.')
+
 try:
     world.start_turning()
 except:
@@ -38,8 +39,10 @@ except:
         traceback.print_exc(file=fp)
         fp.write('\n' + ('*' * 50))
     world.log.critical('OH NOES! The server died! More information in the death_errors.log.')
-    player_error = "Bloody hell, the game server crashed!\n" +\
-    "Don't worry, we've done our best to save your data.\n" +\
-    "Try logging on again in a minute or two.\r\n"
+    player_error = [
+        "Bloody hell, the game server crashed!",
+        "Don't worry, we've done our best to save your data.",
+        "Try logging on again in a minute or two."
+    ]
     for player in world.player_list.values():
         player.conn.send(player_error)

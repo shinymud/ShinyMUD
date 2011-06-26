@@ -31,7 +31,7 @@ class TextEditMode(object):
     
     def process_input(self):
         if self.pc.inq:
-            line = self.pc.inq[0].replace('\n', '').replace('\r', '')
+            line = self.pc.inq[0]
             if line.startswith('@'):
                 # player is submitting a command, parse it!
                 cmd, line_num, args = self.command_form.match(line).group('cmd', 'line', 'args')

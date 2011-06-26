@@ -39,7 +39,8 @@ class World(object):
         except Exception, e:
             self.log.error('Error opening login_greeting.txt: ' + str(e))
         else:
-            self.login_greeting = greet_file.read()
+            text = greet_file.read()
+            self.login_greeting = text.split('\n')
         finally:
             greet_file.close()
         if not self.login_greeting:

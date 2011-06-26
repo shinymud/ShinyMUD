@@ -7,8 +7,12 @@ class TestReset(ShinyTestCase):
         from shinymud.modes.build_mode import BuildMode
         from shinymud.modes.init_mode import InitMode
         from shinymud.data.config import wecho_color, clear_fcolor
-        bob = Player(('bob', 'bar'))
-        alice = Player(('alice', 'bar'))
+        from shinymud.lib.connection_handlers.shiny_connections import ShinyConnection
+        
+        bob = Player('foo')
+        bob.name = 'bob'
+        alice = Player('foo')
+        alice.name = 'alice'
         self.world.player_add(bob)
         self.world.player_add(alice)
         
@@ -18,7 +22,7 @@ class TestReset(ShinyTestCase):
         alice.outq = []
         
         self.world.tell_players('hello world!')
-        echo = wecho_color + 'hello world!' + clear_fcolor + '\r\n'
+        echo = wecho_color + 'hello world!' + clear_fcolor
         self.assertTrue(echo in bob.outq)
         self.assertTrue(echo in alice.outq)
         
@@ -27,7 +31,7 @@ class TestReset(ShinyTestCase):
         alice.outq = []
         
         self.world.tell_players('hello all!')
-        echo = wecho_color + 'hello all!' + clear_fcolor + '\r\n'
+        echo = wecho_color + 'hello all!' + clear_fcolor
         self.assertTrue(echo not in bob.outq)
         self.assertTrue(echo in alice.outq)
         
@@ -36,7 +40,7 @@ class TestReset(ShinyTestCase):
         alice.outq = []
         
         self.world.tell_players('hello!', ['alice'])
-        echo = wecho_color + 'hello!' + clear_fcolor + '\r\n'
+        echo = wecho_color + 'hello!' + clear_fcolor
         self.assertTrue(echo in bob.outq)
         self.assertTrue(echo not in alice.outq)
     

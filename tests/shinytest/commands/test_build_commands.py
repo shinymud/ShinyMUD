@@ -36,17 +36,17 @@ class TestBuildCommands(ShinyTestCase):
         
         # Make sure that we don't die with no args!
         Edit(self.bob, '', 'edit').run()
-        empty = 'Type "help edit" to get help using this command.\r\n'
+        empty = 'Type "help edit" to get help using this command.'
         self.assertTrue(empty in self.bob.outq)
         
         # Bob should fail to be able to edit the area, since he's not yet on
         # the area's builder's list
-        fail = 'You aren\'t allowed to edit someone else\'s area.\r\n'
+        fail = 'You aren\'t allowed to edit someone else\'s area.'
         Edit(self.bob, 'area dessert', 'edit').run()
         self.assertTrue(fail in self.bob.outq)
         
         # Bob should now succeed in editing the area
-        success = 'Now editing area "dessert".\r\n'
+        success = 'Now editing area "dessert".'
         area.builders.append('bob')
         Edit(self.bob, 'area dessert', 'edit').run()
         self.assertEqual(self.bob.mode.edit_area, area)
@@ -110,8 +110,7 @@ class TestBuildCommands(ShinyTestCase):
              'link').run()
         self.bob.world.log.debug(self.bob.outq)
         fail = ("This room's (id: 1) west exit is already linked to room 1, "
-                "area cake.\r\n"
-                "You must unlink it before linking it to a new room.\r\n")
+                "area cake.\nYou must unlink it before linking it to a new room.")
         self.assertTrue(fail in self.bob.outq)
     
     def test_unlink_command(self):
@@ -144,16 +143,16 @@ class TestBuildCommands(ShinyTestCase):
         # Make sure we fail if the area doesn't actually exist
         Export(self.bob, 'area bar', 'export').run()
         self.world.log.debug(self.bob.outq)
-        self.assertTrue('Area "bar" doesn\'t exist.\r\n' in self.bob.outq)
+        self.assertTrue('Area "bar" doesn\'t exist.' in self.bob.outq)
         
         # We should fail if the player gives us incorrect syntax
-        error = 'Try: "export <area/player> <name>", or see "help export".\r\n'
+        error = 'Try: "export <area/player> <name>", or see "help export".'
         Export(self.bob, 'lol', 'export').run()
         self.assertTrue(error in self.bob.outq)
         
         # Character exporting doesn't exist yet, but make sure the player gets
         # the correct logic branch if they try it
-        error = 'Invalid type "char". See "help export".\r\n'
+        error = 'Invalid type "char". See "help export".'
         Export(self.bob, 'char bob', 'export').run()
         self.assertTrue(error in self.bob.outq)
         
@@ -181,16 +180,16 @@ class TestBuildCommands(ShinyTestCase):
         # Make sure we fail if the area file doesn't actually exist
         Import(self.bob, 'area superlongtestfoo', 'import').run()
         self.world.log.debug(self.bob.outq)
-        self.assertTrue('Error: file superlongtestfoo_area.shiny_format does not exist.\r\n' in self.bob.outq)
+        self.assertTrue('Error: file superlongtestfoo_area.shiny_format does not exist.' in self.bob.outq)
         
         # Make sure we fail if the player gives incorrect syntax
         Import(self.bob, 'superlongtestbar', 'import').run()
-        error = 'Invalid type "superlongtestbar". See "help export".\r\n'
+        error = 'Invalid type "superlongtestbar". See "help export".'
         self.assertTrue(error in self.bob.outq)
         
         # Make sure we fail if the area already exists in the MUD
         Import(self.bob, 'area superlongtestexistenz', 'import').run()
-        error = 'Area "superlongtestexistenz" already exists in your game.\r\n'
+        error = 'Area "superlongtestexistenz" already exists in your game.'
         self.assertTrue(error in self.bob.outq)
         
         # Make sure the import command actually works
@@ -203,7 +202,7 @@ class TestBuildCommands(ShinyTestCase):
         
         self.world.destroy_area('superlongtestbar', 'test')
         Import(self.bob, 'area superlongtestbar from email', 'import').run()
-        error = 'Cannot find transport: load_email\r\n'
+        error = 'Cannot find transport: load_email'
         self.world.log.debug(self.bob.outq)
         self.assertTrue(error in self.bob.outq)
         

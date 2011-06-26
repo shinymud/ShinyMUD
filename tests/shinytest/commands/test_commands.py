@@ -40,7 +40,7 @@ class TestGeneralCommands(ShinyTestCase):
         self.world.player_add(alice)
         
         Chat(bob, 'lol, hey guys!', 'chat').run()
-        chat = config.chat_color + 'Bob chats, "lol, hey guys!"' + config.clear_fcolor + '\r\n'
+        chat = config.chat_color + 'Bob chats, "lol, hey guys!"' + config.clear_fcolor
         self.assertTrue(chat in sam.outq)
         self.assertTrue(chat in bob.outq)
         self.assertFalse(chat in alice.outq)
@@ -94,15 +94,15 @@ class TestGeneralCommands(ShinyTestCase):
         Give(bob, 'bauble to alice', 'give').run()
         self.assertEqual(len(bob.inventory), 0)
         self.assertEqual(len(alice.inventory), 1)
-        to_alice = 'Bob gives you a bauble.\r\n'
+        to_alice = 'Bob gives you a bauble.'
         self.assertTrue(to_alice in alice.outq)
-        to_bob = 'You give a bauble to Alice.\r\n'
+        to_bob = 'You give a bauble to Alice.'
         self.assertTrue(to_bob in bob.outq)
         
         Give(alice, 'bauble to shiny', 'give').run()
         self.assertEqual(len(alice.inventory), 0)
         self.assertEqual(len(npc.inventory), 1)
-        to_alice = 'You give a bauble to %s.\r\n' % npc.name
+        to_alice = 'You give a bauble to %s.' % npc.name
         alice.world.log.debug(alice.outq)
         self.assertTrue(to_alice in alice.outq)
         to_shiny = 'Alice gives you a bauble.'
@@ -128,7 +128,7 @@ class TestGeneralCommands(ShinyTestCase):
         # Try to set goto_appear and goto_disappear (both should fail
         # since this player shouldn't have permissions)
         Set(bob, 'goto_appear Bob pops in from nowhere.', 'set').run()
-        eresult = 'You don\'t have the permissions to set that.\r\n'
+        eresult = 'You don\'t have the permissions to set that.'
         self.assertTrue(eresult in bob.outq)
         bob.outq = []
         Set(bob, 'goto_disappear foo', 'set').run()
@@ -158,7 +158,7 @@ class TestGeneralCommands(ShinyTestCase):
         bob.playerize({'name':'bob', 'password':'pork'})
         self.world.player_add(bob)
         bob.permissions = bob.permissions | config.BUILDER
-        generic_fail = 'Type "help goto" for help with this command.\r\n'
+        generic_fail = 'Type "help goto" for help with this command.'
         
         # We should fail if we only specify a room number when we aren't in
         # an area 
@@ -169,7 +169,7 @@ class TestGeneralCommands(ShinyTestCase):
         
         # We should fail if we try to go to a room in an area that doesn't 
         # exist
-        message = 'Area "food" doesn\'t exist.\r\n'
+        message = 'Area "food" doesn\'t exist.'
         Goto(bob, '1 food', 'goto').run()
         self.assertEqual(bob.location, None)
         bob.world.log.debug(bob.outq)
@@ -177,7 +177,7 @@ class TestGeneralCommands(ShinyTestCase):
         
         # We should fail if we try to go to a room that doesn't exist (in an
         # area that does)
-        message = 'Room "4005" doesn\'t exist in area blarg.\r\n'
+        message = 'Room "4005" doesn\'t exist in area blarg.'
         Goto(bob, '4005 blarg', 'goto').run()
         self.assertEqual(bob.location, None)
         bob.world.log.debug(bob.outq)
@@ -197,6 +197,6 @@ class TestGeneralCommands(ShinyTestCase):
         # We should get a help message if there is only white space given
         bob.outq = []
         Goto(bob, '   ', 'goto').run()
-        fail = 'Type "help goto" for help with this command.\r\n'
+        fail = 'Type "help goto" for help with this command.'
         self.assertTrue(fail in bob.outq)
     
