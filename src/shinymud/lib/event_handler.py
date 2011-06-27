@@ -290,10 +290,12 @@ source of the phrase
         # The person who's responsible for saying/giving the message that the
         # npc heard (may be None)
         teller = self.args.get('teller')
+        # The NPC that hears the player
+        listener = self.args.get('obj')
         # If the player never added a condition with this event, then oh well
         if not condition:
             return
-        if heard_string.find(condition) != -1:
+        if (heard_string.find(condition) != -1) and (listener != teller):
             # We heard what we were looking for!
             if teller:
                 rep = {'#target_name': teller.fancy_name()}
