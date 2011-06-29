@@ -114,7 +114,7 @@ class TextEditMode(object):
         try:
             line_number = int(args.get('line'))
         except:
-            self.pc.update_output('%s is not a valid line number.' % args.get('line'))
+            self.pc.update_output("'%s' is not a valid line number." % args.get('args'))
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 self.edit_lines[line_number-1] = args.get('args')
@@ -127,20 +127,20 @@ class TextEditMode(object):
         try:
             line_number = int(args.get('line'))
         except:
-            self.pc.update_output('%s is not a valid line number.' % args.get('line'))
+            self.pc.update_output("'%s' is not a valid line number." % args.get('args'))
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 self.edit_lines.insert(line_number-1, args.get('args'))
                 self.pc.update_output('Line replaced.\n')
                 self.show_progress()
             else:
-                self.pc.update_output('%s is not a valid line number.' % args.get('line'))
+                self.pc.update_output('%s is not a valid line number.' % str(line_number))
     
     def delete_line(self, **args):
         try:
             line_number = int(args.get('line'))
         except:
-            self.pc.update_output('%s is not a valid line number.' % line_number)
+            self.pc.update_output("'%s' is not a valid line number." % args.get('args'))
         else:
             if (line_number > 0) and (line_number <= len(self.edit_lines)):
                 del self.edit_lines[line_number-1]
