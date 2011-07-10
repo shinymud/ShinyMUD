@@ -79,7 +79,14 @@ class Player(Character):
         """Gets raw input from the player and queues it for later processing."""
         data = self.conn.recv()
         if data:
-            self.inq.append(data)
+            if isinstance(data, basestring):
+                self.inq.append(data)
+
+            elif isinstance(data, list):
+                self.inq += data
+        
+        elif data is None:
+            self.player_logout(True)
     
     def send_output(self):
         """Sends all data from the player's output queue to the player."""
@@ -162,15 +169,21 @@ class Player(Character):
         # process. Don't save the incomplete data.
         if self.dbid:
             self.save()
-        if not broken_pipe:
-            self.world.play_log.info('%s has exited.' % self.fancy_name())
+            
+            if not broken_pipe:
+                self.world.play_log.info('%s has exited.' % self.fancy_name())
+            else:
+                self.world.play_log.info('%s has been disconnected (broken pipe).' % self.fancy_name())
+            self.conn.close()
+            if hasattr(self, 'location') and self.location:
+                self.location.remove_char(self)
+            self.world.player_remove(self.name)
+            self.world.tell_players("%s has left the world." % self.fancy_name())
         else:
-            self.world.play_log.info('%s has been disconnected (broken pipe).' % self.fancy_name())
-        self.conn.close()
-        if hasattr(self, 'location') and self.location:
-            self.location.remove_char(self)
-        self.world.player_remove(self.name)
-        self.world.tell_players("%s has left the world." % self.fancy_name())
+            # If they didn't make it through the CC process, just close the connection
+            self.conn.close()
+            self.world.player_remove(self.name)
+            self.world.log.debug("Logging out an unnamed player.")
     
     def set_mode(self, mode):
         if mode == 'build':

@@ -9,6 +9,8 @@ class WebsocketHandler(threading.Thread):
     def __init__(self, port, host, world):
         threading.Thread.__init__(self)
         self.world = world
+        self.host = host
+        self.port = port
         self.daemon = True # So this thread will exit when the main thread does
         self.listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -21,24 +23,24 @@ class WebsocketHandler(threading.Thread):
         player logging in, and then add that Player object to the world.
         """
         
-        # This doesn't actually work - it needs to be implemented!
-        # self.listener.listen(5)
-        #         self.world.log.debug("Listener started")
-        #         while 1:
-        #             try:
-        #                 new_player = Player(self.listener.accept())
-        #             except Exception, e:
-        #                 self.world.log.debug(str(e))
-        #             else:
-        #                 self.set_telnet_options(new_player)
-        #                 self.world.log.info("Client logging in from: %s" % str(new_player.addr))
-        #                 new_player.conn.setblocking(0)
-        #                 # The player_add function in the world requires access to the player_list,
-        #                 # which the main thread edits quite a bit -- that's why we need a lock 
-        #                 # before we add a player
-        #                 self.world.player_list_lock.acquire()
-        #                 self.world.player_add(new_player)
-        #                 self.world.player_list_lock.release()
+        self.listener.listen(5)
+        self.world.log.debug("Listener started")
+        while 1:
+            try:
+                connection = WebsocketConnection( self.listener.accept(), 
+                                                    self.world.log, self.host, self.port)
+            except Exception, e:
+                self.world.log.debug(str(e))
+            else:
+                new_player = Player(connection)
+                self.world.log.info("Websocket: Client logging in from: %s" % str(connection.addr))
+                # new_player.conn.setblocking(0)
+                # The player_add function in the world requires access to the player_list,
+                # which the main thread edits quite a bit -- that's why we need a lock 
+                # before we add a player
+                self.world.player_list_lock.acquire()
+                self.world.player_add(new_player)
+                self.world.player_list_lock.release()
     
 
 
@@ -58,18 +60,17 @@ class TelnetHandler(threading.Thread):
         This thread will accept connections, create a Player object for the
         player logging in, and then add that Player object to the world.
         """
-        self.world.log.debug('WOW')
+        
         self.listener.listen(5)
         self.world.log.debug("Listener started")
         while 1:
             try:
-                self.world.log.debug("Hi!")
                 connection = TelnetConnection(self.listener.accept(), self.world.log)
             except Exception, e:
                 self.world.log.debug(str(e))
             else:
                 new_player = Player(connection)
-                self.world.log.info("Client logging in from: %s" % str(connection.addr))
+                self.world.log.info("Telnet: Client logging in from: %s" % str(connection.addr))
                 # The player_add function in the world requires access to the player_list,
                 # which the main thread edits quite a bit -- that's why we need a lock 
                 # before we add a player
