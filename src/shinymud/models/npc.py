@@ -175,7 +175,7 @@ description:
             self.save()
             s += "%s now has %s permissions." % (self.name, args)
         else:
-            s += '%s is not a valid permission group. Valid permissions are: \n' % (
+            s += '%s is not a valid permission group. Valid permissions are: %s\n' % (
                   args, ', '.join(PERMS.keys()))
         return s
     
@@ -212,14 +212,16 @@ description:
                 self.cmdq.append(cmd(self, args, cmd_name))
                 self.world.npc_subscribe(self)
     
-    def build_add_event(self, args):
+    def build_add_event(self, args, player=None):
         """Add an event to an npc."""
         # add event on_enter call script 1
         # add event listen_for 'stuff' call script 1
         # add event given_item call script 3
         help_message = 'Type "help events" for help with this command.'
         exp = r'(?P<trigger>\w+)([ ]+\'(?P<condition>(.*?))\')?([ ]+call)' +\
-              r'([ ]+script)?([ ]+(?P<id>\d+))([ ]+(?P<area>\w+))?([ ]+(?P<prob>\d+))?'
+              r'([ ]+script)?([ ]+(?P<id>\d+))' +\
+              r'(([ ]+from)([ ]+area)?([ ]+(?P<area>\w+)))?' +\
+              r'([ ]+(?P<prob>\d+))?'
         if not args:
             return help_message
         match = re.match(exp, args, re.I)
@@ -267,7 +269,7 @@ description:
         else:
             self.events[new_event.event_trigger] = [new_event]
     
-    def build_remove_event(self, event):
+    def build_remove_event(self, event, player=None):
         """Remove an event from an npc.
         event -- a string containing the id and trigger type of the event to be removed.
         """
@@ -278,7 +280,7 @@ description:
         trigger, index = match.group('trigger', 'index')
         if trigger not in self.events:
             return 'Npc %s doesn\'t have an event with the trigger type "%s".' % (self.id, trigger)
-        if int(index) > len(self.events[trigger]):
+        if int(index) > len(self.events[trigger]) - 1:
             return 'Npc %s doesn\'t have the event %s #%s.' % (self.id, trigger, index)
         event = self.events[trigger].pop(int(index))
         event.destruct()
@@ -315,7 +317,7 @@ description:
         """Return true if this npc has this ai pack, False if it does not."""
         return ai in self.ai_packs
     
-    def build_add_ai(self, args):
+    def build_add_ai(self, args, player=None):
         """Add an ai pack to this npc via BuildMode."""
         if not args:
             return 'Try: "add ai <ai-pack-name>", or type "help ai packs".'
@@ -327,7 +329,7 @@ description:
         else:
             return '"%s" is not a valid ai pack. See "help ai packs".' % args
     
-    def build_remove_ai(self, ai_type):
+    def build_remove_ai(self, ai_type, player=None):
         """Remove an ai pack from this npc via BuildMode."""
         if not ai_type:
             return 'Try: "remove ai <ai-pack-name>", or type "help ai packs".'

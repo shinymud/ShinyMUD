@@ -725,9 +725,14 @@ command_help.register(("<title>NPC Events (NPC Attribute)</title>"
 To add an event to an npc:
   add event <event-trigger> '<condition>' call <script_id> [<probability>]
   example: "add event hears 'I'll join your quest' call script 2"
+You can also add scripts from another area:
+  add event <event-trigger> '<condition>' call <script_id> from area <area-name> [<probability>]
+  example: "add event pc_enters call script 3 from area Greendale"
 To remove an event from an npc:
   remove event <event-trigger> <event-id>
   example: "remove event hears 0"
+\nA shorthand form is also acceptable for adding events. You may leave out 'script' and 'area' if you wish:
+  example: "add event pc_enters call 3 from Greendale"
 \nFor a list of event triggers, see "help triggers".
 """
 ), ['npc event', 'event', 'events', 'npc events'])
