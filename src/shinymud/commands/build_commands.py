@@ -747,6 +747,7 @@ on events.
 \n<b>pc_enter</b> - call script when a player character enters the room.
 <b>given_item</b> - call script when the npc is given an item.
 <b>hears</b> - call script when the npc hears a certain phrase in the room.
+<b>emoted</b> - call script when the npc sees someone emote.
 """
 ), ['event list', 'triggers', 'event triggers'])
 
@@ -856,6 +857,8 @@ following are all of the conditionals you can test in a script:
   using the script command Record (see help "script commands").
 * <b>equal (if equal keyword1 keyword2)</b> - Will be true if keyword1 is the same as
   keyword2, false if keyword1 is not the same as keyword2.
+* <b>target_has (if target_has <item id> from <item area>) </b> - Is true if the 
+  target has the item in their inventory. (Make sure the item you provide exists!)
 
 """
 ), ['script conditional', 'script conditionals', 'conditional', 'conditionals'])

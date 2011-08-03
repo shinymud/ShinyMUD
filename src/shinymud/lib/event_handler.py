@@ -26,7 +26,8 @@ class EventHandler(object):
         self.script_cmds = {'record': self.record_player
                            }
         self.conditions = {'remember': self.remember_player,
-                           'equal': self.equal
+                           'equal': self.equal,
+                           'target_has': self.has_item
                           }
     
     def run(self):
@@ -157,6 +158,28 @@ class EventHandler(object):
         if args[0] == args[1]:
             return True
         return False
+    
+    def has_item(self, *args):
+        """Returns true if the target PLAYER has a specific ITEM"""
+        bad_args = "Script %s Error: You must provide both the player and the item they may have." % self.script.id
+        player = self.args.get('player')     
+        if not args:
+            raise ConditionError(bad_args)
+        else:
+            args = " ".join(args)
+            exp = r'(#target_name[ ]+)?(item[ ]+)?(?P<id>\d+)[ ]+(from[ ]+)?(area[ ]+)?(?P<area>\w+)'
+            match = re.match(exp, args, re.I)
+            if not match:
+                raise ConditionError(bad_args)
+            item_id, area_name = match.group('id', 'area')
+            #Check for the item in the players inventory. We don't need to check if the item exists
+            #in the world since the player then couldn't possibly have it.
+            for each in player.inventory:
+                if ((item_id == each.build_id) and \
+                        (area_name.lower() == each.build_area)):
+                        return True
+            return False
+
     
 
 class ParseError(Exception):
