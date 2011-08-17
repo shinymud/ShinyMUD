@@ -1,12 +1,14 @@
 from shinymud.commands.commands import *
-from shinymud.data.config import GAME_NAME
+from shinymud.data.config import GAME_NAME, EMAIL_ENABLED
 from shinymud.lib.ansi_codes import CONCEAL, CLEAR, COLOR_FG_RED
 from shinymud.lib.world import World
+from shinymud.lib.shinymail import *
 
+import random
 import hashlib
 import re
 
-BAD_PASSWORDS = ['cancel', '@cancel', 'password', 'passwd']
+BAD_PASSWORDS = ['cancel', '@cancel', 'password', 'passwd', 'forgot']
 
 # choose_class_string = """Choose a class, or pick custom:
 # Fighter    Thief      Wizard     Custom
@@ -42,6 +44,7 @@ class InitMode(object):
     def __init__(self, player):
         """
         player - a Player object that has yet to be playerized (player-initialized)
+        newbie - a new player, which is designated by creating a new player name
         """
         self.player = player
         self.newbie = False
@@ -49,7 +52,9 @@ class InitMode(object):
         self.active = True
         self.name = 'InitMode'
         self.world = World.get_world()
+        self.log = self.world.log
         self.save = {}
+        
     
     def get_input(self):
         """Get input from the player and pass it to the appropriate function.
@@ -119,12 +124,16 @@ class InitMode(object):
     
     def verify_password(self, arg):
         """Verify that the password provided by the player and the password from
-        their database profile are correct.
+        their database profile are correct, or reset the password if it was forgotton.
         
         PREV STATE: self.verify_playername
         NEXT STATE: self.character_cleanup, if the correct password was provided
                     self.verify_playername, if an incorrect password was provided
+                    self.reset_password, if they forgot their password
         """
+        if arg == 'forgot':
+            self.state = self.reset_password
+            return
         password = hashlib.sha1(arg).hexdigest()
         if password == self.password:
             # Wicked cool, our player exists AND the right person is self.world.logging in
@@ -136,7 +145,70 @@ class InitMode(object):
         else:
             self.next_state = self.verify_playername
             self.player.update_output(CLEAR)
-            self.player.update_output("Bad playername or password. Enter playername:")
+            self.player.update_output(["Bad playername or password. ", \
+                        "If you have forgotton your password, enter 'forgot' for your password, " + \
+                         "and we will e-mail you a code to reset it.", "Enter playername:"])
+
+    def reset_password(self):
+        """At this stage we're trying to get our players back. If they decided 
+        to add a password to their character, we will send them a code and they
+        can reset it, and they will go to a state to confirm their code. If not,
+        they are out of luck, but they can still log on as another character.
+
+        PREV STATE: self.verify_password
+        NEXT STATE: self.verify_playername
+        """
+        self.state = self.get_input
+        player_email = self.world.db.select('email,name FROM player WHERE dbid=?', [self.dbid])[0]['email']
+        if not player_email:
+            self.player.update_output(CLEAR + 'You do not have an e-mail associated with this character. ' +
+            'You will need to contact someone with super admin privileges to reset your password.')
+            self.player.update_output(['', 'Until then you can log on with another character if you like: '])
+            self.next_state = self.verify_playername
+            return
+        try:
+            if not EMAIL_ENABLED:
+                raise Exception("%s email is not configured! %s could not reset their password!" %
+                                                         (GAME_NAME, self.player.name))
+            self.conf_code = random.randint(99999, 1000000)
+            subject = '%s Password Reset' % GAME_NAME
+            message = 'Hello %s, \n\nYou have recently requested a password reset. ' % self.playername
+            message += 'Please enter the code below into your game prompt to reset your password.\n '
+            message += 'Code: %s\n\nThanks, \n\n\n\n%s' % (self.conf_code, GAME_NAME)
+            mail = ShinyMail([player_email], subject, message)
+            mail.send()
+            self.player.update_output(CLEAR + 'An e-mail has been sent to %s with a six digit number inside.' %
+                                                                             player_email)
+            self.player.update_output('Copy the code here to continue: ')
+            self.next_state = self.confirm_code
+            return
+        except Exception, e:
+            #We had a problem sending email! Most likely, we don't have email set up in the config.py file
+            self.player.update_output(CLEAR + 'We were unable to send an e-mail to %s. ' % player_email)
+            self.player.update_output('This could be a problem with our internal e-mail sender.' + \
+            'Please contact the administrator of the game. We\'re sorry for the inconvenience.')
+            self.player.update_output(['', 'You can log in with another player if you like: '])
+            self.log.error("Password email reset Fail: " + str(e))
+            self.next_state = self.verify_playername
+
+    def confirm_code(self, arg):
+        """Confirm the user is who they say they are. If they have
+        the magic code (e-mailed to them), then we will give them 
+        their account back.
+        
+        PREV STATE: self.reset_password
+        NEXT STATE: self.create_password
+        """
+        if arg.isdigit() and int(arg) == self.conf_code:
+            #We have now verified this is the correct person, grab their player info and
+            #reset their password
+            self.player.playerize(self.world.db.select('* FROM player WHERE dbid=?', [self.dbid])[0])
+            self.player.update_output(CLEAR + 'Type in your new password: ' + CONCEAL)
+            self.password = None
+            self.next_state = self.create_password
+        else:
+            self.player.update_output(CLEAR + 'The code you entered was incorrect.')
+            self.player.update_output('Copy the code here to continue: ')
     
     def join_world(self):
         """The final stop in our InitMode state machine! 
@@ -180,6 +252,7 @@ class InitMode(object):
         self.world.player_add(self.player)
         self.world.player_remove(self.player.conn)
         self.state = self.join_world
+
     
     # ************Character creation below!! *************
     def verify_new_character(self, arg):
@@ -194,6 +267,7 @@ class InitMode(object):
         if arg.strip().lower().startswith('y'):
             if self.playername.isalpha():
                 self.save['name'] = self.playername.lower()
+                self.newbie = True
                 self.player.update_output('Please choose a password: ' + CONCEAL)
                 self.password = None
                 self.next_state = self.create_password
@@ -222,6 +296,7 @@ class InitMode(object):
                 self.save['name'] = arg.lower()
                 self.player.update_output('Please choose a password: ' + CONCEAL, False)
                 self.password = None
+                self.newbie = True
                 self.next_state = self.create_password
         else:
             self.player.update_output("Invalid name. Names should be a single word, using only letters.\r\n" +\
@@ -243,9 +318,14 @@ class InitMode(object):
         else:
             if self.password == hashlib.sha1(arg).hexdigest():
                 self.save['password'] = self.password
-                self.next_state = self.choose_gender
-                self.player.update_output(CLEAR + "What gender shall your character be? Choose from: neutral, female, or male.")
-                self.player.update_output('Gender: ')
+                if not self.newbie:
+                    self.player.update_output(CLEAR + "Your new password has been saved.")
+                    self.state = self.character_cleanup
+                else:
+                    self.next_state = self.choose_gender
+                    self.player.update_output(CLEAR + "What gender shall your character be? " +\
+                                                    "Choose from: neutral, female, or male.")
+                    self.player.update_output('Gender: ')
             else:
                 self.player.update_output(CLEAR + 'Passwords did not match.')
                 self.player.update_output('Please choose a password: ' + CONCEAL)
@@ -291,12 +371,11 @@ class InitMode(object):
             self.player.playerize(self.save)
             self.player.save()
             self.state = self.character_cleanup
-            self.newbie = True
         else:
             self.player.playerize(self.save)
             self.player.save()
             self.state = self.character_cleanup
-            self.newbie = True
+            
     
     # def assign_defaults(self):
     #     if len(self.player.inq) > 0:
