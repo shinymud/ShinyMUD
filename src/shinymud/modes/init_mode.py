@@ -144,10 +144,9 @@ class InitMode(object):
             self.state = self.character_cleanup
         else:
             self.next_state = self.verify_playername
-            self.player.update_output(CLEAR)
-            self.player.update_output(["Bad playername or password. ", \
+            self.player.update_output([CLEAR + "Bad playername or password. ", \
                         "If you have forgotton your password, enter 'forgot' for your password, " + \
-                         "and we will e-mail you a code to reset it.", "Enter playername:"])
+                         "and we will e-mail you a code to reset it.", "Enter playername: "])
 
     def reset_password(self):
         """At this stage we're trying to get our players back. If they decided 
@@ -277,7 +276,7 @@ class InitMode(object):
                                          ])
                 self.next_state = self.new_playername
         else:
-            self.player.update_output('Type "new" if you\'re a new player. Otherwise, enter your playername.')
+            self.player.update_output('Type "new" if you\'re a new player. Otherwise, enter your playername: ')
             self.next_state = self.verify_playername
     
     def new_playername(self, arg):
@@ -294,7 +293,7 @@ class InitMode(object):
             else:
                 #verify here!
                 self.save['name'] = arg.lower()
-                self.player.update_output('Please choose a password: ' + CONCEAL, False)
+                self.player.update_output('Please choose a password: ' + CONCEAL)
                 self.password = None
                 self.newbie = True
                 self.next_state = self.create_password
@@ -359,8 +358,9 @@ class InitMode(object):
         
         PREV STATE: self.choose_gender
         NEXT_STATE: self.character_cleanup
+                    self.add_email - if user answers 'yes', or gives bad input
         """
-        if arg.lower().startswith('y'):
+        if arg.lower() == 'y' or arg.lower() == 'yes':
             self.save['email'] = 'yes_email'
             self.player.update_output('We promise not to use your e-mail for evil!')
             self.player.update_output('Please enter your e-mail address: ')
@@ -371,10 +371,12 @@ class InitMode(object):
             self.player.playerize(self.save)
             self.player.save()
             self.state = self.character_cleanup
-        else:
+        elif arg.lower() == 'n' or arg.lower() == 'no':
             self.player.playerize(self.save)
             self.player.save()
             self.state = self.character_cleanup
+        else:
+            self.player.update_output('Please enter yes or no: ')
             
     
     # def assign_defaults(self):
