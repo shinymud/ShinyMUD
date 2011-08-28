@@ -186,16 +186,13 @@ class BuildItem(Item):
             # self.world.db.update_from_dict('item', self.to_dict())
             return 'Item carryable status set.\n'
     
-    def build_add_type(self, item_type, item_dict=None, player=None):
+    def build_add_type(self, item_type, player=None):
         """Add a new item type to this item."""
         if not item_type in ITEM_TYPES:
             return 'That\'s not a valid item type.'
         if item_type in self.item_types:
             return 'This item is already of type %s.' % item_type
-        if item_dict:
-            new_type = ITEM_TYPES[item_type](item_dict)
-        else:
-            new_type = ITEM_TYPES[item_type]()
+        new_type = ITEM_TYPES[item_type]()
         new_type.build_item = self
         new_type.save()
         self.item_types[item_type] = new_type
