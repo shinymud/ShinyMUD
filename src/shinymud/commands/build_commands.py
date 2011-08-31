@@ -393,18 +393,18 @@ object you're editing.
     def execute(self):
         obj = self.pc.mode.edit_object or self.pc.mode.edit_area
         if not obj:
-            self.pc.update_output('You must be editing something to add attributes.\n')
+            self.pc.update_output('You must be editing something to add attributes.')
         elif not self.args:
-            self.pc.update_output('What do you want to add?\n')
+            self.pc.update_output('What do you want to add?')
         else:
-            message = 'You can\'t add that.\n'
+            message = 'You can\'t add that.'
             match = re.match(r'\s*(\w+)([ ](.+))?$', self.args, re.I)
             if not match:
-                self.pc.update_output('Type "help add" for help with this command.\n')
+                self.pc.update_output('Type "help add" for help with this command.')
             else:
                 func, _, arg = match.groups()
                 if hasattr(obj, 'build_add_' + func):
-                    self.pc.update_output(getattr(obj, 'build_add_' + func)(arg, self.pc))
+                    message = getattr(obj, 'build_add_' + func)(arg, self.pc)
                 elif obj.__class__.__name__ == 'BuildItem':
                     # If we didn't find the add function in the object's native add functions,
                     # but the object is of type BuildItem, then we should search the add functions
@@ -418,7 +418,7 @@ object you're editing.
                         if hasattr(ai, 'build_add_' + func):
                             message = getattr(ai, 'build_add_' + func)(arg, self.pc)
                             break
-                    self.pc.update_output(message)
+                self.pc.update_output(message)
     
 
 build_list.register(Add, ['add'])

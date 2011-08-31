@@ -29,7 +29,7 @@ class TestSport(ShinyTestCase):
         i1 = nufoo.get_item('1')
         self.assertEqual('chair', i1.name)
         self.assertTrue(i1.has_type('furniture'))
-        self.assertEqual(i1.item_types['furniture'].capacity, 5)
+        self.assertEqual(i1.item_types['furniture'].capacity, 1)
         
         # Make sure the npcs come back good
         n1 = nufoo.get_npc('1')
