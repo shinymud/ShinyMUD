@@ -277,9 +277,24 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
         return str(your_id)
     
     def load_spawns(self, spawn_list=None):
-        self.world.log.debug(spawn_list)
+        """
+        Loads all of the spawns into this room, from either the given spawn_list
+        or the database.
+        """
         if not spawn_list:
             spawn_list = self.world.db.select('* FROM room_spawns WHERE room=?', [self.dbid])
+        self.world.log.debug(spawn_list) 
+        #Build a dictionary of what spawns where (room, another item, an npc) which we will
+        #call the dependencies. We need to build this list since self.new_spawn() needs 
+        #objects for 'containers' instead of the string representations. Our 'containers'
+        #don't exist yet. We will need to build spawns first, then use 'dependencies' to
+        # add them later.
+        dependencies = {}
+        for each in spawn_list:
+            dependencies[each['id']] = each['container']
+            del each['container']
+        self.world.log.debug("Spawn_Dependencies {Spawn_id:container} ---: " + str(dependencies))  
+        #Build spawns and save them.
         for row in spawn_list:
             row['room'] = self
             area = self.world.get_area(row['spawn_object_area'])
@@ -289,12 +304,14 @@ spawns: %s""" % (self.name, self.description, nice_exits, spawns)
                     row['obj'] = obj
                     self.world.log.debug(row)
                     self.new_spawn(row)
-        for spawn in self.spawns.values():
-            if spawn.container:
-                if spawn.container in self.spawns:
-                    container = self.spawns.get(spawn.container)
-                    spawn.container = container
-                    container.add_nested_spawn(spawn)
+        #Add spawns to their containers and save them.               
+        for spawn_id, cont in dependencies.items():
+            if cont:
+                spawn = self.spawns.get(spawn_id)
+                spawn.container = self.spawns.get(cont)
+                spawn.container.add_nested_spawn(self.spawns.get(spawn_id))
+                spawn.save()
+    
     
     def clean_spawns(self):
         """Make sure that all of the spawns for this room are valid, and
