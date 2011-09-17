@@ -36,7 +36,7 @@ class TestNpc(ShinyTestCase):
         """Test if an NPC can exist within an area properly (unspawned)"""
         self.npc = self.area.new_npc()
         self.npc.characterize({'name': 'bobert'})
-        self.assertTrue('bobert' in self.area.list_npcs() )
+        self.assertTrue(self.npc in self.area.npcs.values())
     
     def test_build_add_remove_events(self):
         npc = self.area.new_npc()
