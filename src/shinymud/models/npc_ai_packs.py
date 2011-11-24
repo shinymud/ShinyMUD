@@ -11,10 +11,19 @@ import re
 
 class NpcAiPack(Model):
     log = World.get_world().log
-    """The base class that must be inherited by all ai pack.
+    """The base class that must be inherited by all ai packs.
      
     If you're going to build a new ai pack, the first stop is to inherit from
     this class and implement its required functions (explained below!).
+    
+    Remember to add your new ai pack to the registry, or else it won't exist
+    in game! Do so by adding this after the ai class:
+        NPC_AI_PACKS = {'<in-game_ai_pack_name>': <class_name>}
+    And this if it's a model:
+        model_list.register(<class_name>)
+        
+    
+        
     """
     def __init__(self, args={}):
         """ An AiPack's __init__ function should take a dictionary of keyword
@@ -22,60 +31,17 @@ class NpcAiPack(Model):
         the saved values of your attributes loaded from the database.
         Your init function should look something like the following:
          
-        # You'll need to initialize these first three attributes
-        # regardless of what kind of ai pack you're creating:
-        self.dbid = args.get('dbid')
-        self.npc = args.get('npc')
-         
-        # Now we'll initialize our class-specific attributes:
-        self.foo = args.get('foo', 'My default foo value.')
-        self.bar = args.get('bar', 'My default bar value.')
+        You will probably want your ai pack inherit from a model, which allows for 
+        automatic saving and loading of basic attributes. You do this by passing
+        a single line to the Model:
+            Model.__init__(self, args)
+            
+        Now, if your ai has any columns they will be automatically loaded with 
+        your ai pack.
+        (See Modles in __init__.py for how to use columns to load data.)
+        
         """
         raise NpcAiTypeInterfaceError('You need to implement the init function.')
-    
-    def to_dict(self):
-        """To dict converts all of the ai pack's attributes that aught to be
-        saved to the database into a dictionary, with the name of the attribute
-        being the key and its value being the value.
-         
-        to_dict takes no arguments, and should return a dictionary.
-        the code for a to_dict function aught to look something like the following:
-         
-        d = {}
-        if self.dbid:
-            d['dbid'] = self.dbid
-        d['npc'] = self.npc.dbid
-        # The names of your attributes must be the same as the ones specified
-        # in the schema.
-        d['foo'] = self.foo
-        d['bar'] = self.bar
-        return d
-        """
-        raise NpcAiTypeInterfaceError('You need to implement the to_dict function.')
-    
-    def save(self, save_dict=None):
-        """The save function saves this AiPack to the database.
-         
-        If passed a save_dict, the save function should only save the data
-        specified in the dictionary to the database. If save_dict is somehow
-        empty or None, the entire instance should be saved to the database.
-        Your save function should look like the following:
-         
-        world = World.get_world()
-        if self.dbid:
-            # This pack has a dbid, so it already exists in the database. We just
-            # need to update it.
-            if save_dict:
-                save_dict['dbid'] = self.dbid
-                world.db.update_from_dict('table_name', save_dict)
-            else:    
-                world.db.update_from_dict('table_name', self.to_dict())
-        else:
-            # This pack doesn't exist in the database if it doesn't have a dbid
-            # yet, so we need to insert it and save its new dbid
-            self.dbid = world.db.insert_from_dict('table_name', self.to_dict())
-        """
-        raise NpcAiTypeInterfaceError('You need to implement the save function.')
     
     def __str__(self):
         """Return a string representation of this ai pack to be displayed
@@ -100,60 +66,85 @@ class NpcAiTypeInterfaceError(Exception):
     pass
 
 
-class MerchandiseList(object):
-    def __init__(self, args=None):
-        # The "live" list contains sublists in the form of [item, price]
-        # where item is an actual BuildItem object and price is an int
-        self.live = []
-        # The "dead" list contains any leftover dictionaries in the form of:
-        # {'id': item_id, 'area': item_area, 'price': price}
-        # These leftover dictionaries could not be resolved into real BuildObjects,
-        # either because the item or its area was recently destroyed.
-        # We'll set them aside so that they can be saved back to the database,
-        # the missing items get restored/re-imported later.
-        self.dead = []
-        self.pending = json.loads(args) if args else None
+class MerchandiseList(Model):
+    """Merchandise list for a particular NPC. 
     
-    def save(self):
-        save_list = self.dead[:]
-        save_list.extend([{'id': item.id, 'area': item.area.name, 'price': price}
-                          for item,price in self.live])
-        return json.dumps(save_list)
+    This class handles all of the items a Merchant buys and sells. This class
+    needs to handle the arbitrary destruction and imortation of areas, while still
+    keeping track of all the items it sells. It does so by keeping 'soft links' with
+    the items, referencing them by item id and verifying them by area and name.
+    
+    When an area with items is removed, we still keep track of items in a 'dead' list.
+    The function "resurrect()" is used to bring them back when the area is re-imported.
+    """
+        
+    db_table_name = 'merchandise_list'
+    db_columns = Model.db_columns + [
+        Column('merchant', foreign_key=('merchant', 'dbid'), null=False, type='INTEGER',
+           write=lambda merchant: merchant.dbid),
+        Column('live',read=read_merchandise, write=write_merchandise),
+        Column('dead', read=read_list, write=write_list),
+        Column('buyer', read=to_bool, default=True),
+        Column('markup', read=read_float, type='NUMBER', default=1),
+    ]
+    
+    
+    def __init__(self, args={}):
+        Model.__init__(self, args)
+        # Both the "live" and "dead" lists contain dictionaries in the form:
+        # {'id': item_id, 'area': item_area, 'name': item_name, 'price': price}
+        #
+        # Neither directly keeps track of items. If an item on the merchandise
+        # list no longer exists, it will be stored in the 'dead' list. Dead
+        # items are occationally checked on, and re-added to the 'live' list 
+        # if the area gets re-imported. 
+        #
+        # Keywords are stored with live items so we can check quickly if they
+        # are in the merchandise list. Keywords are not saved with their items,
+        # and may not exist for dead items.
+        if not self.live:
+            self.live = []
+        if not self.dead:
+            self.dead = []
+        
+        self.resolve()        
     
     def resolve(self):
-        if not self.pending:
-            return
-        for group in self.pending:
-            if self.world.area_exists(group.get('area')):
-                item = self.world.get_area(group.get('area')).get_item(group.get('id'))
-                if item:
-                    self.live.append([item, int(group.get('price'))])
-                else:
-                    self.dead.append(group)
-            else:
+        """Check live items, and make sure they are still alive. """
+        for group in self.live:
+            i = self.verify_item(group)
+            if not i:
+                self.live.remove(group)
                 self.dead.append(group)
-        self.pending = None
-    
+            else:
+                group['keywords'] = i.keywords
+                group['price'] = int(group['price'])
+                
+
     def resurrect(self):
         """Try to find the items in the self.dead list: if they can now be found
         in the world, remove them from the self.dead list and add them to the
         self.live list.
         """
-        for i in reversed(xrange(len(self.dead))):
-            d = self.dead[i]
-            if self.world.area_exists(d.get('area')):
-                item = self.world.get_area(d.get('area')).get_item(d.get('id'))
-                if item:
-                    self.live.append([item, int(d.get('price'))])
-                    del self.dead[i]
+        for group in self.dead:
+            i = self.verify_item(group)
+            if i:
+                self.dead.remove(group)
+                self.live.append(group)
+                group['keywords'] = i.keywords
+                group['price'] = int(group['price'])
+
     
     def merch_list(self):
         """Get a list of the item's for sale to players."""
+        if self.dead:
+            self.resurrect()
+        self.resolve()
         if self.live:
             sl = ''
             for group in self.live:
-                sl += '  %s %s -- %s\n' % (str(group[1]), CURRENCY,
-                                           group[0].name)
+                sl += '  %s %s -- %s\n' % (str(group['price']), CURRENCY,
+                                           group['name'])
         else:
             sl = None
         return sl
@@ -165,11 +156,11 @@ class MerchandiseList(object):
         sl = ''
         i = 1
         for group in self.live:
-            sl += '    [%s] %s %s -- %s (%s:%s)\n' % (str(i), str(group[1]), 
+            sl += '    [%s] %s %s -- %s (%s:%s)\n' % (str(i), str(group['price']), 
                                                       self.world.currency_name,
-                                                      group[0].name,
-                                                      group[0].id,
-                                                      group[0].area.name)
+                                                      group['name'],
+                                                      group['id'],
+                                                      group['area'])
             i += 1
         if self.dead:
             sl = '---- Missing Items ----\n ' +\
@@ -187,19 +178,35 @@ merchant by typing "remove missing".
         if not sl:
             sl = 'Nothing.'
         return sl
+        
+    def verify_item(self, item_group):
+        """Make sure our refrence to the real item matches, and return the item
+        if true. Otherwise return false.
+        """
+        if self.world.area_exists(item_group.get('area')):
+            item = self.world.get_area(item_group.get('area')).get_item(item_group.get('id'))
+            if item and item.name == item_group['name']:
+                return item
+        return None
     
     def add_item(self, item_group):
         """Add an item (and its price) to the self.live list.
         """
-        self.live.append(item_group)
+        item = item_group[0]
+        self.live.append({'id': item_group[0].id, 'area':item_group[0].area.name,
+                        'name':item_group[0].name, 'price':item_group[1],
+                        'keywords': item_group[0].keywords
+                        })
     
     def get_item(self, keyword):
         """If this merchant has an item with the given keyword, return it and
         its price in [item, price] form, else return None.
         """
         for group in self.live:
-            if keyword in group[0].keywords:
-                return group
+            if keyword in group['keywords']:
+                item = self.verify_item(group)
+                if item:
+                    return (item, group.get('price'))
         return None
     
     def pop(self, index):
@@ -208,13 +215,17 @@ merchant by typing "remove missing".
         """
         if (index > len(self.live)) or (index < 0):
             return None
-        return self.live.pop(index)
+        group = self.live.pop(index)
+        return (self.verify_item(group), group.get("price"))
+        
     
     def reset_dead(self):
         """Set the self.dead list back to an empty list.
         """
         self.dead = []
     
+
+model_list.register(MerchandiseList)
 
 class Merchant(NpcAiPack):
     help = (
@@ -231,22 +242,40 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         Column('buyer', read=to_bool, default=True),
         Column('markup', read=read_float, type='NUMBER', default=1),
         Column('buys_types', read=read_list, write=write_list),
-        Column('sale_items', read=MerchandiseList,
-               write=lambda ml: ml.save if ml else None)
+        Column('sale_items', write=lambda ml: ml.save() if ml else None)
     ]
+    
+    def __init__(self, args={}):
+        Model.__init__(self, args)
+        self.buys_types = []
+        if not self.sale_items:
+            #We only get here if this is the first instance of the merchant,
+            # otherwise the merchandise will be loaded from load_extras()
+            merch_dict = {'merchant': self}
+            self.sale_items = MerchandiseList(merch_dict)
+            self.sale_items.save()
+            
+    def load_extras(self):
+        #Load the merchandise list for the Merchant
+        merchl = self.world.db.select('* FROM merchandise_list WHERE merchant=?', [self.dbid])
+        if merchl:
+            merchl[0]['merchant'] = self 
+            self.sale_items = MerchandiseList(merchl[0])
+
+
     def __str__(self):
         if self.buyer:
             bt = ', '.join(self.buys_types) or 'Buys all types.'
         else:
             bt = 'Merchant is not a buyer.'
         
-        s = '\n'.join(("MERCHANT ATTRIBUTES:",
+        s = '\n'.join(["MERCHANT ATTRIBUTES:",
                        "  For sale:\n" + self.sale_items.build_list(),
                        "  Buys items: " + str(self.buyer),
                        "  Buys only these types: " + bt,
                        "  Markup: " + str(self.markup) + 'x item\'s base value.',
                        ""
-                     ))
+                     ])
         return s
     
     def player_sale_list(self):
@@ -332,8 +361,8 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
     def build_add_type(self, itype, player=None):
         """Add an item type that this merchant should specialize in buying."""
         if not self.buyer:
-            return 'This merchant is not a buyer.\n' +\
-            'You must set buys to True before this merchant will buy anything from players.'
+            return ['This merchant is not a buyer.',
+            'You must set buys to True before this merchant will buy anything from players.']
         itype = itype.strip().lower()
         if not itype:
             return 'Try "add type <item-type>", or see "help merchant".'
@@ -353,7 +382,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             return 'This merchant is not a buyer.\n' +\
             'You must set buys to True before this merchant will buy anything from players.'
         if not itype:
-            return 'Try "add type <item-type>", or see "help merchant".'
+            return 'Try "remove type <item-type>", or see "help merchant".'
         if itype == 'all':
             self.buys_types = []
             self.save()
@@ -363,7 +392,10 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
             self.buys_types.remove(itype)
             self.save()
             return 'Merchant no longer buys items of type %s.' % itype
-        return 'Merchant already doesn\'t buy items of type %s.' % itype
+        if (itype != 'plain') and (itype not in ITEM_TYPES):
+            return '%s is not a valid item type. See "help merchant" for details.' % itype
+        else:
+            return 'Merchant already doesn\'t buy items of type %s.' % itype
     
     def build_add_item(self, args, player=None):
         """Add an item for this merchant to sell."""
@@ -408,7 +440,7 @@ The Merchant AI pack is meant to give NPCs the ability to become merchants.
         if not item:
             return 'That item doesn\'t exist.'
         self.save()
-        return 'Merchant no longer sells %s.' % item_name
+        return 'Merchant no longer sells %s.' % item[0].name
     
     def build_remove_missing(self, args, player=None):
         """Remove any 'dead' items from this merchant's sale_items.

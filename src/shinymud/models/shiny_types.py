@@ -53,6 +53,17 @@ def write_area(val):
         return val
     return val.name
 
+def read_merchandise(val):
+    return [read_dict(each) for each in val.split('<>')]
+
+def write_merchandise(val):
+    lst = []
+    for dicts in val:
+        if dicts.get('keywords'):
+            del dicts['keywords']
+        lst.append(write_dict(dicts))
+    return '<>'.join(lst)
+
 def read_json(val):
     return json.loads(val)
 
