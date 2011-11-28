@@ -19,7 +19,7 @@ class NpcAiPack(Model):
     Remember to add your new ai pack to the registry, or else it won't exist
     in game! Do so by adding this after the ai class:
         NPC_AI_PACKS = {'<in-game_ai_pack_name>': <class_name>}
-    And this if it's a model:
+    And this to register it as a model:
         model_list.register(<class_name>)
         
     
