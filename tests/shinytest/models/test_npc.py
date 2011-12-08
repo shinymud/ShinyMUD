@@ -36,7 +36,7 @@ class TestNpc(ShinyTestCase):
         """Test if an NPC can exist within an area properly (unspawned)"""
         self.npc = self.area.new_npc()
         self.npc.characterize({'name': 'bobert'})
-        self.assertTrue('bobert' in self.area.list_npcs() )
+        self.assertTrue(self.npc in self.area.npcs.values())
     
     def test_build_add_remove_events(self):
         npc = self.area.new_npc()
@@ -166,17 +166,31 @@ class TestNpc(ShinyTestCase):
     
     def test_build_add_remove_ai(self):
         npc = self.area.new_npc()
+        
+        #Test adding ai pack
         message = npc.build_add_ai("", self.bob)
         self.assertEqual('Try: "add ai <ai-pack-name>", or type "help ai packs".', message)
         message = npc.build_add_ai("doesnotexist", self.bob)
         self.assertEqual('"doesnotexist" is not a valid ai pack. See "help ai packs".', message)
-        #AI is not fully written yet. Uncomment these when the future happens!
-        #message = npc.build_add_ai("merchant", self.bob)
-        #self.assertEqual("This npc (Shiny McShinerson) is now a merchant.", message)
-        #message = npc.build_add_ai("merchant", self.bob)
-        #self.assertEqual('This npc (Shiny McShinerson) already has that ai pack.', message)
+        message = npc.build_add_ai("merchant", self.bob)
+        self.assertEqual("This npc (Shiny McShinerson) is now a merchant.", message)
+        message = npc.build_add_ai("merchant", self.bob)
+        self.assertEqual('This npc (Shiny McShinerson) already has that ai pack.', message)
     
-
+        #Test basic add behavior for ai pack
+        message = str(npc)
+        self.assertTrue("MERCHANT ATTRIBUTES:" in message)
+        
+        #Test removing ai pack
+        message = npc.build_remove_ai("", self.bob)
+        self.assertEqual('Try: "remove ai <ai-pack-name>", or type "help ai packs".', message)
+        message = npc.build_remove_ai("doesnotexist", self.bob)
+        self.assertEqual('This npc doesn\'t have the "doesnotexist" ai type.', message)
+        message = npc.build_remove_ai("merchant", self.bob)
+        self.assertEqual('Npc 1 (Shiny McShinerson) no longer has merchant ai.', message)
+        message = npc.build_remove_ai("merchant", self.bob)
+        self.assertEqual('This npc doesn\'t have the "merchant" ai type.', message)
+        
 
     
 

@@ -150,7 +150,7 @@ class InitMode(object):
 
     def reset_password(self):
         """At this stage we're trying to get our players back. If they decided 
-        to add a password to their character, we will send them a code and they
+        to add an e-mail to their character, we will send them a code and they
         can reset it, and they will go to a state to confirm their code. If not,
         they are out of luck, but they can still log on as another character.
 

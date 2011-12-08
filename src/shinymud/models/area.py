@@ -149,11 +149,13 @@ Description: \n    %s""" % (self.name,
 # Here exist all the function that an area uses to manage the rooms
 # it contains.
     def list_rooms(self):
-        names = self.rooms.keys()
-        room_list = (' Rooms in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.rooms.items():
-            room_list += '%s - %s\n' % (key, value.name)
-        room_list += '-'.center(50, '-')
+        room_list = [(' Rooms in area "%s" ' % self.name).center(50, '-')]
+        #For now we will sort everything alphabetically by it's name
+        stuff = [(each[1].name, each[0]) for each in self.rooms.items()]
+        stuff.sort()
+        for value, key in stuff:
+            room_list.append('%s - %s' % (key, value) )
+        room_list.append('-'.center(50, '-') )
         return room_list
     
     def new_room(self, room_dict=None):
@@ -199,11 +201,13 @@ Description: \n    %s""" % (self.name,
 # it contains.
     def list_npcs(self):
         """Return a 'pretty list' of all the npcs in this area."""
-        names = self.npcs.keys()
-        npc_list = (' Npcs in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.npcs.items():
-            npc_list += '%s - %s\n' % (key, value.name)
-        npc_list += '-'.center(50, '-')
+        npc_list = [(' Npcs in area "%s" ' % self.name).center(50, '-')]
+        #For now we will sort everything alphabetically by it's name
+        stuff = [(each[1].name, each[0]) for each in self.npcs.items()]
+        stuff.sort()
+        for value, key in stuff:
+            npc_list.append('%s - %s' % (key, value) )
+        npc_list.append('-'.center(50, '-') )
         return npc_list
     
     def new_npc(self, npc_dict=None):
@@ -244,11 +248,13 @@ Description: \n    %s""" % (self.name,
 # Here exist all the function that an area uses to manage the items
 # it contains.
     def list_items(self):
-        names = self.items.keys()
-        item_list = (' Items in area "%s" ' % self.name).center(50, '-') + '\n'
-        for key, value in self.items.items():
-            item_list += '%s - %s\n' % (key, value.name)
-        item_list += '-'.center(50, '-')
+        item_list = [(' Items in area "%s" ' % self.name).center(50, '-')]
+        #For now we will sort everything alphabetically by it's name
+        stuff = [(each[1].name, each[0]) for each in self.items.items()]
+        stuff.sort()
+        for value, key in stuff:
+            item_list.append('%s - %s' % (key, value) )
+        item_list.append( '-'.center(50, '-') )
         return item_list
     
     def new_item(self, item_dict=None):
@@ -286,12 +292,14 @@ Description: \n    %s""" % (self.name,
 # Here exist all the function that an area uses to manage the scripts
 # it contains.
     def list_scripts(self):
-        names = self.npcs.keys()
-        script_list = (' Scripts in area "%s" ' % self.name
-                      ).center(50, '-') + '\n'
-        for key, value in self.scripts.items():
-            script_list += '%s - %s\n' % (key, value.name)
-        script_list += '-'.center(50, '-')
+        script_list = [(' Scripts in area "%s" ' % self.name
+                      ).center(50, '-')]
+        #For now we will sort everything alphabetically by it's name
+        stuff = [(each[1].name, each[0]) for each in self.scripts.items()]
+        stuff.sort()
+        for value, key in stuff:
+            script_list.append('%s - %s' % (key, value) )
+        script_list.append('-'.center(50, '-') )
         return script_list
     
     def new_script(self, script_dict=None):

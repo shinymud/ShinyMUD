@@ -486,7 +486,7 @@ class Container(ItemType):
     db_table_name = 'container'
     db_columns = ItemType.db_columns + [
         Column('weight_capacity', type="NUMBER", read=read_float, default=0),
-        Column('build_item_capacity', type="INTEGER", read=read_int, write=int, default=-1),
+        Column('build_item_capacity', type="INTEGER", read=read_int, write=int, default=0),
         Column('weight_reduction', type="INTEGER", read=read_int, write=int, default=0),
         Column('openable', read=to_bool, default=False),
         Column('closed', read=to_bool, default=False),
@@ -595,7 +595,7 @@ class Container(ItemType):
     
     def build_set_openable(self, args, player=None):
         boolean = to_bool(args)
-        if not boolean:
+        if boolean == None:
             return 'Acceptable values for this attribute are true or false.'
         else:
             self.openable = boolean
@@ -604,7 +604,7 @@ class Container(ItemType):
     
     def build_set_closed(self, args, player=None):
         boolean = to_bool(args)
-        if not boolean:
+        if boolean == None:
             return 'Acceptable values for this attribute are true or false.'
         else:
             self.closed = boolean
