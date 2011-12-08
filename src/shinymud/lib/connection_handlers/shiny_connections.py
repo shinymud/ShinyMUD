@@ -22,7 +22,7 @@ class TelnetConnection(ShinyConnection):
     
     def __init__(self, conn_info, log):
         ShinyConnection.__init__(self, conn_info, log)
-        self.win_size = None
+        self.win_size = (80,40)
         self.set_telnet_options()
         # Put our socket into non-blocking mode - we'll periodically poll for data
         # instead of blocking until we get it
