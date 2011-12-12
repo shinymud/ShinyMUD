@@ -107,6 +107,26 @@ class TestGeneralCommands(ShinyTestCase):
         self.assertTrue(to_alice in alice.outq)
         to_shiny = 'Alice gives you a bauble.'
         self.assertTrue(to_shiny in npc.actionq)
+        
+        #Test Money
+        bob.currency = 100
+        com = config.CURRENCY + ' to alice'
+        #Test give one currency unit
+        self.assertEqual(alice.currency, 0)
+        Give(bob, com, 'give').run()
+        self.assertEqual(bob.currency, 99)
+        self.assertEqual(alice.currency, 1)
+        #test give multiple currencies
+        com = '99' + config.CURRENCY + ' to alice'
+        Give(bob, com, 'give').run()
+        self.assertEqual(bob.currency, 0)
+        self.assertEqual(alice.currency, 100)
+        #test give more than bob has
+        com = '1000' + config.CURRENCY + ' to alice'
+        Give(bob, com, 'give').run()
+        self.assertEqual(bob.currency, 0)
+        self.assertEqual(alice.currency, 100)
+        
     
     def test_set_command(self):
         from shinymud.models.area import Area

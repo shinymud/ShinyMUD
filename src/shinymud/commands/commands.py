@@ -543,6 +543,8 @@ To load an npc:
                                                                                 [self.pc.name], self.pc)
         else:
             self.pc.update_output('That item doesn\'t exist.\n')
+
+        
     
 
 command_list.register(Load, ['load', 'spawn'])
@@ -586,35 +588,62 @@ give <item-keyword> to <npc/player-name>
         if not self.args:
             self.pc.update_output('Try: "give <item> to <person>", or type "help give".')
             return
-        exp = r'(?P<thing>.*?)([ ]to[ ])(?P<givee>\w+)'
+        exp = r'(?P<amount>\d+)?([ ]+)?(?P<thing>.*?)([ ]+)(to[ ]+)?(?P<givee>\w+)'
         match = re.match(exp, self.args, re.I)
         if not match:
             self.pc.update_output('Try: "give <item> to <person>", or type "help give".')
         elif not self.pc.location:
             self.pc.update_output('You are alone in the void; there\'s no one to give anything to.\n')
         else:
-            thing, person = match.group('thing', 'givee')
+            amount, thing, person = match.group('amount', 'thing', 'givee')
+            #check that the person we're giving to exists
             givee = self.pc.location.get_player(person)
             if not givee:
                 givee = self.pc.location.get_npc_by_kw(person)
                 if not givee:
                     self.pc.update_output('%s isn\'t here.' % person.capitalize())
                     return
+            #check for giving an item
+            thing_name = 'something'
             item = self.pc.check_inv_for_keyword(thing)
-            if not item:
-                self.pc.update_output('You don\'t have %s.' % thing)
-            else:
+            if item:
                 self.pc.item_remove(item)
                 givee.item_add(item)
-                self.pc.update_output('You give %s to %s.' % (item.name, givee.fancy_name()))
-                givee.update_output('%s gives you %s.' % (self.pc.fancy_name(), item.name))
-                self.pc.location.tell_room('%s gives %s to %s.' % (self.pc.fancy_name(),
-                                                                      item.name,
-                                                                      givee.fancy_name()),
-                                            [self.pc.name, givee.name])
-                if givee.is_npc():
-                    givee.notify('given_item', {'giver': self.pc, 
-                                                'item': item})
+                thing_name = item.name
+            #check for giving currency
+            elif not item and thing == CURRENCY:
+                if not amount:
+                    amount = 1
+                else:
+                    amount = int(amount)
+                if self.pc.currency < amount:
+                    self.pc.update_output('You don\'t have that much ' + CURRENCY + '.')
+                    return
+                else:
+                    self.pc.currency -= amount
+                    givee.currency += amount
+                    thing_name = str(amount) + ' ' + CURRENCY
+            else:
+                self.pc.update_output('You don\'t have %s.' % thing)
+                return
+                
+            #We've completed the giving process, now tell everyone about it.
+            self.pc.update_output('You give %s to %s.' % (thing_name, givee.fancy_name()))
+            givee.update_output('%s gives you %s.' % (self.pc.fancy_name(), thing_name))
+            self.pc.location.tell_room('%s gives %s to %s.' % (self.pc.fancy_name(),
+                                                                  thing_name,
+                                                                  givee.fancy_name()),
+                                        [self.pc.name, givee.name])
+            if item and givee.is_npc():
+                givee.notify('given_item', {'giver': self.pc, 
+                                            'item': item})
+    def give_currency(self, amount, givee):
+        if self.pc.currency < amount:
+            self.pc.update_output('You don\'t have that much ' + CURRENCY + '.')
+        else:
+            self.pc.currency -= amount
+            givee.currency += amount
+            curr = 'some ' + CURRENCY
     
 
 command_list.register(Give, ['give'])
