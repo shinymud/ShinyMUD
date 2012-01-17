@@ -1893,8 +1893,8 @@ character)
         self.pc.update_output("")
     
 
-command_list.register(Attack, ['attack', 'kill'])
-command_help.register(Attack.help, ['attack', 'kill'])
+#command_list.register(Attack, ['attack', 'kill'])
+#command_help.register(Attack.help, ['attack', 'kill'])
 
 class Run(BaseCommand):
     help = (
@@ -1936,8 +1936,8 @@ If you want to escape in a specific direction, try
             self.pc.next_action = action
     
 
-battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
-command_help.register(Run.help, ['run', 'flee', 'escape'])
+#battle_commands.register(Run, ['run', 'flee', 'escape', 'go'])
+#command_help.register(Run.help, ['run', 'flee', 'escape'])
 
 class Me(BaseCommand):
     """Get a score card of your player details."""
