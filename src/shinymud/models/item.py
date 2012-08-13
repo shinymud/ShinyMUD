@@ -207,6 +207,19 @@ class BuildItem(Item):
         del self.item_types[item_type]
         return 'This item is no longer of type %s.' % item_type
     
+    def load_type(self, item_type, item_dict=None):
+        """load a preset item type into an item. NOTE: A regular load from the db will
+        cause shinyMUD to load using a column/model. Currently this method only needs to 
+        be used by loading from import.
+        """
+        if item_dict:
+            new_type = ITEM_TYPES[item_type](item_dict)
+        else:
+            new_type = ITEM_TYPES[item_type]()
+        new_type.build_item = self
+        new_type.save()
+        self.item_types[item_type] = new_type
+    
     def load(self, spawn_id=None):
         """Create a GameItem with the same attributes as this prototype item.
         spawn_id -- The id of the spawn that is loading this item into a room,

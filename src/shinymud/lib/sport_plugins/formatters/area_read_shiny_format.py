@@ -33,7 +33,7 @@ def format(world, raw_data):
         for itype in itypes:
             # Get this itype's item by that item's id
             my_item = new_area.get_item(itype['item'])
-            my_item.build_add_type(itype['item_type'], itype)
+            my_item.load_type(itype['item_type'], itype)
         world.log.debug('Finished Item types.')
         for npc in npcs:
             new_area.new_npc(npc)

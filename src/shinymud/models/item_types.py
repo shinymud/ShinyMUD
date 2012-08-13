@@ -752,7 +752,11 @@ class Portal(ItemType):
         room = area.get_room(room_id)
         if not room:
             return 'That room doesn\'t exist.\n'
+        #Set location so we don't have to resolve it (for as long as the game runs)
         self.location = room
+        #Also set these two, so we can resolve the room next time the game starts
+        self.to_room = room_id
+        self.to_area = area_name
         self.save()
         return 'This portal now connects to room %s in area %s.\n' % (self.location.id,
                                                                       self.location.area.name)
