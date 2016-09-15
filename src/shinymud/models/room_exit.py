@@ -162,7 +162,7 @@ class RoomExit(Model):
     def build_set_closed(self, args):
         try:
             boolean = to_bool(args[0])
-        except Exception, e:
+        except Exception as e:
             return str(e)
         else:
             self.closed = boolean
@@ -189,7 +189,7 @@ class RoomExit(Model):
     def build_set_hidden(self, args):
         try:
             boolean = to_bool(args[0])
-        except Exception, e:
+        except Exception as e:
             return str(e)
         else:
             self.hidden = boolean
@@ -199,7 +199,7 @@ class RoomExit(Model):
     def build_set_locked(self, args):
         try:
             boolean = to_bool(args[0])
-        except Exception, e:
+        except Exception as e:
             return str(e)
         else:
             self.locked = boolean

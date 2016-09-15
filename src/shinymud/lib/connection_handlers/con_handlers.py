@@ -29,7 +29,7 @@ class WebsocketHandler(threading.Thread):
             try:
                 connection = WebsocketConnection( self.listener.accept(), 
                                                     self.world.log, self.host, self.port)
-            except Exception, e:
+            except Exception as e:
                 self.world.log.debug(str(e))
             else:
                 new_player = Player(connection)
@@ -66,7 +66,7 @@ class TelnetHandler(threading.Thread):
         while 1:
             try:
                 connection = TelnetConnection(self.listener.accept(), self.world.log)
-            except Exception, e:
+            except Exception as e:
                 self.world.log.debug(str(e))
             else:
                 new_player = Player(connection)
@@ -124,7 +124,7 @@ class StatSender(threading.Thread):
                 plist = ','.join([name for name in self.world.player_list if isinstance(name, basestring)])
                 conn.send(str(self.world.uptime) + ':' + plist)
                 conn.close()
-            except Exception, e:
+            except Exception as e:
                 self.world.log.error('StatSender ERROR: ' + str(e))
     
 

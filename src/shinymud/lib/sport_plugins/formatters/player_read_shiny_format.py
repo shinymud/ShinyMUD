@@ -48,7 +48,7 @@ def format(world, raw_data):
                 containee.container = old_new.get(old_container_dbid)
                 containee.save()
             
-    except Exception, e:
+    except Exception as e:
         # if anything went wrong, make sure we destroy any leftover character
         # data. This way, we won't run into problems if they try to import it
         # again, and we won't leave orphaned or erroneous data in the db.

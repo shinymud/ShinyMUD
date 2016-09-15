@@ -181,7 +181,7 @@ class InitMode(object):
             self.player.update_output('Copy the code here to continue: ')
             self.next_state = self.confirm_code
             return
-        except Exception, e:
+        except Exception as e:
             #We had a problem sending email! Most likely, we don't have email set up in the config.py file
             self.player.update_output(CLEAR + 'We were unable to send an e-mail to %s. ' % player_email)
             self.player.update_output('This could be a problem with our internal e-mail sender.' + \

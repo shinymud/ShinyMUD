@@ -31,7 +31,7 @@ class DB(object):
                 cursor.execute("insert " + query, params)
             else:
                 cursor.execute("insert " + query)
-        except Exception, e:
+        except Exception as e:
             self.conn.rollback()
             raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:
@@ -86,7 +86,7 @@ class DB(object):
                 cursor.execute("update " + query, params)
             else:
                 cursor.execute("update " + query)
-        except Exception, e:
+        except Exception as e:
             self.conn.rollback()
             raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:
@@ -120,7 +120,7 @@ class DB(object):
                 cursor.execute("delete " + query, params)
             else:
                 cursor.execute("delete " + query)
-        except Exception, e:
+        except Exception as e:
             self.conn.rollback()
             raise Exception(str(e) + '\n%s\n%s' % (query, repr(params)))
         else:

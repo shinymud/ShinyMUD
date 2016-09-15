@@ -36,7 +36,7 @@ class World(object):
         
         try:
             greet_file = open(ROOT_DIR + '/login_greeting.txt', 'r')
-        except Exception, e:
+        except Exception as e:
             self.log.error('Error opening login_greeting.txt: ' + str(e))
         else:
             text = greet_file.read()

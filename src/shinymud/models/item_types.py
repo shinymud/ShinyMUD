@@ -130,7 +130,7 @@ class Equippable(ItemType):
             index = 1
         try:
             dmg = Damage(m.group('params'))
-        except Exception, e:
+        except Exception as e:
             return str(e)
         else:
             if len(self.dmg) < index:
@@ -161,7 +161,7 @@ class Equippable(ItemType):
             # world = World.get_world()
             # world.db.update_from_dict('equippable', self.to_dict())
             return 'damage has been added.\n'
-        except Exception, e:
+        except Exception as e:
             return str(e)
     
     def build_set_hit(self, params, player=None):

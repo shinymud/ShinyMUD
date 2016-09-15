@@ -145,7 +145,7 @@ def setup():
                     print ' Importing Built-in Areas '.center(50, '-')
                     result = inport_dir('area', source_path=PREPACK)
                     print result
-                except Exception, e:
+                except Exception as e:
                     print "Oops, there was an error importing our areas.\n" +\
                           "No worries, we'll just start your game and you can try again later."
             else:
@@ -163,7 +163,7 @@ def clean():
             if name.endswith('.pyc'):
                 try:
                     os.remove(os.path.join(dirname, name))
-                except Exception, e:
+                except Exception as e:
                     print "Error removing .pyc file: " + str(e)
     
     if check_running():
@@ -177,7 +177,7 @@ def clean():
             # delete the database.
             try:
                 os.remove(DB_NAME)
-            except Exception, e:
+            except Exception as e:
                 print 'Error removing database: ' + str(e)
     # Delete all .pyc files in the directory
     print 'Deleting pyc files...'
@@ -189,7 +189,7 @@ def clean():
             if logfile.endswith('.log'):
                 try:
                     os.remove(os.path.join(path, 'shinymud/data/logs/', logfile))
-                except Exception, e:
+                except Exception as e:
                     print 'Error removing logfile: ' + str(e)
     print "Cleaning complete!"
 

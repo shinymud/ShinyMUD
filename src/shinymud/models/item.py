@@ -178,7 +178,7 @@ class BuildItem(Item):
         """Set the carryable status for this item."""
         try:
             val = to_bool(boolean)
-        except Exception, e:
+        except Exception as e:
             return str(e)
         else:
             self.carryable = val

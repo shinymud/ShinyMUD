@@ -31,7 +31,7 @@ def transport(world, filename, path):
         raise SportError('Error: file %s does not exist.' % filename)
     try:
         f = open(filepath, 'r')
-    except IOError, e:
+    except IOError as e:
         world.log.debug(str(e))
         raise SportError('Error: opening the area file failed. '
                          'Check the logfile for details.')

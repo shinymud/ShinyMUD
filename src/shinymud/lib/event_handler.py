@@ -41,10 +41,10 @@ class EventHandler(object):
         self.log.debug('About to execute script %s.' % self.script.id)
         try:
             lines = self.parse_script()
-        except ParseError, e:
+        except ParseError as e:
             self.log.error(str(e))
             self.obj.actionq.append(str(e))
-        except ConditionError, e:
+        except ConditionError as e:
             self.obj.actionq.append(str(e))
         else:        
             for line in lines:
@@ -55,7 +55,7 @@ class EventHandler(object):
                     if cmd_name in self.script_cmds:
                         try:
                             self.script_cmds[cmd_name](args)
-                        except CommandError, e:
+                        except CommandError as e:
                             self.obj.actionq.append(str(e))
                     else:
                         cmd = command_list[cmd_name]
@@ -113,7 +113,7 @@ class EventHandler(object):
                 elif lines[index].startswith('else'):
                     state = F
                 index += 1
-        except IndexError, e:
+        except IndexError as e:
             raise ParseError('Script %s Error: "if" block was not terminated by an "endif"' % self.script.id)
         self.log.debug('Parse If status:\nTrue: %s\nFalse: %s\nCondition: %s\n' % (str(T), str(F), str(condition)))
         pl.extend({True: T, False: F}[condition])

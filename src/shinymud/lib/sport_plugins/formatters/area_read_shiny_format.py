@@ -51,7 +51,7 @@ def format(world, raw_data):
             world.log.debug(exit['room'])
             my_room = new_area.get_room(str(exit['room']))
             my_room.new_exit(exit)
-    except Exception, e:
+    except Exception as e:
         # if anything went wrong, make sure we destroy whatever parts of
         # the area that got created. This way, we won't run into problems
         # if they try to import it again, and we won't leave orphaned or

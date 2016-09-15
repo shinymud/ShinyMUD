@@ -8,13 +8,13 @@ def transport(world, shinydata, filename, path):
     if not os.path.exists(path):
         try:
             os.mkdir(path)
-        except Exception, e:
+        except Exception as e:
             world.log.error('EXPORT FAILED: ' + str(e))
             raise SportError('Error accessing the export directory for areas.')
     filepath = os.path.join(path, filename)
     try:
         f = open(filepath, 'w')
-    except IOError, e:
+    except IOError as e:
         world.log.debug(str(e))
         raise SportError('Error writing to file. Check the logfile for details')
     else:
